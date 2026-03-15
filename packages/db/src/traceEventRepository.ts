@@ -4,10 +4,13 @@ import type {
 } from "@logistics-erp/schema";
 import { supabase } from "./client.js";
 
+const UNIQUE_VIOLATION_CODE = "23505";
+
 /**
  * trace_events 1 件 insert。
- * - shipment_id / stock_movement_id: 出荷・在庫移動との紐づけ。importer では両方渡すと追跡しやすい。
- * - 将来の重複防止: payload に source_type / source_ref や idempotency key を入れ、一意制約で防ぐ想定。
+ * - idempotency_key を指定した場合、unique 制約違反時は既存行を取得して返す（冪等）。
+ * - shipment_id / stock_movement_id: 出荷・在庫移動との紐づけ。
+ * TODO: 将来 QR アプリからは client_event_id を idempotency_key に使う想定。
  */
 export async function insertTraceEvent(
   input: TraceEventInsertInput
@@ -48,6 +51,7 @@ export async function insertTraceEvent(
     unit: input.unit ?? null,
     payload: input.payload ?? null,
     note: input.note ?? null,
+    idempotency_key: input.idempotency_key ?? null,
   };
 
   const { data, error } = await supabase
@@ -57,6 +61,15 @@ export async function insertTraceEvent(
     .single();
 
   if (error) {
+    if (
+      input.idempotency_key &&
+      (error.code === UNIQUE_VIOLATION_CODE || error.message?.includes("unique"))
+    ) {
+      const existing = await findTraceEventByIdempotencyKey(
+        input.idempotency_key
+      );
+      if (existing) return existing;
+    }
     throw new Error(
       `[@logistics-erp/db] insertTraceEvent failed: ${error.message}`,
       { cause: error }
@@ -64,6 +77,25 @@ export async function insertTraceEvent(
   }
 
   return data as TraceEvent;
+}
+
+export async function findTraceEventByIdempotencyKey(
+  idempotencyKey: string
+): Promise<TraceEvent | null> {
+  const { data, error } = await supabase
+    .from("trace_events")
+    .select("*")
+    .eq("idempotency_key", idempotencyKey)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(
+      `[@logistics-erp/db] findTraceEventByIdempotencyKey failed: ${error.message}`,
+      { cause: error }
+    );
+  }
+
+  return (data as TraceEvent) ?? null;
 }
 
 export async function listTraceEventsByTraceId(

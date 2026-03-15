@@ -54,7 +54,8 @@ export async function registerShipmentEffects(
 ): Promise<RegisterShipmentEffectsResult> {
   const shipment = rowToShipment(shipmentRow);
 
-  // 1. stock_movements に IN を登録（shipment_id を紐づけ）
+  // 1. stock_movements に IN を登録（idempotency_key で再実行時は既存を返す）
+  const receiptIdempotencyKey = `RECEIPT:${shipmentRow.id}:IN`;
   const movement = await insertStockMovement({
     movement_type: "IN",
     supplier: shipmentRow.supplier,
@@ -62,6 +63,7 @@ export async function registerShipmentEffects(
     part_name: shipmentRow.part_name,
     quantity: shipmentRow.quantity,
     shipment_id: shipmentRow.id,
+    idempotency_key: receiptIdempotencyKey,
   });
 
   // 2. inventory を増加（存在しなければ insert）

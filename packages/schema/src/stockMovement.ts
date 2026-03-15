@@ -18,6 +18,7 @@ export type StockMovement = {
   source_ref: string | null
   shipment_id: string | null
   note: string | null
+  idempotency_key: string | null
 }
 
 /** stock_movements への 1 件 insert 用。id / created_at は DB で付与。 */
@@ -32,4 +33,5 @@ export type StockMovementInsertInput = {
   source_ref?: string | null
   shipment_id?: string | null
   note?: string | null
+  idempotency_key?: string | null
 }

@@ -60,6 +60,7 @@ export type TraceEvent = {
   unit: string | null
   payload: Record<string, unknown> | null
   note: string | null
+  idempotency_key: string | null
 }
 
 export type TraceEventInsertInput = {
@@ -87,4 +88,5 @@ export type TraceEventInsertInput = {
   unit?: string | null
   payload?: Record<string, unknown> | null
   note?: string | null
+  idempotency_key?: string | null
 }

@@ -25,10 +25,13 @@
 - **registerEffects: false または未指定** … shipment upsert のみ（既存挙動）
 - **registerEffects: true** … shipment upsert 後に各行で `registerShipmentEffects` を実行し、`result.effects` に結果を格納
 
-## 今後の検討（transaction / idempotency）
+## 冪等性（idempotency_key）
+
+- **stock_movements**: `idempotency_key = RECEIPT:{shipment_id}:IN` を付与。同一キーで再 insert 時は unique 制約により既存行を取得して返す。
+- **trace_events**: `idempotency_key = IMPORTER_INIT:{shipment_id}:SHIPPER_CONFIRMED` を付与。同様に再実行時は既存を返す。
+- 詳細は [idempotency-and-trace-id.md](./idempotency-and-trace-id.md) を参照。
+
+## 今後の検討（transaction / outbox）
 
 - **transaction**: 複数テーブルへの書き込みを 1 トランザクションにまとめ、途中失敗時にロールバックできるようにする。
-- **idempotency**: 同じ CSV を 2 回流しても、stock_movements / trace_events が重複しないようにする。  
-  例: `source_type` + `source_ref` + `shipment_id` + `event_type` の一意制約、`importer_run_id` の導入、再実行時の idempotency key の利用。
-
-現状は **registerEffects を true にすると 2 回実行で重複登録される** ため、本番で使う前に上記のいずれかの対策が必要。
+- **importer_run_id**: 取込実行単位を識別し、再実行範囲やロールバック範囲を明確にする。
