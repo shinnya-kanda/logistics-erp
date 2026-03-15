@@ -1,1 +1,3 @@
 export * from "./shipment.js"
+export * from "./src/inventory.js"
+export * from "./src/stockMovement.js"
