@@ -1,5 +1,5 @@
 import type { Shipment } from "@logistics-erp/schema";
-import { supabase } from "./client.js";
+import { supabase } from "./src/client.js";
 
 export async function insertShipment(shipment: Shipment): Promise<void> {
   const { error } = await supabase.from("shipments").insert({

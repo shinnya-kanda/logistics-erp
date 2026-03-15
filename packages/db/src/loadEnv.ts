@@ -17,6 +17,7 @@ function findEnvFile(startDir: string): string | null {
     if (parent === current) {
       return null;
     }
+
     current = parent;
   }
 }
@@ -24,18 +25,23 @@ function findEnvFile(startDir: string): string | null {
 export function loadEnv() {
   if (loaded) return;
 
-  const candidates = [process.cwd(), process.env.INIT_CWD].filter(
-    (v): v is string => Boolean(v)
-  );
+  const candidateDirs = [
+    process.cwd(),
+    process.env.INIT_CWD,
+    path.resolve(process.cwd(), "../.."),
+    path.resolve(process.cwd(), "../../.."),
+  ].filter((v): v is string => Boolean(v));
 
-  for (const dir of candidates) {
+  for (const dir of candidateDirs) {
     const envPath = findEnvFile(dir);
     if (envPath) {
       dotenv.config({ path: envPath });
+      console.log("[loadEnv] loaded:", envPath);
       loaded = true;
       return;
     }
   }
 
+  console.log("[loadEnv] .env not found");
   loaded = true;
 }
