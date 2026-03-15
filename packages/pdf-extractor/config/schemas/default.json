@@ -1,0 +1,115 @@
+{
+  "schema_name": "default",
+  "fields": [
+    {
+      "field_name": "発行NO",
+      "page_index": 0,
+      "x0": 278.8,
+      "y0": 159.84,
+      "x1": 311.56,
+      "y1": 168.84,
+      "mode": "text",
+      "normalize": "raw",
+      "section_name": "left_genpin"
+    },
+    {
+      "field_name": "品番",
+      "page_index": 0,
+      "x0": 28.04,
+      "y0": 23.7,
+      "x1": 136.79,
+      "y1": 45.45,
+      "mode": "text",
+      "normalize": "raw",
+      "section_name": "left_genpin"
+    },
+    {
+      "field_name": "荷卸場",
+      "page_index": 0,
+      "x0": 32.46,
+      "y0": 130.43,
+      "x1": 59.46,
+      "y1": 148.43,
+      "mode": "text",
+      "normalize": "raw",
+      "section_name": "left_genpin"
+    },
+    {
+      "field_name": "数量",
+      "page_index": 0,
+      "x0": 147.84,
+      "y0": 106.48,
+      "x1": 153.84,
+      "y1": 118.48,
+      "mode": "text",
+      "normalize": "raw",
+      "section_name": "left_genpin"
+    },
+    {
+      "field_name": "納期",
+      "page_index": 0,
+      "x0": 312.77,
+      "y0": 98.79,
+      "x1": 336.77,
+      "y1": 106.79,
+      "mode": "text",
+      "normalize": "raw",
+      "section_name": "left_genpin"
+    },
+    {
+      "field_name": "発行NO",
+      "page_index": 0,
+      "x0": 682.55,
+      "y0": 159.84,
+      "x1": 715.31,
+      "y1": 168.84,
+      "mode": "text",
+      "normalize": "raw",
+      "section_name": "right_genpin"
+    },
+    {
+      "field_name": "品番",
+      "page_index": 0,
+      "x0": 431.8,
+      "y0": 23.7,
+      "x1": 540.55,
+      "y1": 45.45,
+      "mode": "text",
+      "normalize": "raw",
+      "section_name": "right_genpin"
+    },
+    {
+      "field_name": "荷卸場",
+      "page_index": 0,
+      "x0": 436.21,
+      "y0": 130.43,
+      "x1": 463.21,
+      "y1": 148.43,
+      "mode": "text",
+      "normalize": "raw",
+      "section_name": "right_genpin"
+    },
+    {
+      "field_name": "数量",
+      "page_index": 0,
+      "x0": 551.59,
+      "y0": 106.48,
+      "x1": 557.59,
+      "y1": 118.48,
+      "mode": "text",
+      "normalize": "raw",
+      "section_name": "right_genpin"
+    },
+    {
+      "field_name": "納期",
+      "page_index": 0,
+      "x0": 716.52,
+      "y0": 98.79,
+      "x1": 740.52,
+      "y1": 106.79,
+      "mode": "text",
+      "normalize": "raw",
+      "section_name": "right_genpin"
+    }
+  ]
+}
