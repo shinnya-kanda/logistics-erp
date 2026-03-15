@@ -1,4 +1,8 @@
-import type { Inventory } from "@logistics-erp/schema";
+import type {
+  Inventory,
+  InventoryInsertInput,
+  InventoryUpdateInput,
+} from "@logistics-erp/schema";
 import { supabase } from "./client.js";
 
 export interface IncreaseInventoryByReceiptParams {
@@ -29,13 +33,14 @@ export async function increaseInventoryByReceipt(
     const allocated = existing.allocated_qty ?? 0;
     const available = newOnHand - allocated;
 
+    const updatePayload: InventoryUpdateInput = {
+      on_hand_qty: newOnHand,
+      available_qty: available,
+      part_name: part_name ?? existing.part_name ?? null,
+    };
     const { data: updated, error } = await supabase
       .from("inventory")
-      .update({
-        on_hand_qty: newOnHand,
-        available_qty: available,
-        part_name: part_name ?? existing.part_name,
-      })
+      .update(updatePayload)
       .eq("id", existing.id)
       .select()
       .single();
@@ -50,16 +55,17 @@ export async function increaseInventoryByReceipt(
     return updated as Inventory;
   }
 
+  const insertPayload: InventoryInsertInput = {
+    supplier,
+    part_no,
+    part_name,
+    on_hand_qty: quantity,
+    allocated_qty: 0,
+    available_qty: quantity,
+  };
   const { data: inserted, error } = await supabase
     .from("inventory")
-    .insert({
-      supplier,
-      part_no,
-      part_name,
-      on_hand_qty: quantity,
-      allocated_qty: 0,
-      available_qty: quantity,
-    })
+    .insert(insertPayload)
     .select()
     .single();
 

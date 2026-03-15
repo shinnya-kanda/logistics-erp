@@ -19,3 +19,17 @@ export type StockMovement = {
   shipment_id: string | null
   note: string | null
 }
+
+/** stock_movements への 1 件 insert 用。id / created_at は DB で付与。 */
+export type StockMovementInsertInput = {
+  movement_type: StockMovementType
+  supplier?: string | null
+  part_no: string
+  part_name?: string | null
+  quantity: number
+  movement_date?: string
+  source_type?: string | null
+  source_ref?: string | null
+  shipment_id?: string | null
+  note?: string | null
+}
