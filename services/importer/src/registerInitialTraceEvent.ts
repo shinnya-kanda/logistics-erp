@@ -3,6 +3,7 @@ import { insertTraceEvent } from "@logistics-erp/db";
 
 export interface RegisterInitialTraceEventOptions {
   shipmentId?: string | null
+  stockMovementId?: string | null
 }
 
 /**
@@ -28,6 +29,7 @@ export async function registerInitialTraceEventFromShipment(
     part_name: shipment.partName || null,
     issue_no: shipment.issueNo,
     shipment_id: options.shipmentId ?? null,
+    stock_movement_id: options.stockMovementId ?? null,
     quantity: shipment.quantity,
     actor_type: "SYSTEM",
     status: "OK",

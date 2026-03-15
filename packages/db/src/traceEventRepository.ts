@@ -4,6 +4,11 @@ import type {
 } from "@logistics-erp/schema";
 import { supabase } from "./client.js";
 
+/**
+ * trace_events 1 件 insert。
+ * - shipment_id / stock_movement_id: 出荷・在庫移動との紐づけ。importer では両方渡すと追跡しやすい。
+ * - 将来の重複防止: payload に source_type / source_ref や idempotency key を入れ、一意制約で防ぐ想定。
+ */
 export async function insertTraceEvent(
   input: TraceEventInsertInput
 ): Promise<TraceEvent> {
