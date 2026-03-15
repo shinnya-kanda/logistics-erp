@@ -17,9 +17,11 @@
     "build": "tsc",
     "generate": "drizzle-kit generate",
     "migrate": "drizzle-kit migrate",
-    "lint": "eslint src --ext .ts"
+    "lint": "eslint . --ext .ts"
   },
   "dependencies": {
+    "@logistics-erp/schema": "workspace:*",
+    "@supabase/supabase-js": "^2.45.0",
     "drizzle-orm": "^0.36.0",
     "postgres": "^3.4.0"
   },
