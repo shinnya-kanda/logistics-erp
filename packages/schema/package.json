@@ -1,0 +1,23 @@
+{
+  "name": "@logistics-erp/schema",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "dev": "pnpm build",
+    "build": "tsc",
+    "lint": "eslint . --ext .ts"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0"
+  }
+}
