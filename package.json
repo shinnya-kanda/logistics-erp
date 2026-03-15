@@ -1,0 +1,17 @@
+{
+  "name": "logistics-erp",
+  "version": "0.0.0",
+  "private": true,
+  "description": "物流ERP モノレポ",
+  "scripts": {
+    "dev": "pnpm -r --parallel run dev",
+    "build": "pnpm -r run build",
+    "lint": "pnpm -r run lint",
+    "db:generate": "pnpm --filter @logistics-erp/db generate",
+    "db:migrate": "pnpm --filter @logistics-erp/db migrate"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@9.14.2"
+}
