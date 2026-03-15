@@ -7,10 +7,11 @@ import { supabase } from "./client.js";
 const UNIQUE_VIOLATION_CODE = "23505";
 
 /**
- * trace_events 1 件 insert。
- * - idempotency_key を指定した場合、unique 制約違反時は既存行を取得して返す（冪等）。
- * - shipment_id / stock_movement_id: 出荷・在庫移動との紐づけ。
- * TODO: 将来 QR アプリからは client_event_id を idempotency_key に使う想定。
+ * trace_events 1 件を冪等に作成（find-or-create）。
+ * 1. idempotency_key があれば既存検索 → あれば返却
+ * 2. shipment_id + event_type があれば既存検索 → あれば返却（fallback）
+ * 3. なければ insert
+ * 4. insert が unique 制約違反なら既存を再取得して返却
  */
 export async function insertTraceEvent(
   input: TraceEventInsertInput
@@ -24,6 +25,19 @@ export async function insertTraceEvent(
     throw new Error(
       "[@logistics-erp/db] insertTraceEvent: event_type は必須です。"
     );
+  }
+
+  if (input.idempotency_key) {
+    const byKey = await findTraceEventByIdempotencyKey(input.idempotency_key);
+    if (byKey) return byKey;
+  }
+
+  if (input.shipment_id && input.event_type) {
+    const byShipment = await findTraceEventByShipmentAndEventType(
+      input.shipment_id,
+      input.event_type
+    );
+    if (byShipment) return byShipment;
   }
 
   const row = {
@@ -61,15 +75,29 @@ export async function insertTraceEvent(
     .single();
 
   if (error) {
-    if (
-      input.idempotency_key &&
-      (error.code === UNIQUE_VIOLATION_CODE || error.message?.includes("unique"))
-    ) {
-      const existing = await findTraceEventByIdempotencyKey(
-        input.idempotency_key
-      );
-      if (existing) return existing;
+    const code = String(error.code ?? "");
+    const isUniqueViolation =
+      code === UNIQUE_VIOLATION_CODE ||
+      code === "23505" ||
+      error.message?.includes("unique") ||
+      error.message?.includes("uniq_trace_event");
+
+    if (isUniqueViolation) {
+      if (input.idempotency_key) {
+        const existing = await findTraceEventByIdempotencyKey(
+          input.idempotency_key
+        );
+        if (existing) return existing;
+      }
+      if (input.shipment_id && input.event_type) {
+        const existing = await findTraceEventByShipmentAndEventType(
+          input.shipment_id,
+          input.event_type
+        );
+        if (existing) return existing;
+      }
     }
+
     throw new Error(
       `[@logistics-erp/db] insertTraceEvent failed: ${error.message}`,
       { cause: error }
@@ -91,6 +119,27 @@ export async function findTraceEventByIdempotencyKey(
   if (error) {
     throw new Error(
       `[@logistics-erp/db] findTraceEventByIdempotencyKey failed: ${error.message}`,
+      { cause: error }
+    );
+  }
+
+  return (data as TraceEvent) ?? null;
+}
+
+export async function findTraceEventByShipmentAndEventType(
+  shipmentId: string,
+  eventType: string
+): Promise<TraceEvent | null> {
+  const { data, error } = await supabase
+    .from("trace_events")
+    .select("*")
+    .eq("shipment_id", shipmentId)
+    .eq("event_type", eventType)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(
+      `[@logistics-erp/db] findTraceEventByShipmentAndEventType failed: ${error.message}`,
       { cause: error }
     );
   }

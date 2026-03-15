@@ -3,31 +3,23 @@ import { buildTraceId } from "@logistics-erp/schema";
 import { insertTraceEvent } from "@logistics-erp/db";
 
 export interface RegisterInitialTraceEventOptions {
-  shipmentId?: string | null
+  /** 必須。idempotency_key と (shipment_id, event_type) の冪等に必要。 */
+  shipmentId: string
   stockMovementId?: string | null
 }
 
 /**
- * shipment を元に trace_events の初期イベントを作成する。
- * - trace_id: buildTraceId({ issue_no, part_no, supplier }) で生成（TRC:...）。
+ * shipment を元に trace_events の初期イベントを冪等に作成する（Phase 0）。
+ * - trace_id: buildTraceId(issueNo, partNo) で生成（TRC:...）。
  * - idempotency_key: IMPORTER_INIT:{shipment_id}:SHIPPER_CONFIRMED（再実行時は既存を返す）。
- * - shipment_id が取れない場合は idempotency_key を付けられず重複登録の可能性あり（TODO）。
+ * - options.shipmentId は必須（冪等キーに使用）。
  */
 export async function registerInitialTraceEventFromShipment(
   shipment: Shipment,
-  options: RegisterInitialTraceEventOptions = {}
+  options: RegisterInitialTraceEventOptions
 ): Promise<TraceEvent> {
-  const traceId = buildTraceId({
-    issue_no: shipment.issueNo,
-    part_no: shipment.partNo,
-    supplier: shipment.supplier,
-  });
-
-  const shipmentId = options.shipmentId ?? null;
-  const idempotencyKey = shipmentId
-    ? `IMPORTER_INIT:${shipmentId}:SHIPPER_CONFIRMED`
-    : null;
-  // TODO: shipment_id が取れない場合（取込経路によっては id が渡らない）、idempotency_key が付けられず二重登録になり得る。
+  const traceId = buildTraceId(shipment.issueNo, shipment.partNo);
+  const idempotencyKey = `IMPORTER_INIT:${options.shipmentId}:SHIPPER_CONFIRMED`;
 
   return insertTraceEvent({
     event_type: "SHIPPER_CONFIRMED",
@@ -37,7 +29,7 @@ export async function registerInitialTraceEventFromShipment(
     part_no: shipment.partNo,
     part_name: shipment.partName || null,
     issue_no: shipment.issueNo,
-    shipment_id: shipmentId,
+    shipment_id: options.shipmentId,
     stock_movement_id: options.stockMovementId ?? null,
     quantity: shipment.quantity,
     actor_type: "SYSTEM",

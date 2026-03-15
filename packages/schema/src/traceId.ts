@@ -39,25 +39,31 @@ export interface BuildTraceIdInput {
 }
 
 /**
- * 共通物流キー trace_id を組み立てる。
- * ルール: TRC:{normalized(issue_no)}:{normalized(part_no)}
- * supplier は引数で受け取るが現状は trace_id には含めない（将来拡張用）。
+ * 共通物流キー trace_id を組み立てる（2 引数版）。
+ * ルール: TRC:{normalized(issueNo)}:{normalized(partNo)}
  *
- * 例:
- *   buildTraceId({ issue_no: "TEST-001", part_no: "P-100" }) => "TRC:TEST-001:P-100"
- *   buildTraceId({ issue_no: "a/b", part_no: "c" }) => "TRC:A-B:C"
- *
- * @throws issue_no も part_no も両方空または正規化後に空の場合
+ * 例: buildTraceId("TEST-001", "P-100") => "TRC:TEST-001:P-100"
  */
-export function buildTraceId(input: BuildTraceIdInput): string {
-  const issue = normalizeTraceToken(input.issue_no);
-  const part = normalizeTraceToken(input.part_no);
+export function buildTraceId(
+  issueNo: string | null | undefined,
+  partNo: string | null | undefined
+): string {
+  const issue = normalizeTraceToken(issueNo);
+  const part = normalizeTraceToken(partNo);
 
   if (issue === "UNKNOWN" && part === "UNKNOWN") {
     throw new Error(
-      "[traceId] buildTraceId: issue_no と part_no の少なくとも一方が必要です。"
+      "[traceId] buildTraceId: issueNo と partNo の少なくとも一方が必要です。"
     );
   }
 
   return `TRC:${issue}:${part}`;
+}
+
+/**
+ * 共通物流キー trace_id を組み立てる（オブジェクト版）。
+ * buildTraceId(issue_no, part_no) のラッパー。
+ */
+export function buildTraceIdFromInput(input: BuildTraceIdInput): string {
+  return buildTraceId(input.issue_no, input.part_no);
 }

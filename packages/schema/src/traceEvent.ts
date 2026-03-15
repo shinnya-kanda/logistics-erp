@@ -90,3 +90,6 @@ export type TraceEventInsertInput = {
   note?: string | null
   idempotency_key?: string | null
 }
+
+/** insert 用の入力型（TraceEventInsertInput の別名）。 */
+export type CreateTraceEventInput = TraceEventInsertInput
