@@ -4,3 +4,7 @@ export {
   registerReceipt,
   type RegisterReceiptResult,
 } from "./src/registerReceipt.js";
+export {
+  registerInitialTraceEventFromShipment,
+  type RegisterInitialTraceEventOptions,
+} from "./src/registerInitialTraceEvent.js";
