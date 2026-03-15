@@ -16,11 +16,13 @@
     "dev": "pnpm build",
     "build": "tsc",
     "lint": "eslint . --ext .ts",
-    "test:import": "tsx testImport.ts"
+    "test:import": "tsx testImport.ts",
+    "test:import-csv": "tsx src/testImport.ts"
   },
   "dependencies": {
     "@logistics-erp/db": "workspace:*",
-    "@logistics-erp/schema": "workspace:*"
+    "@logistics-erp/schema": "workspace:*",
+    "csv-parse": "^5.5.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
