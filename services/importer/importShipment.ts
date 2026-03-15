@@ -3,28 +3,27 @@ import { insertShipment } from "@logistics-erp/db";
 
 function normalizeShipment(raw: any): Shipment {
   const r = raw ?? {};
-  const issueNo = String(r?.issueNo ?? r?.issue_no ?? "").trim();
-  const partNo = String(r?.partNo ?? r?.part_no ?? "").trim();
+  const shipment: Shipment = {
+    issueNo: r.issueNo ?? r.issue_no ?? "",
+    supplier: r.supplier ?? "",
+    partNo: r.partNo ?? r.part_no ?? "",
+    partName: r.partName ?? r.part_name ?? "",
+    quantity: Number(r.quantity ?? 0),
+    dueDate: r.dueDate ?? r.due_date ?? "",
+  };
 
-  if (!issueNo) {
+  if (!shipment.issueNo) {
     throw new Error(
       "[@logistics-erp/importer] importShipment: 必須項目 issueNo が空です。"
     );
   }
-  if (!partNo) {
+  if (!shipment.partNo) {
     throw new Error(
       "[@logistics-erp/importer] importShipment: 必須項目 partNo が空です。"
     );
   }
 
-  return {
-    issueNo,
-    supplier: String(r?.supplier ?? "").trim(),
-    partNo,
-    partName: String(r?.partName ?? r?.part_name ?? "").trim(),
-    quantity: Number(r?.quantity ?? 0),
-    dueDate: String(r?.dueDate ?? r?.due_date ?? "").trim(),
-  };
+  return shipment;
 }
 
 /**
