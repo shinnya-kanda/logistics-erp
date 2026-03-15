@@ -16,7 +16,7 @@
     "dev": "pnpm build",
     "build": "tsc",
     "lint": "eslint . --ext .ts",
-    "test:import": "tsx testImport.ts",
+    "test:import": "tsx src/testImport.ts",
     "test:import-csv": "tsx src/testImport.ts"
   },
   "dependencies": {

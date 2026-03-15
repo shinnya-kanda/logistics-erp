@@ -1,6 +1,11 @@
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+console.log("cwd =", process.cwd());
+console.log("INIT_CWD =", process.env.INIT_CWD);
+console.log("SUPABASE_URL =", process.env.SUPABASE_URL);
+console.log("SUPABASE_ANON_KEY exists =", Boolean(process.env.SUPABASE_ANON_KEY));
+
 const __filename = fileURLToPath(import.meta.url);
 import { importShipments } from "./importShipments.js";
 
