@@ -8,10 +8,22 @@ scan 最小 HTTP（`scanHttpHandler`）と `processScanInput` の **壊しては
 |------|------|
 | HTTP | `GET /health` 200・`OPTIONS /scans` 204 + CORS ヘッダ |
 | 検証 | `scanned_code` / `scan_type` 欠如、不正 `idempotency_key` / `selected_shipment_item_id`、不正 JSON → **400** + `{ error: string }` |
-| 業務（DB あり） | `matched` / `wrong_part` / `wrong_location` / `match_key` 経路の unique→`wrong_part` / `none` / `ambiguous` |
+| 業務（DB あり） | `matched` / `wrong_part` / `wrong_location` / `match_key` 経路の unique→`wrong_part` / **`shortage` / `excess`**（`quantity_scanned_total`・`progress_status`・issue）/ `none` / `ambiguous` |
+| 照合エンジン | `verifyScanAgainstShipmentItem` の **`unknown`**（`quantity_expected` 非数値）— HTTP では通常到達しないがエンジン挙動を固定 |
 | 冪等 | 同一 `idempotency_key` の再送で `scan_events` 非増殖・`progress` 非二重更新 |
 | ambiguous | 候補 2 件以上・replay で候補再現 |
 | Phase 2.3 | `selected_shipment_item_id` で manual 解消・`raw_payload.manual_ambiguous_resolution` |
+| 冪等 + shortage | 同一 `idempotency_key` で `shortage` 応答の replay 時、`scan_events` / `progress` / `issues` が増えない |
+
+### `none` と `unknown` の違い（POST /scans）
+
+| | **none** | **unknown**（verify） |
+|--|----------|-------------------------|
+| マッチ | どの `shipment_item` にもヒットしない | 行は特定できるが数量などで照合不能 |
+| `scan_events.shipment_item_id` | `null` | 通常は明細 ID あり（HTTP では稀） |
+| `verification` | `null` | `status: "unknown"`（エンジンテストで固定） |
+
+`validateScanInput` では `scanned_code` が必須のため、**品番相当が空で unknown** になるリクエストは正規の JSON では作れない。DB の `quantity_expected` は `numeric NOT NULL` のため **`Number()` が NaN になる値は通常保存できず**、`POST /scans` 経由の `unknown` は実運用ではほぼ起きない。テストでは `verifyScanAgainstShipmentItem` を直接呼び、分岐を固定している。
 
 ## 何を保証しないか（今回のスコープ外）
 
@@ -61,7 +73,10 @@ pnpm --filter "@logistics-erp/api" test
 - **EXT-BAR-WP** / **WP-INTERNAL** — `external_barcode` 経由マッチ → wrong_part  
 - **LOC-001** — wrong_location  
 - **CONTRACT-MK-LOOKUP** / **REAL-MK-PN** — `match_key` 経由マッチ → 照合は part_no 不一致で wrong_part  
-- **AMB-SAME** ×2 — ambiguous
+- **AMB-SAME** ×2 — ambiguous  
+- **NO-SH-005**（予定 5）— 1 件スキャンで **shortage**  
+- **NO-EX-006**（予定 1）— `quantity_scanned: 3` で **excess**  
+- **NO-SH-IDEM**（予定 5）— **shortage** の冪等 replay 専用  
 
 ## 実装メモ
 

@@ -19,6 +19,12 @@ export const FX = {
   itemWrongLoc: "c2a00000-0000-4000-8000-000000000103",
   /** part_no と異なる match_key でマッチし、照合は wrong_part になる行 */
   itemMatchKey: "c2a00000-0000-4000-8000-000000000104",
+  /** quantity_expected=5, 1 件スキャンで shortage */
+  itemShort: "c2a00000-0000-4000-8000-000000000105",
+  /** quantity_expected=1, quantity_scanned=3 で excess */
+  itemExcess: "c2a00000-0000-4000-8000-000000000106",
+  /** shortage + 冪等 replay 専用（他テストと干渉しない） */
+  itemShortIdem: "c2a00000-0000-4000-8000-000000000107",
   itemAmb1: "c2a00000-0000-4000-8000-000000000201",
   itemAmb2: "c2a00000-0000-4000-8000-000000000202",
 } as const;
@@ -29,6 +35,9 @@ const ITEM_IDS = [
   FX.itemWrongPart,
   FX.itemWrongLoc,
   FX.itemMatchKey,
+  FX.itemShort,
+  FX.itemExcess,
+  FX.itemShortIdem,
   FX.itemAmb1,
   FX.itemAmb2,
 ] as const;
@@ -265,6 +274,57 @@ export async function seedScanContractFixtures(sql: Sql): Promise<void> {
         'CONTRACT-MK-LOOKUP',
         'planned',
         5
+      ),
+      (
+        ${FX.itemShort}::uuid,
+        ${FX.shipmentMain}::uuid,
+        6,
+        'tr-ct-sh-105',
+        'NO-SH-005',
+        'shortage line',
+        5,
+        'ea',
+        null,
+        null,
+        null,
+        null,
+        null,
+        'planned',
+        6
+      ),
+      (
+        ${FX.itemExcess}::uuid,
+        ${FX.shipmentMain}::uuid,
+        7,
+        'tr-ct-ex-106',
+        'NO-EX-006',
+        'excess line',
+        1,
+        'ea',
+        null,
+        null,
+        null,
+        null,
+        null,
+        'planned',
+        7
+      ),
+      (
+        ${FX.itemShortIdem}::uuid,
+        ${FX.shipmentMain}::uuid,
+        8,
+        'tr-ct-sh-107',
+        'NO-SH-IDEM',
+        'shortage idempotency',
+        5,
+        'ea',
+        null,
+        null,
+        null,
+        null,
+        null,
+        'planned',
+        8
       ),
       (
         ${FX.itemAmb1}::uuid,
