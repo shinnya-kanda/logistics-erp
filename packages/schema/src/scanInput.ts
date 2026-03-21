@@ -26,9 +26,17 @@ export type ScanInputPayload = {
    * 未指定のリクエストは非冪等（従来どおり毎回新規 scan 行）。
    */
   idempotency_key?: string | null
+  /**
+   * Phase2.3: ambiguous 解消でユーザーが選んだ明細。指定時は自動マッチより優先して照合する。
+   * 初回 ambiguous 送信とは別の idempotency_key で送ること。
+   */
+  selected_shipment_item_id?: string | null
 }
 
 const IDEMPOTENCY_KEY_MAX_LEN = 512;
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export class ScanInputValidationError extends Error {
   constructor(message: string) {
@@ -104,6 +112,25 @@ export function validateScanInput(raw: unknown): ScanInputPayload {
     idempotency_key = k;
   }
 
+  let selected_shipment_item_id: string | null = null;
+  if (
+    o.selected_shipment_item_id !== undefined &&
+    o.selected_shipment_item_id !== null
+  ) {
+    const sid = String(o.selected_shipment_item_id).trim();
+    if (!sid) {
+      throw new ScanInputValidationError(
+        "selected_shipment_item_id に空文字・空白のみは指定できません。"
+      );
+    }
+    if (!UUID_RE.test(sid)) {
+      throw new ScanInputValidationError(
+        "selected_shipment_item_id は有効な UUID である必要があります。"
+      );
+    }
+    selected_shipment_item_id = sid.toLowerCase();
+  }
+
   return {
     scanned_code,
     scan_type,
@@ -122,6 +149,7 @@ export function validateScanInput(raw: unknown): ScanInputPayload {
         : null,
     scope_shipment_id,
     idempotency_key,
+    selected_shipment_item_id,
   };
 }
 

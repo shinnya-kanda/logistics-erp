@@ -1,4 +1,7 @@
-import type { ScanHttpPostScansSuccessBody } from "@logistics-erp/schema";
+import type {
+  AmbiguousScanCandidate,
+  ScanHttpPostScansSuccessBody,
+} from "@logistics-erp/schema";
 
 export type ScanBannerTone = "ok" | "ng" | "check" | "neutral";
 
@@ -7,6 +10,28 @@ export type ScanBanner = {
   title: string;
   subtitle?: string;
 };
+
+function scanEventManualResolved(
+  raw: ScanHttpPostScansSuccessBody["scanEvent"]["raw_payload"]
+): boolean {
+  return (
+    raw !== null &&
+    typeof raw === "object" &&
+    !Array.isArray(raw) &&
+    (raw as Record<string, unknown>).manual_ambiguous_resolution === true
+  );
+}
+
+/** ambiguous 候補（match / トップレベル のどちらか） */
+export function getAmbiguousCandidates(
+  data: ScanHttpPostScansSuccessBody
+): AmbiguousScanCandidate[] {
+  if (data.match.kind !== "ambiguous") return [];
+  const fromTop = data.ambiguous_candidates;
+  if (Array.isArray(fromTop) && fromTop.length > 0) return fromTop;
+  const fromMatch = data.match.candidates;
+  return Array.isArray(fromMatch) ? fromMatch : [];
+}
 
 /** 現場向けの短いラベル（match / verification / 冪等を優先） */
 export function getScanBanner(data: ScanHttpPostScansSuccessBody): ScanBanner {
@@ -19,10 +44,11 @@ export function getScanBanner(data: ScanHttpPostScansSuccessBody): ScanBanner {
   }
 
   if (data.match.kind === "ambiguous") {
+    const n = data.match.candidate_ids.length;
     return {
       tone: "check",
       title: "CHECK / AMBIGUOUS",
-      subtitle: `候補 ${data.match.candidate_ids.length} 件 — スコープや trace を絞ってください`,
+      subtitle: `候補 ${n} 件 — 一覧から 1 件を選んで再照合するか、スコープを絞って再スキャンしてください`,
     };
   }
 
@@ -43,19 +69,47 @@ export function getScanBanner(data: ScanHttpPostScansSuccessBody): ScanBanner {
     };
   }
 
+  const manualLine = scanEventManualResolved(data.scanEvent.raw_payload)
+    ? "RESOLVED MANUALLY · 候補選択で再照合"
+    : undefined;
+
   switch (v.status) {
     case "matched":
-      return { tone: "ok", title: "OK / MATCHED" };
+      return {
+        tone: "ok",
+        title: "OK / MATCHED",
+        subtitle: manualLine,
+      };
     case "shortage":
-      return { tone: "check", title: "CHECK / SHORTAGE", subtitle: "数量が予定未満です" };
+      return {
+        tone: "check",
+        title: "CHECK / SHORTAGE",
+        subtitle: manualLine ?? "数量が予定未満です",
+      };
     case "excess":
-      return { tone: "check", title: "CHECK / EXCESS", subtitle: "数量が予定を超えています" };
+      return {
+        tone: "check",
+        title: "CHECK / EXCESS",
+        subtitle: manualLine ?? "数量が予定を超えています",
+      };
     case "wrong_part":
-      return { tone: "ng", title: "NG / WRONG PART" };
+      return {
+        tone: "ng",
+        title: "NG / WRONG PART",
+        subtitle: manualLine,
+      };
     case "wrong_location":
-      return { tone: "ng", title: "NG / WRONG LOCATION" };
+      return {
+        tone: "ng",
+        title: "NG / WRONG LOCATION",
+        subtitle: manualLine,
+      };
     case "unknown":
-      return { tone: "check", title: "CHECK / UNKNOWN", subtitle: v.notes || undefined };
+      return {
+        tone: "check",
+        title: "CHECK / UNKNOWN",
+        subtitle: manualLine ?? v.notes ?? undefined,
+      };
     default:
       return {
         tone: "neutral",

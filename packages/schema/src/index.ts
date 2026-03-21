@@ -1,3 +1,4 @@
+export * from "./ambiguousScanCandidate.js";
 export * from "./expectedData.js";
 export * from "./scanInput.js";
 export * from "./scanPhase2.js";

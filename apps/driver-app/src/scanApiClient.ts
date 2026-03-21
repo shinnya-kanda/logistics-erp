@@ -149,6 +149,13 @@ function isScanSuccessBody(v: unknown): v is ScanHttpPostScansSuccessBody {
   if (typeof v.idempotency_hit !== "boolean") return false;
   if (typeof v.created_new_scan !== "boolean") return false;
   if (!isRecord(v.match) || typeof v.match.kind !== "string") return false;
+  if (v.match.kind === "ambiguous") {
+    const m = v.match as Record<string, unknown>;
+    if (!Array.isArray(m.candidate_ids)) return false;
+    if (m.candidates !== undefined && !Array.isArray(m.candidates)) {
+      return false;
+    }
+  }
   return true;
 }
 

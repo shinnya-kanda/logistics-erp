@@ -13,7 +13,11 @@ import {
   type ScanApiError,
   type ScanHttpPostScansSuccessBody,
 } from "./scanApiClient.js";
-import { getScanBanner, scanErrorKindLabel } from "./scanDisplay.js";
+import {
+  getAmbiguousCandidates,
+  getScanBanner,
+  scanErrorKindLabel,
+} from "./scanDisplay.js";
 
 function trimOrNull(s: string): string | null {
   const t = s.trim();
@@ -22,7 +26,8 @@ function trimOrNull(s: string): string | null {
 
 function buildScanPayload(
   fields: FormFields,
-  idempotency_key: string
+  idempotency_key: string,
+  options?: { selected_shipment_item_id?: string }
 ): ScanInputPayload {
   const quantity_scannedStr = fields.quantity_scanned.trim();
   let quantity_scanned: number | null = null;
@@ -33,7 +38,7 @@ function buildScanPayload(
     }
   }
 
-  return {
+  const payload: ScanInputPayload = {
     scanned_code: fields.scanned_code.trim(),
     scan_type: fields.scan_type.trim(),
     scanned_part_no: trimOrNull(fields.scanned_part_no),
@@ -46,6 +51,10 @@ function buildScanPayload(
     device_id: trimOrNull(fields.device_id),
     idempotency_key,
   };
+  if (options?.selected_shipment_item_id) {
+    payload.selected_shipment_item_id = options.selected_shipment_item_id;
+  }
+  return payload;
 }
 
 type FormFields = {
@@ -88,6 +97,7 @@ export function ScannerApp() {
   );
   const [httpStatus, setHttpStatus] = useState<number | null>(null);
   const [submitError, setSubmitError] = useState<ScanApiError | null>(null);
+  const [resolvingItemId, setResolvingItemId] = useState<string | null>(null);
 
   const baseUrl = getScanApiBaseUrl();
 
@@ -168,6 +178,66 @@ export function ScannerApp() {
     setSubmitting(false);
 
     if (res.ok) {
+      if (res.data.match.kind !== "ambiguous") {
+        idempotencyKeyRef.current = null;
+        lastSentRef.current = null;
+      }
+      setResult(res.data);
+      setHttpStatus(res.status);
+      return;
+    }
+    setSubmitError(res.error);
+  }
+
+  async function submitWithSelectedShipmentItem(shipmentItemId: string) {
+    const code = fields.scanned_code.trim();
+    const st = fields.scan_type.trim();
+    if (!code) {
+      setSubmitError({
+        kind: "validation",
+        message: "スキャンコードを入力してください。",
+      });
+      return;
+    }
+    if (!st) {
+      setSubmitError({
+        kind: "validation",
+        message: "scan_type を入力してください。",
+      });
+      return;
+    }
+
+    const qStr = fields.quantity_scanned.trim();
+    if (qStr) {
+      const n = Number(qStr);
+      if (!Number.isInteger(n) || n < 1) {
+        setSubmitError({
+          kind: "validation",
+          message: "数量は 1 以上の整数で入力するか、空にしてください。",
+        });
+        return;
+      }
+    }
+
+    /** 候補確定は初回 ambiguous とは別リクエスト — 必ず新しい冪等キー */
+    const freshKey = crypto.randomUUID();
+    const payload = buildScanPayload(fields, freshKey, {
+      selected_shipment_item_id: shipmentItemId,
+    });
+
+    setResolvingItemId(shipmentItemId);
+    setSubmitting(true);
+    setSubmitError(null);
+    setResult(null);
+    setHttpStatus(null);
+
+    const res = await postScan(payload);
+    setSubmitting(false);
+    setResolvingItemId(null);
+
+    if (res.ok) {
+      idempotencyKeyRef.current = null;
+      lastSentRef.current = null;
       setResult(res.data);
       setHttpStatus(res.status);
       return;
@@ -181,12 +251,13 @@ export function ScannerApp() {
   }
 
   const banner = result ? getScanBanner(result) : null;
+  const ambiguousCandidates = result ? getAmbiguousCandidates(result) : [];
 
   return (
     <div className="scanner-shell">
       <header className="scanner-header">
         <h1 className="scanner-title">Logistics ERP Scanner</h1>
-        <p className="scanner-sub">手入力スキャン（Phase 2.2）</p>
+        <p className="scanner-sub">手入力スキャン（Phase 2.2 / 2.3）</p>
       </header>
 
       <section className="scanner-panel connection-panel" aria-label="接続">
@@ -437,6 +508,72 @@ export function ScannerApp() {
             </div>
           ) : null}
 
+          {result.match.kind === "ambiguous" ? (
+            <div className="ambiguous-panel" aria-label="ambiguous 候補">
+              <h3 className="ambiguous-title">候補から 1 件を選んで再照合</h3>
+              <p className="ambiguous-hint muted small">
+                自動では確定しません。タップで明示指定します（新しい
+                idempotency_key で送信）。
+              </p>
+              {ambiguousCandidates.length === 0 ? (
+                <p className="muted small">
+                  候補の詳細が取得できませんでした。ID:{" "}
+                  {result.match.candidate_ids.join(", ")}
+                </p>
+              ) : (
+                <ul className="ambiguous-list">
+                  {ambiguousCandidates.map((c) => (
+                    <li key={c.shipment_item_id} className="ambiguous-card">
+                      <div className="ambiguous-card-head">
+                        <span className="mono basis-pill">{c.match_basis}</span>
+                      </div>
+                      <div className="ambiguous-card-body">
+                        <div>
+                          <span className="label">part_no</span>{" "}
+                          <span className="mono">{c.part_no}</span>
+                        </div>
+                        {c.part_name ? (
+                          <div className="small">{c.part_name}</div>
+                        ) : null}
+                        <div>
+                          <span className="label">予定数量</span>{" "}
+                          {c.quantity_expected}
+                          {c.quantity_unit ? ` ${c.quantity_unit}` : ""}
+                        </div>
+                        {c.unload_location ? (
+                          <div>
+                            <span className="label">荷卸</span> {c.unload_location}
+                          </div>
+                        ) : null}
+                        {c.trace_id ? (
+                          <div className="mono small wrap">trace: {c.trace_id}</div>
+                        ) : null}
+                        {c.delivery_date ? (
+                          <div className="small">納期: {c.delivery_date}</div>
+                        ) : null}
+                        <div className="mono small wrap">
+                          shipment_item_id: {c.shipment_item_id}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn primary ambiguous-resolve-btn"
+                        disabled={submitting}
+                        onClick={() =>
+                          void submitWithSelectedShipmentItem(c.shipment_item_id)
+                        }
+                      >
+                        {resolvingItemId === c.shipment_item_id && submitting
+                          ? "再照合中…"
+                          : "これで再照合"}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ) : null}
+
           <details className="result-details">
             <summary>詳細 JSON</summary>
             <pre className="json-dump">{JSON.stringify(result, null, 2)}</pre>
@@ -444,10 +581,16 @@ export function ScannerApp() {
 
           <button
             type="button"
-            className="btn primary next-scan"
+            className={
+              result.match.kind === "ambiguous"
+                ? "btn secondary next-scan"
+                : "btn primary next-scan"
+            }
             onClick={resetAfterSuccess}
           >
-            次のスキャン
+            {result.match.kind === "ambiguous"
+              ? "やり直し（次のスキャン）"
+              : "次のスキャン"}
           </button>
         </section>
       ) : null}

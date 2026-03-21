@@ -77,7 +77,7 @@ pnpm --filter @logistics-erp/api dev:scan
 # POST http://localhost:3040/scans  JSON body = validateScanInput 互換
 ```
 
-ブラウザから叩く場合: **CORS**（`SCAN_CORS_ORIGIN`、既定 `*`）と **Phase 2.2** の [phase2-2-pwa-scanner-shell.md](./phase2-2-pwa-scanner-shell.md)（`apps/driver-app`）。
+ブラウザから叩く場合: **CORS**（`SCAN_CORS_ORIGIN`、既定 `*`）と **Phase 2.2** の [phase2-2-pwa-scanner-shell.md](./phase2-2-pwa-scanner-shell.md)（`apps/driver-app`）。**ambiguous 解消**は [phase2-3-ambiguous-resolution-ui.md](./phase2-3-ambiguous-resolution-ui.md)。
 
 ## 今回やっていないこと
 

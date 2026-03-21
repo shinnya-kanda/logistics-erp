@@ -2,6 +2,8 @@
  * Phase2: Expected vs Actual の照合結果（単一スキャン × 単一明細の最小モデル）
  */
 
+import type { AmbiguousScanCandidate } from "./ambiguousScanCandidate.js";
+
 export type VerificationStatus =
   | "matched"
   | "shortage"
@@ -15,7 +17,12 @@ export type MatchKind = "unique" | "none" | "ambiguous"
 export type ShipmentItemMatchResult =
   | { kind: "unique"; shipment_item_id: string }
   | { kind: "none" }
-  | { kind: "ambiguous"; candidate_ids: string[] }
+  | {
+      kind: "ambiguous";
+      candidate_ids: string[];
+      /** 候補の最小表示用（replay 時は raw_payload から復元） */
+      candidates: AmbiguousScanCandidate[];
+    }
 
 export type ExpectedSummary = {
   shipment_item_id: string

@@ -2,6 +2,7 @@ import postgres from "postgres";
 import type { JSONValue } from "postgres";
 import type { ShipmentItem } from "@logistics-erp/schema";
 import {
+  ScanInputValidationError,
   validateScanInput,
   type ScanInputPayload,
   type ScanEventRow,
@@ -73,9 +74,50 @@ export async function processScanInput(rawBody: unknown): Promise<ProcessScanOut
       }
     }
 
-    const match = await matchShipmentItemForScan(sql, input);
+    let match: ShipmentItemMatchResult;
+    let manualItem: ShipmentItem | null = null;
+
+    if (input.selected_shipment_item_id) {
+      scanLogInfo("scan manual ambiguous resolution requested", {
+        selected_shipment_item_id: input.selected_shipment_item_id,
+      });
+      manualItem = await fetchShipmentItem(
+        sql,
+        input.selected_shipment_item_id
+      );
+      if (!manualItem) {
+        scanLogWarn("scan manual ambiguous resolution failed", {
+          reason: "shipment_item_not_found",
+          selected_shipment_item_id: input.selected_shipment_item_id,
+        });
+        throw new ScanInputValidationError(
+          "selected_shipment_item_id の shipment_item が存在しません。"
+        );
+      }
+      if (
+        input.scope_shipment_id &&
+        manualItem.shipment_id !== input.scope_shipment_id
+      ) {
+        scanLogWarn("scan manual ambiguous resolution failed", {
+          reason: "scope_mismatch",
+          selected_shipment_item_id: input.selected_shipment_item_id,
+        });
+        throw new ScanInputValidationError(
+          "selected_shipment_item_id は scope_shipment_id（出荷）に属していません。"
+        );
+      }
+      match = { kind: "unique", shipment_item_id: manualItem.id };
+      scanLogInfo("scan manual ambiguous resolution — verifying selected item", {
+        shipment_item_id: manualItem.id,
+      });
+    } else {
+      match = await matchShipmentItemForScan(sql, input);
+    }
 
     if (match.kind === "ambiguous") {
+      scanLogInfo("scan ambiguous candidates returned", {
+        candidate_count: String(match.candidate_ids.length),
+      });
       scanLogWarn("match ambiguous — shipment_item_id は付与せず保存", {
         candidate_count: match.candidate_ids.length,
       });
@@ -103,7 +145,8 @@ export async function processScanInput(rawBody: unknown): Promise<ProcessScanOut
       );
     }
 
-    const item = await fetchShipmentItem(sql, match.shipment_item_id);
+    const item =
+      manualItem ?? (await fetchShipmentItem(sql, match.shipment_item_id));
     if (!item) {
       scanLogError("match unique だが shipment_item が取得できません", {
         shipment_item_id: match.shipment_item_id,
@@ -158,6 +201,12 @@ export async function processScanInput(rawBody: unknown): Promise<ProcessScanOut
           match_kind: match.kind,
           verification_status: verification.status,
           verification_notes: verification.notes ?? null,
+          ...(input.selected_shipment_item_id
+            ? {
+                manual_ambiguous_resolution: true,
+                selected_shipment_item_id: input.selected_shipment_item_id,
+              }
+            : {}),
         });
 
         const [scanEvent] = await q<ScanEventRow[]>`
@@ -290,6 +339,13 @@ export async function processScanInput(rawBody: unknown): Promise<ProcessScanOut
           });
         }
 
+        if (input.selected_shipment_item_id) {
+          scanLogInfo("scan manual ambiguous resolution success", {
+            shipment_item_id: item.id,
+            verification_status: verification.status,
+          });
+        }
+
         return {
           scanEvent,
           match,
@@ -309,6 +365,11 @@ export async function processScanInput(rawBody: unknown): Promise<ProcessScanOut
         if (existing) {
           return buildIdempotentReplayOutput(sql, existing, fetchProgress);
         }
+      }
+      if (input.selected_shipment_item_id) {
+        scanLogError("scan manual ambiguous resolution failed — transaction", {
+          shipment_item_id: item.id,
+        });
       }
       scanLogError("scan flow トランザクション失敗（ロールバック済み）", {
         shipment_item_id: item.id,
@@ -345,6 +406,7 @@ async function insertScanOnly(
       const extra: Record<string, unknown> = { match_kind: match.kind };
       if (match.kind === "ambiguous") {
         extra.candidate_ids = match.candidate_ids;
+        extra.ambiguous_candidates = match.candidates;
       }
       const rawPayload = mergePayload(input, extra);
 
@@ -405,6 +467,8 @@ async function insertScanOnly(
         issue: null,
         idempotency_hit: false,
         created_new_scan: true,
+        ambiguous_candidates:
+          match.kind === "ambiguous" ? match.candidates : null,
       };
     });
   } catch (err) {

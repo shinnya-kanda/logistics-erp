@@ -1,4 +1,5 @@
 import type {
+  AmbiguousScanCandidate,
   ScanEventRow,
   ShipmentItemIssueRow,
   ShipmentItemMatchResult,
@@ -16,4 +17,6 @@ export type ProcessScanOutput = {
   idempotency_hit: boolean
   /** 今回の呼び出しで新規 scan_events 行を作成した */
   created_new_scan: boolean
+  /** ambiguous 時の候補（match.candidates と同一。JSON クライアント向け） */
+  ambiguous_candidates?: AmbiguousScanCandidate[] | null
 }
