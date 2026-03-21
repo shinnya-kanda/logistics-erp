@@ -4,3 +4,4 @@
 
 - [Phase 1 Expected Data](./phase1-expected-data.md) — `source_files` / `shipments` ヘッダ / `shipment_items` と importer
 - [Importer フロー](./importer-flow.md)
+- [ChatGPT 共有用コンテキスト](./CHATGPT_SHARE.md) — 外部 AI への説明・プロンプト接頭辞
