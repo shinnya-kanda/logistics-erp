@@ -8,7 +8,7 @@ scan 最小 HTTP（`scanHttpHandler`）と `processScanInput` の **壊しては
 |------|------|
 | HTTP | `GET /health` 200・`OPTIONS /scans` 204 + CORS ヘッダ |
 | 検証 | `scanned_code` / `scan_type` 欠如、不正 `idempotency_key` / `selected_shipment_item_id`、不正 JSON → **400** + `{ error: string }` |
-| 業務（DB あり） | `matched` / `wrong_part` / `wrong_location` / `none` / `ambiguous` |
+| 業務（DB あり） | `matched` / `wrong_part` / `wrong_location` / `match_key` 経路の unique→`wrong_part` / `none` / `ambiguous` |
 | 冪等 | 同一 `idempotency_key` の再送で `scan_events` 非増殖・`progress` 非二重更新 |
 | ambiguous | 候補 2 件以上・replay で候補再現 |
 | Phase 2.3 | `selected_shipment_item_id` で manual 解消・`raw_payload.manual_ambiguous_resolution` |
@@ -53,6 +53,15 @@ pnpm --filter "@logistics-erp/api" test
 | `services/api/test/helpers/httpScanClient.ts` | `fetch` ラッパ |
 
 `idempotency_key` は `contract-test*` プレフィックスで掃除対象に含める。
+
+フィクスチャ明細の役割（`scanContractFixtures.ts`）:
+
+- **MATCH-IDEM** — 冪等 replay 専用  
+- **MATCH-001** — 正常 matched  
+- **EXT-BAR-WP** / **WP-INTERNAL** — `external_barcode` 経由マッチ → wrong_part  
+- **LOC-001** — wrong_location  
+- **CONTRACT-MK-LOOKUP** / **REAL-MK-PN** — `match_key` 経由マッチ → 照合は part_no 不一致で wrong_part  
+- **AMB-SAME** ×2 — ambiguous
 
 ## 実装メモ
 

@@ -273,6 +273,31 @@ describe("scan minimal HTTP contract", () => {
       expect(after).toBe(before + 1);
     });
 
+    it("match_key: unique match via match_key column, verification wrong_part vs part_no", async () => {
+      const before = await countIssuesForItem(sql, FX.itemMatchKey);
+      const idem = `${CONTRACT_IDEM_PREFIX}-mk-1`;
+      const { status, json } = await postScans(server.baseUrl, {
+        scanned_code: "CONTRACT-MK-LOOKUP",
+        scan_type: "unload",
+        scope_shipment_id: FX.shipmentMain,
+        idempotency_key: idem,
+      });
+      expect(status).toBe(201);
+      expect(isRecord(json)).toBe(true);
+      if (!isRecord(json)) return;
+      const match = json.match as Record<string, unknown>;
+      expect(match.kind).toBe("unique");
+      expect(match.shipment_item_id).toBe(FX.itemMatchKey);
+      const se = json.scanEvent as Record<string, unknown>;
+      expect(se.shipment_item_id).toBe(FX.itemMatchKey);
+      expect(se.result_status).toBe("wrong_part");
+      const ver = json.verification as Record<string, unknown> | null;
+      expect(ver?.status).toBe("wrong_part");
+      expect(json.issue).toBeTruthy();
+      const after = await countIssuesForItem(sql, FX.itemMatchKey);
+      expect(after).toBe(before + 1);
+    });
+
     it("none: scan saved without shipment_item_id, no progress mutation on fixture items", async () => {
       const idem = `${CONTRACT_IDEM_PREFIX}-none-1`;
       const progBefore = await getProgressRow(sql, FX.itemMatched);
@@ -312,6 +337,9 @@ describe("scan minimal HTTP contract", () => {
       const cands = match.candidates as unknown[] | undefined;
       expect(Array.isArray(cands)).toBe(true);
       expect((cands as unknown[]).length).toBeGreaterThanOrEqual(2);
+      const top = json.ambiguous_candidates as unknown[] | undefined;
+      expect(Array.isArray(top)).toBe(true);
+      expect((top as unknown[]).length).toBe((cands as unknown[]).length);
       const se = json.scanEvent as Record<string, unknown>;
       expect(se.shipment_item_id).toBeNull();
       expect(json.progress).toBeNull();

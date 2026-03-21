@@ -17,6 +17,8 @@ export const FX = {
   itemMatched: "c2a00000-0000-4000-8000-000000000101",
   itemWrongPart: "c2a00000-0000-4000-8000-000000000102",
   itemWrongLoc: "c2a00000-0000-4000-8000-000000000103",
+  /** part_no と異なる match_key でマッチし、照合は wrong_part になる行 */
+  itemMatchKey: "c2a00000-0000-4000-8000-000000000104",
   itemAmb1: "c2a00000-0000-4000-8000-000000000201",
   itemAmb2: "c2a00000-0000-4000-8000-000000000202",
 } as const;
@@ -26,6 +28,7 @@ const ITEM_IDS = [
   FX.itemMatched,
   FX.itemWrongPart,
   FX.itemWrongLoc,
+  FX.itemMatchKey,
   FX.itemAmb1,
   FX.itemAmb2,
 ] as const;
@@ -245,6 +248,23 @@ export async function seedScanContractFixtures(sql: Sql): Promise<void> {
         null,
         'planned',
         4
+      ),
+      (
+        ${FX.itemMatchKey}::uuid,
+        ${FX.shipmentMain}::uuid,
+        5,
+        'tr-ct-mk-104',
+        'REAL-MK-PN',
+        'match_key fallback',
+        1,
+        'ea',
+        null,
+        null,
+        null,
+        null,
+        'CONTRACT-MK-LOOKUP',
+        'planned',
+        5
       ),
       (
         ${FX.itemAmb1}::uuid,
