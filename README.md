@@ -97,6 +97,7 @@ DATABASE_URL=postgresql://user:password@localhost:5432/logistics_erp
 - 冪等: リクエストに `idempotency_key`（非空・512 文字以内）を付与。SQL: `phase2_1_scan_events_idempotency.sql`。詳細は [docs/phase2-1-scan-idempotency.md](docs/phase2-1-scan-idempotency.md)。新規 **201** / 再送 replay **200**。
 - **Phase 2.2** 手入力 scanner shell（`apps/driver-app`）: [docs/phase2-2-pwa-scanner-shell.md](docs/phase2-2-pwa-scanner-shell.md)。環境変数 `VITE_SCAN_API_BASE_URL`（既定 `http://localhost:3040`）。カメラ・バーコードは未対応。
 - **Phase 2.3** ambiguous 解消（候補表示 + `selected_shipment_item_id`）: [docs/phase2-3-ambiguous-resolution-ui.md](docs/phase2-3-ambiguous-resolution-ui.md)。候補確定の再送は **新しい idempotency_key** を使用。
+- **Phase 2.4** `POST /scans` / `GET /health` 契約テスト: [docs/phase2-4-scan-contract-tests.md](docs/phase2-4-scan-contract-tests.md)（`pnpm --filter "@logistics-erp/api" test`）。
 
 ### 6. データベースのマイグレーション（任意）
 
@@ -157,6 +158,7 @@ pip install -e ".[dev]"
 | `pnpm db:generate` | Drizzle マイグレーションSQLを生成 |
 | `pnpm db:migrate` | マイグレーションを実行 |
 | `pnpm lint` | 全ワークスペースで lint 実行 |
+| `pnpm --filter "@logistics-erp/api" test` | Scan 最小 HTTP の契約テスト（Vitest）。DB フルは `SCAN_CONTRACT_TEST_DATABASE_URL` 参照 [docs/phase2-4-scan-contract-tests.md](docs/phase2-4-scan-contract-tests.md) |
 
 ## ライセンス
 
