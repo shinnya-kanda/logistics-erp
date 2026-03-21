@@ -12,16 +12,16 @@ import {
 } from "@logistics-erp/schema";
 import { requireDatabaseUrl } from "../expectedImportRepository.js";
 import { scanLogError, scanLogInfo, scanLogWarn } from "../scanLog.js";
+import {
+  buildIdempotentReplayOutput,
+  findScanEventByIdempotencyKey,
+  isIdempotencyUniqueViolation,
+} from "./scanIdempotency.js";
+import type { ProcessScanOutput } from "./processScanTypes.js";
 import { matchShipmentItemForScan } from "./matchShipmentItemForScan.js";
 import { verifyScanAgainstShipmentItem } from "./verifyScanAgainstShipmentItem.js";
 
-export type ProcessScanOutput = {
-  scanEvent: ScanEventRow
-  match: ShipmentItemMatchResult
-  verification: VerificationResult | null
-  progress: ShipmentItemProgressRow | null
-  issue: ShipmentItemIssueRow | null
-}
+export type { ProcessScanOutput } from "./processScanTypes.js";
 
 function mergePayload(
   input: ScanInputPayload,
@@ -32,10 +32,11 @@ function mergePayload(
 
 /**
  * スキャン 1 件を受理し、scan_events 保存 →（マッチ時）progress / issue 更新まで行う。
- * 単一 Postgres トランザクションで整合性を取る。
+ * idempotency_key ありのときは DB unique + 競合リカバリで二重反映を防ぐ。
  */
 export async function processScanInput(rawBody: unknown): Promise<ProcessScanOutput> {
   const input = validateScanInput(rawBody);
+  const idemKey = input.idempotency_key ?? null;
   const quantityDelta = input.quantity_scanned ?? 1;
   const scannedAt =
     input.scanned_at?.trim() ||
@@ -45,23 +46,61 @@ export async function processScanInput(rawBody: unknown): Promise<ProcessScanOut
     scan_type: input.scan_type,
     scanned_code: input.scanned_code,
     scope_shipment_id: input.scope_shipment_id ?? undefined,
+    idempotency_key: idemKey
+      ? idemKey.length > 24
+        ? `${idemKey.slice(0, 24)}…`
+        : idemKey
+      : "none",
   });
+
+  if (!idemKey) {
+    scanLogWarn("scan request without idempotency key (non-idempotent)", {
+      scanned_code: input.scanned_code,
+    });
+  }
 
   const sql = postgres(requireDatabaseUrl(), { max: 1 });
 
   try {
+    if (idemKey) {
+      const preExisting = await findScanEventByIdempotencyKey(sql, idemKey);
+      if (preExisting) {
+        scanLogInfo("scan idempotency hit (duplicate replay returned)", {
+          scan_event_id: preExisting.id,
+          idempotency_key: `${idemKey.slice(0, 24)}…`,
+        });
+        return buildIdempotentReplayOutput(sql, preExisting, fetchProgress);
+      }
+    }
+
     const match = await matchShipmentItemForScan(sql, input);
 
     if (match.kind === "ambiguous") {
       scanLogWarn("match ambiguous — shipment_item_id は付与せず保存", {
         candidate_count: match.candidate_ids.length,
       });
-      return await insertScanOnly(sql, input, match, scannedAt, "unknown", quantityDelta);
+      return await insertScanOnly(
+        sql,
+        input,
+        match,
+        scannedAt,
+        "unknown",
+        quantityDelta,
+        idemKey
+      );
     }
 
     if (match.kind === "none") {
       scanLogWarn("match none — unmatched として raw scan のみ保存", {});
-      return await insertScanOnly(sql, input, match, scannedAt, "unknown", quantityDelta);
+      return await insertScanOnly(
+        sql,
+        input,
+        match,
+        scannedAt,
+        "unknown",
+        quantityDelta,
+        idemKey
+      );
     }
 
     const item = await fetchShipmentItem(sql, match.shipment_item_id);
@@ -75,7 +114,8 @@ export async function processScanInput(rawBody: unknown): Promise<ProcessScanOut
         { kind: "none" },
         scannedAt,
         "unknown",
-        quantityDelta
+        quantityDelta,
+        idemKey
       );
     }
 
@@ -135,7 +175,8 @@ export async function processScanInput(rawBody: unknown): Promise<ProcessScanOut
             operator_id,
             operator_name,
             scanned_at,
-            raw_payload
+            raw_payload,
+            idempotency_key
           )
           VALUES (
             ${input.trace_id ?? item.trace_id},
@@ -151,7 +192,8 @@ export async function processScanInput(rawBody: unknown): Promise<ProcessScanOut
             ${input.operator_id ?? null},
             ${input.operator_name ?? null},
             ${scannedAt}::timestamptz,
-            ${sql.json(rawPayload as JSONValue)}
+            ${sql.json(rawPayload as JSONValue)},
+            ${idemKey}
           )
           RETURNING *
         `;
@@ -241,15 +283,33 @@ export async function processScanInput(rawBody: unknown): Promise<ProcessScanOut
           });
         }
 
+        if (idemKey) {
+          scanLogInfo("scan idempotent insert success", {
+            scan_event_id: scanEvent.id,
+            idempotency_key: `${idemKey.slice(0, 24)}…`,
+          });
+        }
+
         return {
           scanEvent,
           match,
           verification,
           progress,
           issue,
+          idempotency_hit: false,
+          created_new_scan: true,
         };
       });
     } catch (err) {
+      if (idemKey && isIdempotencyUniqueViolation(err)) {
+        scanLogInfo("scan unique conflict recovered — returning existing row", {
+          idempotency_key: `${idemKey.slice(0, 24)}…`,
+        });
+        const existing = await findScanEventByIdempotencyKey(sql, idemKey);
+        if (existing) {
+          return buildIdempotentReplayOutput(sql, existing, fetchProgress);
+        }
+      }
       scanLogError("scan flow トランザクション失敗（ロールバック済み）", {
         shipment_item_id: item.id,
       });
@@ -266,65 +326,99 @@ async function insertScanOnly(
   match: ShipmentItemMatchResult,
   scannedAt: string,
   resultStatus: string,
-  quantityDelta: number
+  quantityDelta: number,
+  idemKey: string | null
 ): Promise<ProcessScanOutput> {
-  return await sql.begin(async (tx) => {
-    const q = tx as unknown as typeof sql;
-    const extra: Record<string, unknown> = { match_kind: match.kind };
-    if (match.kind === "ambiguous") {
-      extra.candidate_ids = match.candidate_ids;
+  if (idemKey) {
+    const preExisting = await findScanEventByIdempotencyKey(sql, idemKey);
+    if (preExisting) {
+      scanLogInfo("scan idempotency hit (ambiguous/none duplicate replay)", {
+        scan_event_id: preExisting.id,
+      });
+      return buildIdempotentReplayOutput(sql, preExisting, fetchProgress);
     }
-    const rawPayload = mergePayload(input, extra);
+  }
 
-    const [scanEvent] = await q<ScanEventRow[]>`
-      INSERT INTO public.scan_events (
-        trace_id,
-        shipment_item_id,
-        scan_type,
-        scanned_code,
-        scanned_part_no,
-        quantity_scanned,
-        quantity_unit,
-        unload_location_scanned,
-        result_status,
-        device_id,
-        operator_id,
-        operator_name,
-        scanned_at,
-        raw_payload
-      )
-      VALUES (
-        ${input.trace_id ?? null},
-        ${null},
-        ${input.scan_type},
-        ${input.scanned_code},
-        ${input.scanned_part_no ?? null},
-        ${String(quantityDelta)},
-        ${input.quantity_unit ?? null},
-        ${input.unload_location_scanned ?? null},
-        ${resultStatus},
-        ${input.device_id ?? null},
-        ${input.operator_id ?? null},
-        ${input.operator_name ?? null},
-        ${scannedAt}::timestamptz,
-        ${sql.json(rawPayload as JSONValue)}
-      )
-      RETURNING *
-    `;
+  try {
+    return await sql.begin(async (tx) => {
+      const q = tx as unknown as typeof sql;
+      const extra: Record<string, unknown> = { match_kind: match.kind };
+      if (match.kind === "ambiguous") {
+        extra.candidate_ids = match.candidate_ids;
+      }
+      const rawPayload = mergePayload(input, extra);
 
-    scanLogInfo("scan_events のみ保存（progress / issue なし）", {
-      scan_id: scanEvent.id,
-      result_status: resultStatus,
+      const [scanEvent] = await q<ScanEventRow[]>`
+        INSERT INTO public.scan_events (
+          trace_id,
+          shipment_item_id,
+          scan_type,
+          scanned_code,
+          scanned_part_no,
+          quantity_scanned,
+          quantity_unit,
+          unload_location_scanned,
+          result_status,
+          device_id,
+          operator_id,
+          operator_name,
+          scanned_at,
+          raw_payload,
+          idempotency_key
+        )
+        VALUES (
+          ${input.trace_id ?? null},
+          ${null},
+          ${input.scan_type},
+          ${input.scanned_code},
+          ${input.scanned_part_no ?? null},
+          ${String(quantityDelta)},
+          ${input.quantity_unit ?? null},
+          ${input.unload_location_scanned ?? null},
+          ${resultStatus},
+          ${input.device_id ?? null},
+          ${input.operator_id ?? null},
+          ${input.operator_name ?? null},
+          ${scannedAt}::timestamptz,
+          ${sql.json(rawPayload as JSONValue)},
+          ${idemKey}
+        )
+        RETURNING *
+      `;
+
+      scanLogInfo("scan_events のみ保存（progress / issue なし）", {
+        scan_id: scanEvent.id,
+        result_status: resultStatus,
+      });
+
+      if (idemKey) {
+        scanLogInfo("scan idempotent insert success (scan-only path)", {
+          scan_event_id: scanEvent.id,
+        });
+      }
+
+      return {
+        scanEvent,
+        match,
+        verification: null,
+        progress: null,
+        issue: null,
+        idempotency_hit: false,
+        created_new_scan: true,
+      };
     });
-
-    return {
-      scanEvent,
-      match,
-      verification: null,
-      progress: null,
-      issue: null,
-    };
-  });
+  } catch (err) {
+    if (idemKey && isIdempotencyUniqueViolation(err)) {
+      scanLogInfo("scan unique conflict recovered (scan-only path)", {
+        idempotency_key: `${idemKey.slice(0, 24)}…`,
+      });
+      const existing = await findScanEventByIdempotencyKey(sql, idemKey);
+      if (existing) {
+        return buildIdempotentReplayOutput(sql, existing, fetchProgress);
+      }
+    }
+    throw err;
+  }
 }
 
 async function fetchShipmentItem(

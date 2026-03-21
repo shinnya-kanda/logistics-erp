@@ -16,9 +16,12 @@ Phase 1 の SQL の **後** に適用:
 
 ```text
 packages/db/sql/phase2_scan_foundation.sql
+packages/db/sql/phase2_1_scan_events_idempotency.sql   # 冪等キー列・部分 UNIQUE
 ```
 
 `updated_at` は Phase 1 と同じ `set_expected_row_updated_at()` トリガを再利用。
+
+**Phase 2.1（冪等性）** の詳細は [phase2-1-scan-idempotency.md](./phase2-1-scan-idempotency.md)。
 
 ## Expected 取込との関係
 
@@ -62,6 +65,7 @@ packages/db/sql/phase2_scan_foundation.sql
 ## サービス API
 
 - `processScanInput(rawBody)`（`@logistics-erp/db`）: マッチ → 検証 → **単一 Postgres トランザクション**で `scan_events` + `progress` +（必要なら）`shipment_item_issues`
+- **Phase 2.1**: リクエストに `idempotency_key` がある場合、DB unique + 事前検索 + 競合リカバリで **再送しても 1 リクエスト 1 scan 行**。戻り値に `idempotency_hit` / `created_new_scan`。
 - 失敗時はトランザクション **ロールバック**（`ambiguous` / `none` の raw scan のみの経路もトランザクション内でコミット）
 
 ログプレフィックス: `[logistics-erp/scan]`（`packages/db/src/scanLog.ts`）

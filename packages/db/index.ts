@@ -5,6 +5,11 @@ export * from "./src/scanLog.js";
 export * from "./src/scan/matchShipmentItemForScan.js";
 export * from "./src/scan/verifyScanAgainstShipmentItem.js";
 export * from "./src/scan/processScanInput.js";
+export * from "./src/scan/processScanTypes.js";
+export {
+  findScanEventByIdempotencyKey,
+  isIdempotencyUniqueViolation,
+} from "./src/scan/scanIdempotency.js";
 export * from "./shipmentRepository.js";
 export * from "./src/inventoryRepository.js";
 export * from "./src/stockMovementRepository.js";

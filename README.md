@@ -92,6 +92,7 @@ DATABASE_URL=postgresql://user:password@localhost:5432/logistics_erp
 - SQL: `packages/db/sql/phase2_scan_foundation.sql`（Phase 1 の後に実行）
 - 説明: [docs/phase2-scan-foundation.md](docs/phase2-scan-foundation.md)
 - 最小 HTTP: `pnpm --filter @logistics-erp/api dev:scan` → `POST http://localhost:3040/scans`（JSON は `validateScanInput` 互換）
+- 冪等: リクエストに `idempotency_key`（非空・512 文字以内）を付与。SQL: `phase2_1_scan_events_idempotency.sql`。詳細は [docs/phase2-1-scan-idempotency.md](docs/phase2-1-scan-idempotency.md)。新規 **201** / 再送 replay **200**。
 
 ### 6. データベースのマイグレーション（任意）
 

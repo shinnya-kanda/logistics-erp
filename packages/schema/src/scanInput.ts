@@ -21,7 +21,14 @@ export type ScanInputPayload = {
    * 未指定時は DB 全体から照合（運用上のリスクあり）。
    */
   scope_shipment_id?: string | null
+  /**
+   * Phase2.1: クライアント生成の冪等キー（再送・二重 POST 時に同一結果を返す）。
+   * 未指定のリクエストは非冪等（従来どおり毎回新規 scan 行）。
+   */
+  idempotency_key?: string | null
 }
+
+const IDEMPOTENCY_KEY_MAX_LEN = 512;
 
 export class ScanInputValidationError extends Error {
   constructor(message: string) {
@@ -81,6 +88,22 @@ export function validateScanInput(raw: unknown): ScanInputPayload {
       ? null
       : String(o.scope_shipment_id).trim() || null;
 
+  let idempotency_key: string | null = null;
+  if (o.idempotency_key !== undefined && o.idempotency_key !== null) {
+    const k = String(o.idempotency_key).trim();
+    if (!k) {
+      throw new ScanInputValidationError(
+        "idempotency_key に空文字・空白のみは指定できません。省略するか非空の文字列を指定してください。"
+      );
+    }
+    if (k.length > IDEMPOTENCY_KEY_MAX_LEN) {
+      throw new ScanInputValidationError(
+        `idempotency_key は最大 ${IDEMPOTENCY_KEY_MAX_LEN} 文字です。`
+      );
+    }
+    idempotency_key = k;
+  }
+
   return {
     scanned_code,
     scan_type,
@@ -98,6 +121,7 @@ export function validateScanInput(raw: unknown): ScanInputPayload {
         ? (o.raw_payload as Record<string, unknown>)
         : null,
     scope_shipment_id,
+    idempotency_key,
   };
 }
 

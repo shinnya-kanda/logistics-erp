@@ -15,6 +15,8 @@ export type ScanEventRow = {
   operator_name: string | null
   scanned_at: string
   raw_payload: Record<string, unknown> | null
+  /** Phase2.1: リクエスト冪等キー（NULL の行は非冪等リクエスト） */
+  idempotency_key: string | null
   created_at: string
 }
 

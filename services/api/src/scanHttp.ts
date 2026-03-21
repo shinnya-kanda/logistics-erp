@@ -5,6 +5,7 @@ import { loadEnv } from "@logistics-erp/db/load-env";
 
 loadEnv();
 
+/** POST /scans: 201 = 新規 scan_events 行作成, 200 = idempotency replay（同一 idempotency_key） */
 const port = Number(process.env.SCAN_HTTP_PORT ?? "3040");
 
 const server = createServer(async (req, res) => {
@@ -25,7 +26,8 @@ const server = createServer(async (req, res) => {
       }
 
       const result = await processScanInput(body);
-      res.writeHead(200, { "Content-Type": "application/json" });
+      const statusCode = result.created_new_scan ? 201 : 200;
+      res.writeHead(statusCode, { "Content-Type": "application/json" });
       res.end(JSON.stringify(result));
     } catch (e) {
       if (e instanceof ScanInputValidationError) {
