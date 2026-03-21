@@ -5,12 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "dev:scan": "tsx watch src/scanHttp.ts",
+    "start:scan": "node dist/scanHttp.js",
     "build": "tsc",
     "start": "node dist/index.js",
     "lint": "eslint src --ext .ts"
   },
   "dependencies": {
     "@logistics-erp/db": "workspace:*",
+    "@logistics-erp/schema": "workspace:*",
     "@logistics-erp/types": "workspace:*",
     "@supabase/supabase-js": "^2.45.0"
   },

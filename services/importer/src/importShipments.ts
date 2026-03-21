@@ -4,11 +4,13 @@ import { parse } from "csv-parse/sync";
 import type { NormalizedShipmentLineInput, ShipmentItem } from "@logistics-erp/schema";
 import { buildTraceId } from "@logistics-erp/schema";
 import {
+  ensureShipmentItemProgressForShipmentId,
   findExpectedImportByChecksum,
   insertExpectedImportBundle,
 } from "@logistics-erp/db";
 import type { ShipmentEffectLineRow } from "./registerShipmentEffects.js";
 import { registerShipmentEffects } from "./registerShipmentEffects.js";
+import { importLogError, importLogInfo, importLogWarn } from "./importLog.js";
 
 export const CSV_COLUMNS = [
   "issue_no",
@@ -31,14 +33,14 @@ function toIsoDate(value: string): string {
 
 function parseQuantityExpected(value: string | undefined, ctx: string): number {
   const n = Number(value);
-  if (Number.isNaN(n) || !Number.isFinite(n) || n < 0) {
+  if (Number.isNaN(n) || !Number.isFinite(n) || n <= 0) {
     throw new Error(
-      `[@logistics-erp/importer] ${ctx}: quantity_expected が不正です: "${value}"（0 以上の数値が必要です）`
+      `[@logistics-erp/importer] ${ctx}: quantity（quantity_expected）は 1 以上の整数である必要があります。入力値: "${value ?? ""}"`
     );
   }
   if (!Number.isInteger(n)) {
     throw new Error(
-      `[@logistics-erp/importer] ${ctx}: quantity_expected は整数である必要があります: "${value}"`
+      `[@logistics-erp/importer] ${ctx}: quantity は整数である必要があります: "${value}"`
     );
   }
   return n;
@@ -61,7 +63,7 @@ function csvRowToNormalized(
   }
   if (!partNo) {
     throw new Error(
-      `[@logistics-erp/importer] 行 ${sourceRowNo}: part_no が空です。`
+      `[@logistics-erp/importer] 行 ${sourceRowNo}: part_no は必須です（空・空白のみは不可）。`
     );
   }
 
@@ -112,6 +114,17 @@ function earliestDeliveryDate(lines: NormalizedShipmentLineInput[]): string | nu
 function basename(path: string): string {
   const parts = path.replace(/\\/g, "/").split("/");
   return parts[parts.length - 1] ?? path;
+}
+
+/** 1 行目に必須列が存在するか（ヘッダ検証） */
+function assertRequiredCsvColumns(sampleRow: CsvRow): void {
+  for (const col of CSV_COLUMNS) {
+    if (!(col in sampleRow)) {
+      throw new Error(
+        `[@logistics-erp/importer] CSV ヘッダに必須列 "${col}" がありません。必要な列: ${CSV_COLUMNS.join(", ")}`
+      );
+    }
+  }
 }
 
 export interface ImportShipmentsResult {
@@ -171,18 +184,60 @@ export async function importShipments(
   const registerEffects = options?.registerEffects === true;
   const file_type = options?.file_type ?? "csv";
   const source_system = options?.source_system ?? "csv_importer";
-
-  const fileBuffer = await readFile(csvPath);
-  const checksum = createHash("sha256").update(fileBuffer).digest("hex");
   const file_name = basename(csvPath);
 
-  const records = parse(fileBuffer, {
-    columns: true,
-    skip_empty_lines: true,
-    trim: true,
-  }) as CsvRow[];
+  let fileBuffer: Buffer;
+  try {
+    fileBuffer = await readFile(csvPath);
+  } catch (err) {
+    importLogError("CSV ファイルの読み込みに失敗しました", {
+      phase: "read_file",
+      file: file_name,
+      path: csvPath,
+    });
+    throw new Error(
+      `[@logistics-erp/importer] CSV を読み込めません: ${csvPath}`,
+      { cause: err instanceof Error ? err : undefined }
+    );
+  }
+
+  const checksum = createHash("sha256").update(fileBuffer).digest("hex");
+  const checksumShort =
+    checksum.length > 16 ? `${checksum.slice(0, 16)}…` : checksum;
+
+  let records: CsvRow[];
+  try {
+    records = parse(fileBuffer, {
+      columns: true,
+      skip_empty_lines: true,
+      trim: true,
+    }) as CsvRow[];
+  } catch (err) {
+    importLogError("CSV のパースに失敗しました", {
+      phase: "parse",
+      file: file_name,
+      checksum: checksumShort,
+    });
+    throw new Error(
+      `[@logistics-erp/importer] CSV の形式が不正です: ${file_name}`,
+      { cause: err instanceof Error ? err : undefined }
+    );
+  }
+
+  records = records.map((row) => {
+    const next: CsvRow = {};
+    for (const [k, v] of Object.entries(row)) {
+      next[k.replace(/^\uFEFF/, "")] = v;
+    }
+    return next;
+  });
 
   if (records.length === 0) {
+    importLogWarn("データ行がありません（ヘッダのみまたは空ファイル）", {
+      phase: "validate",
+      file: file_name,
+      checksum: checksumShort,
+    });
     return {
       total: 0,
       inserted: 0,
@@ -193,57 +248,139 @@ export async function importShipments(
     };
   }
 
-  const normalizedLines: NormalizedShipmentLineInput[] = [];
-  let rowNo = 2;
-  for (const row of records) {
-    normalizedLines.push(csvRowToNormalized(row, rowNo));
-    rowNo += 1;
+  try {
+    assertRequiredCsvColumns(records[0] as CsvRow);
+  } catch (err) {
+    importLogError("CSV ヘッダ検証に失敗しました", {
+      phase: "validate_header",
+      file: file_name,
+      checksum: checksumShort,
+    });
+    throw err;
   }
 
-  validateBatchConsistency(normalizedLines);
+  const normalizedLines: NormalizedShipmentLineInput[] = [];
+  let rowNo = 2;
+  try {
+    for (const row of records) {
+      normalizedLines.push(csvRowToNormalized(row, rowNo));
+      rowNo += 1;
+    }
+    validateBatchConsistency(normalizedLines);
+  } catch (err) {
+    importLogError("行の正規化またはバッチ整合性チェックに失敗しました", {
+      phase: "validate_rows",
+      file: file_name,
+      checksum: checksumShort,
+    });
+    throw err;
+  }
 
   const issueNo = normalizedLines[0].issue_no;
   const supplierHead = normalizedLines[0].supplier || null;
   const headerDelivery = earliestDeliveryDate(normalizedLines);
 
-  const existing = await findExpectedImportByChecksum(checksum);
   let source_file_id: string;
   let shipment_id: string;
   let items: ShipmentItem[];
   let from_existing_checksum: boolean | undefined;
 
-  if (existing) {
-    source_file_id = existing.source_file_id;
-    shipment_id = existing.shipment_id;
-    items = existing.items;
-    from_existing_checksum = true;
-  } else {
-    const bundle = await insertExpectedImportBundle({
-      source: {
-        file_name,
-        file_type,
-        source_system,
-        checksum,
-      },
-      header: {
-        shipment_no: issueNo,
-        shipper_name: supplierHead,
-        delivery_date: headerDelivery,
-      },
-      lines: normalizedLines.map((line, idx) => ({
-        line_no: idx + 1,
-        trace_id: buildTraceId(line.issue_no, line.part_no),
-        part_no: line.part_no,
-        part_name: line.part_name || null,
-        quantity_expected: line.quantity_expected,
-        delivery_date: line.delivery_date || null,
-        source_row_no: line.source_row_no,
-        match_key: null,
-      })),
+  try {
+    const existing = await findExpectedImportByChecksum(checksum);
+    if (existing) {
+      importLogInfo(
+        "同一 checksum の source_files が既存のため DB INSERT をスキップ（冪等）",
+        {
+          phase: "db_idempotent_hit",
+          file: file_name,
+          checksum: checksumShort,
+          source_file_id: existing.source_file_id,
+          shipment_id: existing.shipment_id,
+          item_count: existing.items.length,
+        }
+      );
+      source_file_id = existing.source_file_id;
+      shipment_id = existing.shipment_id;
+      items = existing.items;
+      from_existing_checksum = true;
+    } else {
+      const bundle = await insertExpectedImportBundle({
+        source: {
+          file_name,
+          file_type,
+          source_system,
+          checksum,
+        },
+        header: {
+          shipment_no: issueNo,
+          shipper_name: supplierHead,
+          delivery_date: headerDelivery,
+        },
+        lines: normalizedLines.map((line, idx) => ({
+          line_no: idx + 1,
+          trace_id: buildTraceId(line.issue_no, line.part_no),
+          part_no: line.part_no,
+          part_name: line.part_name || null,
+          quantity_expected: line.quantity_expected,
+          delivery_date: line.delivery_date || null,
+          source_row_no: line.source_row_no,
+          match_key: null,
+        })),
+      });
+      source_file_id = bundle.source_file_id;
+      shipment_id = bundle.shipment_id;
+      items = bundle.items;
+      if (bundle.from_existing_checksum) {
+        from_existing_checksum = true;
+        importLogInfo(
+          "INSERT 時に checksum 一意制約で競合したため既存取込を返しました（並行実行の冪等扱い）",
+          {
+            phase: "db_race_recovered",
+            file: file_name,
+            checksum: checksumShort,
+            source_file_id: bundle.source_file_id,
+            shipment_id: bundle.shipment_id,
+          }
+        );
+      } else {
+        importLogInfo("Expected Data をトランザクションで登録しました", {
+          phase: "db_commit",
+          file: file_name,
+          checksum: checksumShort,
+          source_file_id: bundle.source_file_id,
+          shipment_id: bundle.shipment_id,
+          item_count: bundle.items.length,
+        });
+      }
+    }
+  } catch (err) {
+    importLogError("Expected Data の DB 処理に失敗しました（INSERT はロールバック済みの場合があります）", {
+      phase: "db",
+      file: file_name,
+      checksum: checksumShort,
     });
-    source_file_id = bundle.source_file_id;
-    shipment_id = bundle.shipment_id;
-    items = bundle.items;
+    throw err;
+  }
+
+  if (shipment_id) {
+    try {
+      await ensureShipmentItemProgressForShipmentId(shipment_id);
+      importLogInfo("shipment_item_progress を冪等シードしました", {
+        phase: "progress_seed",
+        file: file_name,
+        shipment_id,
+      });
+    } catch (err) {
+      importLogError(
+        "shipment_item_progress のシードに失敗しました（Phase2 の SQL 適用と DATABASE_URL を確認）",
+        {
+          phase: "progress_seed",
+          file: file_name,
+          shipment_id,
+        }
+      );
+      throw err;
+    }
   }
 
   const effectRows = linesToEffectRows(
@@ -266,10 +403,37 @@ export async function importShipments(
 
   if (registerEffects && items.length > 0) {
     const effects: Awaited<ReturnType<typeof registerShipmentEffects>>[] = [];
-    for (const lineRow of effectRows) {
-      effects.push(await registerShipmentEffects(lineRow));
+    for (let i = 0; i < effectRows.length; i++) {
+      const lineRow = effectRows[i];
+      try {
+        effects.push(await registerShipmentEffects(lineRow));
+      } catch (err) {
+        importLogError(
+          "registerEffects 失敗 — Expected Data は既にコミット済みです。同一 shipment_item に対する再実行は idempotency_key で安全に再試行できます",
+          {
+            phase: "register_effects",
+            file: file_name,
+            checksum: checksumShort,
+            line_index: i + 1,
+            line_total: effectRows.length,
+            shipment_item_id: lineRow.shipment_item_id,
+            part_no: lineRow.part_no,
+            shipment_id: shipment_id,
+          }
+        );
+        throw new Error(
+          `[@logistics-erp/importer] registerEffects 失敗: 明細 ${i + 1}/${effectRows.length} part_no=${lineRow.part_no} shipment_item_id=${lineRow.shipment_item_id}`,
+          { cause: err instanceof Error ? err : undefined }
+        );
+      }
     }
     result.effects = effects;
+    importLogInfo("registerEffects 完了", {
+      phase: "effects_done",
+      file: file_name,
+      checksum: checksumShort,
+      effect_count: effects.length,
+    });
   }
 
   return result;

@@ -3,10 +3,11 @@
 ## Phase 1 現在のフロー（Expected Data）
 
 1. **CSV 読み込み** → `csv-parse/sync` で行パース → **内部モデル** `NormalizedShipmentLineInput` に正規化（CSV 列名への依存をここに閉じる）
-2. **バッチ検証** … 同一ファイル内で `issue_no` / `supplier` が一致すること、`part_no` / `quantity_expected` が妥当であること
+2. **バッチ検証** … 同一ファイル内で `issue_no` / `supplier` が一致すること。`part_no` 必須、`quantity` は **1 以上の整数**。必須列ヘッダチェック。失敗時・冪等ヒット時は `[logistics-erp/importer]` プレフィックスでログ出力。
 3. **checksum（SHA-256）** … 既に `source_files` に同一 checksum があれば **DB insert は行わず** 既存の `shipments` ヘッダ + `shipment_items` を読み戻す（冪等）
 4. **未登録の場合** … `DATABASE_URL` で **単一トランザクション**として  
    `source_files`（1 件）→ `shipments`（ヘッダ 1 件）→ `shipment_items`（複数行）を挿入。失敗時はロールバック
+4b. **Phase 2**: 成功後に `ensureShipmentItemProgressForShipmentId(shipment_id)` で `shipment_item_progress` を **冪等シード**（checksum 冪等ヒット時も同様、`ON CONFLICT DO NOTHING`）。
 5. **registerEffects オプション時** … 各 **shipment_item** 行に対して `registerShipmentEffects` を実行:
    - `stock_movements` に IN（`shipment_id` = ヘッダ、`shipment_item_id` = 明細）
    - `inventory` 増加

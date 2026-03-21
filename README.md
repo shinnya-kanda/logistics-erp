@@ -87,6 +87,12 @@ DATABASE_URL=postgresql://user:password@localhost:5432/logistics_erp
 
 マイグレーション SQL: `packages/db/sql/phase1_expected_data.sql`（Phase 0 適用後に実行）。概要は [docs/phase1-expected-data.md](docs/phase1-expected-data.md)。
 
+**Phase 2 Actual / スキャン最小基盤**
+
+- SQL: `packages/db/sql/phase2_scan_foundation.sql`（Phase 1 の後に実行）
+- 説明: [docs/phase2-scan-foundation.md](docs/phase2-scan-foundation.md)
+- 最小 HTTP: `pnpm --filter @logistics-erp/api dev:scan` → `POST http://localhost:3040/scans`（JSON は `validateScanInput` 互換）
+
 ### 6. データベースのマイグレーション（任意）
 
 PostgreSQL を用意し、スキーマを適用する場合:

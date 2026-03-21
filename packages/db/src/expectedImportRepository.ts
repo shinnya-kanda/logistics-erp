@@ -4,6 +4,50 @@ import { loadEnv } from "./loadEnv.js";
 
 loadEnv();
 
+function isPostgresError(e: unknown): e is postgres.PostgresError {
+  return (
+    typeof e === "object" &&
+    e !== null &&
+    "name" in e &&
+    (e as { name: string }).name === "PostgresError" &&
+    "code" in e
+  );
+}
+
+/** 一意制約名・メッセージから checksum 重複（並行取込レース）を推定 */
+function isChecksumUniqueViolation(err: unknown): boolean {
+  if (!isPostgresError(err) || err.code !== "23505") return false;
+  const c = (err.constraint_name ?? "").toLowerCase();
+  const d = (err.detail ?? "").toLowerCase();
+  const m = (err.message ?? "").toLowerCase();
+  return (
+    c.includes("checksum") ||
+    c.includes("uq_source_files_checksum") ||
+    d.includes("checksum") ||
+    m.includes("uq_source_files_checksum")
+  );
+}
+
+function formatRollbackError(err: unknown): Error {
+  if (isPostgresError(err)) {
+    const parts = [
+      "[@logistics-erp/db] Expected Data 取込を中止しました（Postgres トランザクションはロールバック済み）。",
+      `code=${err.code}`,
+      err.table_name ? `table=${err.table_name}` : null,
+      err.constraint_name ? `constraint=${err.constraint_name}` : null,
+      err.column_name ? `column=${err.column_name}` : null,
+      err.detail ? `detail=${err.detail}` : null,
+      err.hint ? `hint=${err.hint}` : null,
+    ].filter(Boolean);
+    return new Error(parts.join(" "), { cause: err });
+  }
+  const msg = err instanceof Error ? err.message : String(err);
+  return new Error(
+    `[@logistics-erp/db] Expected Data 取込失敗（トランザクションはロールバック済み）: ${msg}`,
+    { cause: err instanceof Error ? err : undefined }
+  );
+}
+
 export type ExpectedImportLineInput = {
   line_no: number
   trace_id: string
@@ -41,6 +85,36 @@ export type ExpectedImportBundleInput = {
   lines: ExpectedImportLineInput[]
 };
 
+function assertBundleLinesValid(lines: ExpectedImportLineInput[]): void {
+  for (const line of lines) {
+    const pn = String(line.part_no ?? "").trim();
+    if (!pn) {
+      throw new Error(
+        "[@logistics-erp/db] insertExpectedImportBundle: part_no が空です（line_no=" +
+          String(line.line_no) +
+          ", source_row_no=" +
+          String(line.source_row_no) +
+          "）。"
+      );
+    }
+    const q = line.quantity_expected;
+    if (!Number.isFinite(q) || !Number.isInteger(q) || q <= 0) {
+      throw new Error(
+        "[@logistics-erp/db] insertExpectedImportBundle: quantity_expected は 1 以上の整数である必要があります（part_no=" +
+          pn +
+          ", line_no=" +
+          String(line.line_no) +
+          "）。"
+      );
+    }
+    if (!String(line.trace_id ?? "").trim()) {
+      throw new Error(
+        "[@logistics-erp/db] insertExpectedImportBundle: trace_id が空です（part_no=" + pn + "）。"
+      );
+    }
+  }
+}
+
 export type ExpectedImportResult = {
   source_file_id: string
   shipment_id: string
@@ -49,7 +123,7 @@ export type ExpectedImportResult = {
   from_existing_checksum?: boolean
 };
 
-function requireDatabaseUrl(): string {
+export function requireDatabaseUrl(): string {
   const url = process.env.DATABASE_URL?.trim();
   if (!url) {
     throw new Error(
@@ -69,32 +143,40 @@ export async function findExpectedImportByChecksum(
 
   const sql = postgres(requireDatabaseUrl(), { max: 1 });
   try {
-    const rows = await sql<
-      { source_file_id: string; shipment_id: string }[]
-    >`
-      SELECT sf.id AS source_file_id, s.id AS shipment_id
-      FROM public.source_files sf
-      INNER JOIN public.shipments s ON s.source_file_id = sf.id
-      WHERE sf.checksum = ${checksum}
-      LIMIT 1
-    `;
+    try {
+      const rows = await sql<
+        { source_file_id: string; shipment_id: string }[]
+      >`
+        SELECT sf.id AS source_file_id, s.id AS shipment_id
+        FROM public.source_files sf
+        INNER JOIN public.shipments s ON s.source_file_id = sf.id
+        WHERE sf.checksum = ${checksum}
+        LIMIT 1
+      `;
 
-    const head = rows[0];
-    if (!head) return null;
+      const head = rows[0];
+      if (!head) return null;
 
-    const items = await sql<ShipmentItem[]>`
-      SELECT *
-      FROM public.shipment_items
-      WHERE shipment_id = ${head.shipment_id}
-      ORDER BY source_row_no ASC NULLS LAST, line_no ASC NULLS LAST
-    `;
+      const items = await sql<ShipmentItem[]>`
+        SELECT *
+        FROM public.shipment_items
+        WHERE shipment_id = ${head.shipment_id}
+        ORDER BY source_row_no ASC NULLS LAST, line_no ASC NULLS LAST
+      `;
 
-    return {
-      source_file_id: head.source_file_id,
-      shipment_id: head.shipment_id,
-      items,
-      from_existing_checksum: true,
-    };
+      return {
+        source_file_id: head.source_file_id,
+        shipment_id: head.shipment_id,
+        items,
+        from_existing_checksum: true,
+      };
+    } catch (err) {
+      const short = checksum.length > 12 ? `${checksum.slice(0, 12)}…` : checksum;
+      throw new Error(
+        `[@logistics-erp/db] findExpectedImportByChecksum 失敗（checksum=${short}）。DATABASE_URL と DB スキーマ（Phase1 SQL 適用済みか）を確認してください。`,
+        { cause: err instanceof Error ? err : undefined }
+      );
+    }
   } finally {
     await sql.end({ timeout: 5 });
   }
@@ -112,10 +194,13 @@ export async function insertExpectedImportBundle(
     );
   }
 
+  assertBundleLinesValid(input.lines);
+
   const sql = postgres(requireDatabaseUrl(), { max: 1 });
 
   try {
-    return await sql.begin(async (tx) => {
+    try {
+      return await sql.begin(async (tx) => {
       const q = tx as unknown as typeof sql;
       const [sf] = await q<{ id: string }[]>`
         INSERT INTO public.source_files (
@@ -227,6 +312,21 @@ export async function insertExpectedImportBundle(
         items,
       };
     });
+    } catch (err) {
+      const ck = input.source.checksum;
+      if (ck && isChecksumUniqueViolation(err)) {
+        const found = await findExpectedImportByChecksum(ck);
+        if (found) {
+          return {
+            source_file_id: found.source_file_id,
+            shipment_id: found.shipment_id,
+            items: found.items,
+            from_existing_checksum: true,
+          };
+        }
+      }
+      throw formatRollbackError(err);
+    }
   } finally {
     await sql.end({ timeout: 5 });
   }

@@ -26,7 +26,7 @@ packages/db/sql/phase1_expected_data.sql
 ## Importer の流れ
 
 1. CSV を読み、**正規化モデル**（`NormalizedShipmentLineInput`）に変換する（CSV 列名から分離）。
-2. **検証**: `issue_no` / `supplier` がファイル内で一致すること、`part_no` / `quantity_expected` が妥当であること。
+2. **検証**: `issue_no` / `supplier` がファイル内で一致すること。`part_no` は必須。`quantity`（quantity_expected）は **1 以上の整数**。CSV 必須列の存在チェック（ヘッダ）。UTF-8 BOM 付きヘッダはキー正規化で吸収。
 3. ファイルの **SHA-256 checksum** を計算する。既に `source_files.checksum` に存在すれば **INSERT せず** 既存の `shipments` / `shipment_items` を返す（冪等）。
 4. 未登録なら **`DATABASE_URL` 経由の単一トランザクション**で `source_files` → `shipments`（ヘッダ）→ `shipment_items` を挿入。失敗時はロールバック。
 5. オプション `registerEffects: true` のとき、**明細ごと**に `stock_movements` / `inventory` / `trace_events` を登録。冪等キーは `shipment_item_id` ベース（Phase 0 の行 id ベースと互換）。
