@@ -1,0 +1,88 @@
+# Phase 2.4 / 2.4.1: POST /scans 契約テスト（Vitest + ephemeral Postgres）
+name: Scan contract tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  scan-contract-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: logistics_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d logistics_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      SCAN_CONTRACT_TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/logistics_test
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/logistics_test
+      NODE_ENV: test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Wait for Postgres (pg_isready)
+        run: |
+          until pg_isready -h localhost -p 5432 -U postgres -d logistics_test; do
+            echo "waiting for postgres..."
+            sleep 2
+          done
+        env:
+          PGPASSWORD: postgres
+
+      - name: Apply SQL migrations (ordered)
+        run: |
+          set -euo pipefail
+          export PGPASSWORD=postgres
+          for f in \
+            packages/db/sql/ci_bootstrap_minimal_shipments.sql \
+            packages/db/sql/create_inventory_and_stock_movements.sql \
+            packages/db/sql/create_trace_events.sql \
+            packages/db/sql/add_idempotency_keys.sql \
+            packages/db/sql/phase0_trace_events_idempotency.sql \
+            packages/db/sql/phase1_expected_data.sql \
+            packages/db/sql/phase2_scan_foundation.sql \
+            packages/db/sql/phase2_1_scan_events_idempotency.sql
+          do
+            echo "::group::psql -f $f"
+            psql -h localhost -U postgres -d logistics_test -v ON_ERROR_STOP=1 -f "$f"
+            echo "::endgroup::"
+          done
+
+      - name: Build schema and db packages
+        run: |
+          pnpm --filter "@logistics-erp/schema" build
+          pnpm --filter "@logistics-erp/db" build
+
+      - name: Run scan contract tests
+        run: pnpm --filter "@logistics-erp/api" test

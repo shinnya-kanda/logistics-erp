@@ -56,6 +56,35 @@ pnpm --filter "@logistics-erp/api" test
 
 `vitest.setup.ts` が `DATABASE_URL` をこの値に差し替える。**普段の開発 DB を共有するとフィクスチャの cleanup で該当 UUID 行が削除される**ため、専用 DB またはバックアップのない検証用 DB を推奨。
 
+### 空の Postgres（ローカル / CI 共通）
+
+本番 Supabase では既存の `shipments` がある前提で後続 SQL が書かれている。**空のインスタンス**では先に `packages/db/sql/ci_bootstrap_minimal_shipments.sql` を適用してから、下記「CI」と同じ順で残りを流す。
+
+## CI（GitHub Actions）
+
+| 項目 | 内容 |
+|------|------|
+| ワークフロー | [`.github/workflows/scan-contract-tests.yml`](../.github/workflows/scan-contract-tests.yml) |
+| トリガー | `push` / `pull_request` |
+| DB | `postgres:15` サービスコンテナ、`POSTGRES_DB=logistics_test`、healthcheck `pg_isready` |
+| 環境変数 | `SCAN_CONTRACT_TEST_DATABASE_URL` / `DATABASE_URL` = `postgresql://postgres:postgres@localhost:5432/logistics_test`、`NODE_ENV=test` |
+| マイグレーション | `psql … -v ON_ERROR_STOP=1 -f` で **順序固定**（失敗時はジョブ失敗・ログにファイル名が出る） |
+
+適用順（リポジトリの連鎖に合わせた一覧）:
+
+1. `ci_bootstrap_minimal_shipments.sql`
+2. `create_inventory_and_stock_movements.sql`
+3. `create_trace_events.sql`
+4. `add_idempotency_keys.sql`
+5. `phase0_trace_events_idempotency.sql`
+6. `phase1_expected_data.sql`
+7. `phase2_scan_foundation.sql`
+8. `phase2_1_scan_events_idempotency.sql`
+
+その後 `pnpm --filter "@logistics-erp/schema" build` → `pnpm --filter "@logistics-erp/db" build` → `pnpm --filter "@logistics-erp/api" test`。DB はジョブ終了とともに破棄される。
+
+**想定ログの流れ**: Checkout → Node 20 / pnpm キャッシュ → `pnpm install` → `pg_isready` 待ち → 各 `psql -f` が `::group::` で折りたたみ表示 → Vitest が契約テストを実行し、失敗時はスタックトレースがそのまま残る。
+
 ## フィクスチャ
 
 | ファイル | 役割 |

@@ -99,6 +99,10 @@ DATABASE_URL=postgresql://user:password@localhost:5432/logistics_erp
 - **Phase 2.3** ambiguous 解消（候補表示 + `selected_shipment_item_id`）: [docs/phase2-3-ambiguous-resolution-ui.md](docs/phase2-3-ambiguous-resolution-ui.md)。候補確定の再送は **新しい idempotency_key** を使用。
 - **Phase 2.4** `POST /scans` / `GET /health` 契約テスト: [docs/phase2-4-scan-contract-tests.md](docs/phase2-4-scan-contract-tests.md)（`pnpm --filter "@logistics-erp/api" test`）。
 
+### CI（GitHub Actions）
+
+`push` / `pull_request` のたびに [`.github/workflows/scan-contract-tests.yml`](.github/workflows/scan-contract-tests.yml) が実行され、**ジョブ専用の ephemeral Postgres 15**（`logistics_test`）を立て、`packages/db/sql` を定義順に `psql` で適用したうえで **`pnpm --filter "@logistics-erp/api" test`** を走らせます。接続は `SCAN_CONTRACT_TEST_DATABASE_URL`（および `DATABASE_URL`）で渡します。空の DB では `shipments` が無いため、先頭に `ci_bootstrap_minimal_shipments.sql` を当てます。手順の詳細は [docs/phase2-4-scan-contract-tests.md](docs/phase2-4-scan-contract-tests.md#ci-github-actions) を参照。
+
 ### 6. データベースのマイグレーション（任意）
 
 PostgreSQL を用意し、スキーマを適用する場合:
@@ -158,7 +162,7 @@ pip install -e ".[dev]"
 | `pnpm db:generate` | Drizzle マイグレーションSQLを生成 |
 | `pnpm db:migrate` | マイグレーションを実行 |
 | `pnpm lint` | 全ワークスペースで lint 実行 |
-| `pnpm --filter "@logistics-erp/api" test` | Scan 最小 HTTP の契約テスト（Vitest）。DB フルは `SCAN_CONTRACT_TEST_DATABASE_URL` 参照 [docs/phase2-4-scan-contract-tests.md](docs/phase2-4-scan-contract-tests.md) |
+| `pnpm --filter "@logistics-erp/api" test` | Scan 最小 HTTP の契約テスト（Vitest）。DB フルは `SCAN_CONTRACT_TEST_DATABASE_URL` 参照 [docs/phase2-4-scan-contract-tests.md](docs/phase2-4-scan-contract-tests.md)。同コマンドが CI（ephemeral Postgres）でも実行される |
 
 ## ライセンス
 
