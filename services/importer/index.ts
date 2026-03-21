@@ -7,6 +7,7 @@ export {
 export {
   registerShipmentEffects,
   type RegisterShipmentEffectsResult,
+  type ShipmentEffectLineRow,
   type ShipmentRow,
 } from "./src/registerShipmentEffects.js";
 export {

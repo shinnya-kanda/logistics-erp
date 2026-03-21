@@ -66,7 +66,9 @@ pnpm build
 
 **services/api（Supabase）**
 
-`services/api/.env` を作成:
+リポジトリ直下の `.env` に次を書けば、`@logistics-erp/api` 起動時に自動で読み込まれます（`@logistics-erp/db/load-env`）。
+
+別途 `services/api/.env` を置いても構いません。
 
 ```env
 SUPABASE_URL=https://your-project.supabase.co
@@ -78,6 +80,12 @@ SUPABASE_ANON_KEY=your-anon-key
 ```env
 DATABASE_URL=postgresql://user:password@localhost:5432/logistics_erp
 ```
+
+**Phase 1 Expected 取込（`importShipments` のトランザクション insert）**
+
+`source_files` / `shipments` / `shipment_items` への一括登録は Supabase クライアントではなく **Postgres 直結**で行う。`DATABASE_URL` に Supabase の *Direct connection* 等を設定すること。
+
+マイグレーション SQL: `packages/db/sql/phase1_expected_data.sql`（Phase 0 適用後に実行）。概要は [docs/phase1-expected-data.md](docs/phase1-expected-data.md)。
 
 ### 6. データベースのマイグレーション（任意）
 

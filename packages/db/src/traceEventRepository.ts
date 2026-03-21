@@ -32,6 +32,14 @@ export async function insertTraceEvent(
     if (byKey) return byKey;
   }
 
+  if (input.shipment_item_id && input.event_type) {
+    const byItem = await findTraceEventByShipmentItemAndEventType(
+      input.shipment_item_id,
+      input.event_type
+    );
+    if (byItem) return byItem;
+  }
+
   if (input.shipment_id && input.event_type) {
     const byShipment = await findTraceEventByShipmentAndEventType(
       input.shipment_id,
@@ -51,6 +59,7 @@ export async function insertTraceEvent(
     part_name: input.part_name ?? null,
     issue_no: input.issue_no ?? null,
     shipment_id: input.shipment_id ?? null,
+    shipment_item_id: input.shipment_item_id ?? null,
     stock_movement_id: input.stock_movement_id ?? null,
     actor_type: input.actor_type ?? null,
     actor_id: input.actor_id ?? null,
@@ -89,6 +98,14 @@ export async function insertTraceEvent(
         );
         if (existing) return existing;
       }
+      if (input.shipment_item_id && input.event_type) {
+        const existingItem = await findTraceEventByShipmentItemAndEventType(
+          input.shipment_item_id,
+          input.event_type
+        );
+        if (existingItem) return existingItem;
+      }
+
       if (input.shipment_id && input.event_type) {
         const existing = await findTraceEventByShipmentAndEventType(
           input.shipment_id,
@@ -119,6 +136,27 @@ export async function findTraceEventByIdempotencyKey(
   if (error) {
     throw new Error(
       `[@logistics-erp/db] findTraceEventByIdempotencyKey failed: ${error.message}`,
+      { cause: error }
+    );
+  }
+
+  return (data as TraceEvent) ?? null;
+}
+
+export async function findTraceEventByShipmentItemAndEventType(
+  shipmentItemId: string,
+  eventType: string
+): Promise<TraceEvent | null> {
+  const { data, error } = await supabase
+    .from("trace_events")
+    .select("*")
+    .eq("shipment_item_id", shipmentItemId)
+    .eq("event_type", eventType)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(
+      `[@logistics-erp/db] findTraceEventByShipmentItemAndEventType failed: ${error.message}`,
       { cause: error }
     );
   }

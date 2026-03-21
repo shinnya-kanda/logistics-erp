@@ -17,6 +17,8 @@ export type StockMovement = {
   source_type: string | null
   source_ref: string | null
   shipment_id: string | null
+  /** Phase1: Expected 明細への参照。レガシー取込では null。 */
+  shipment_item_id: string | null
   note: string | null
   idempotency_key: string | null
 }
@@ -32,6 +34,7 @@ export type StockMovementInsertInput = {
   source_type?: string | null
   source_ref?: string | null
   shipment_id?: string | null
+  shipment_item_id?: string | null
   note?: string | null
   idempotency_key?: string | null
 }

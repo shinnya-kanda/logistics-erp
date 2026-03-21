@@ -3,8 +3,10 @@ import { buildTraceId } from "@logistics-erp/schema";
 import { insertTraceEvent } from "@logistics-erp/db";
 
 export interface RegisterInitialTraceEventOptions {
-  /** 必須。idempotency_key と (shipment_id, event_type) の冪等に必要。 */
+  /** 必須。ヘッダ shipments.id（Phase1）またはレガシー行 id（Phase0）。 */
   shipmentId: string
+  /** Phase1: shipment_items.id。指定時は冪等キーは明細単位になる。 */
+  shipmentItemId?: string | null
   stockMovementId?: string | null
 }
 
@@ -19,7 +21,9 @@ export async function registerInitialTraceEventFromShipment(
   options: RegisterInitialTraceEventOptions
 ): Promise<TraceEvent> {
   const traceId = buildTraceId(shipment.issueNo, shipment.partNo);
-  const idempotencyKey = `IMPORTER_INIT:${options.shipmentId}:SHIPPER_CONFIRMED`;
+  const idempotencyKey = options.shipmentItemId
+    ? `IMPORTER_INIT:${options.shipmentItemId}:SHIPPER_CONFIRMED`
+    : `IMPORTER_INIT:${options.shipmentId}:SHIPPER_CONFIRMED`;
 
   return insertTraceEvent({
     event_type: "SHIPPER_CONFIRMED",
@@ -30,6 +34,7 @@ export async function registerInitialTraceEventFromShipment(
     part_name: shipment.partName || null,
     issue_no: shipment.issueNo,
     shipment_id: options.shipmentId,
+    shipment_item_id: options.shipmentItemId ?? null,
     stock_movement_id: options.stockMovementId ?? null,
     quantity: shipment.quantity,
     actor_type: "SYSTEM",

@@ -10,6 +10,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
+    },
+    "./load-env": {
+      "types": "./dist/src/loadEnv.d.ts",
+      "import": "./dist/src/loadEnv.js",
+      "default": "./dist/src/loadEnv.js"
     }
   },
   "scripts": {

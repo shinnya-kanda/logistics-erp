@@ -31,6 +31,7 @@ export async function insertStockMovement(
     source_type: input.source_type ?? null,
     source_ref: input.source_ref ?? null,
     shipment_id: input.shipment_id ?? undefined,
+    shipment_item_id: input.shipment_item_id ?? null,
     note: input.note ?? null,
     idempotency_key: input.idempotency_key ?? null,
   };

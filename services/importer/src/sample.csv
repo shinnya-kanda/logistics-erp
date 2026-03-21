@@ -1,4 +1,4 @@
 issue_no,supplier,part_no,part_name,quantity,due_date
-TEST-CSV-001,Acme Corp,P-100,Widget A,50,2026-03-20
-TEST-CSV-002,Acme Corp,P-101,Widget B,25,2026-03-21
-TEST-CSV-003,Globex Inc,P-200,Gadget X,10,2026-04-01
+TEST-CSV-BATCH-001,Acme Corp,P-100,Widget A,50,2026-03-20
+TEST-CSV-BATCH-001,Acme Corp,P-101,Widget B,25,2026-03-21
+TEST-CSV-BATCH-001,Acme Corp,P-200,Gadget X,10,2026-04-01

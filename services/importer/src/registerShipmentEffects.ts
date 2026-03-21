@@ -7,8 +7,7 @@ import {
 import { registerInitialTraceEventFromShipment } from "./registerInitialTraceEvent.js";
 
 /**
- * Supabase shipments テーブルから返る 1 行（upsert 後のレコード）。
- * registerShipmentEffects はこの形式を受け取り、在庫・trace を登録する。
+ * Supabase shipments テーブルから返る 1 行（Phase0: 行=明細相当の upsert 後レコード）。
  */
 export interface ShipmentRow {
   id: string
@@ -20,14 +19,37 @@ export interface ShipmentRow {
   due_date: string
 }
 
+/** Phase1: shipment_items + ヘッダ id を渡し、在庫・trace を明細単位で冪等登録する。 */
+export interface ShipmentEffectLineRow {
+  shipment_item_id: string
+  shipment_header_id: string
+  issue_no: string
+  supplier: string | null
+  part_no: string
+  part_name: string | null
+  quantity: number
+  due_date: string
+}
+
+export type ShipmentEffectInputRow = ShipmentRow | ShipmentEffectLineRow;
+
+function isPhase1EffectRow(row: ShipmentEffectInputRow): row is ShipmentEffectLineRow {
+  return (
+    "shipment_item_id" in row &&
+    row.shipment_item_id != null &&
+    "shipment_header_id" in row &&
+    row.shipment_header_id != null
+  );
+}
+
 export interface RegisterShipmentEffectsResult {
-  shipment: ShipmentRow
+  shipment: ShipmentEffectInputRow
   movement: StockMovement
   inventory: Inventory
   traceEvent: TraceEvent
 }
 
-function rowToShipment(row: ShipmentRow): Shipment {
+function rowToShipment(row: ShipmentEffectInputRow): Shipment {
   return {
     issueNo: row.issue_no,
     supplier: row.supplier ?? "",
@@ -39,49 +61,51 @@ function rowToShipment(row: ShipmentRow): Shipment {
 }
 
 /**
- * 1 件の shipment レコードを起点に、
+ * 1 件の shipment（Phase0 行）または shipment_item（Phase1 明細）を起点に、
  * ① stock_movements に IN 登録
  * ② inventory 更新
- * ③ trace_events に初期イベント登録（stock_movement_id を紐づけ）
+ * ③ trace_events に初期イベント登録
  * を順に実行し、結果をまとめて返す。
  *
- * TODO(idempotency): 現状、importer を 2 回実行すると stock_movements と trace_events が重複登録される。
- * 重複防止には (1) source_type + source_ref + shipment_id + event_type の一意制約、
- * (2) importer_run_id の導入、(3) 再実行時の idempotency key の導入 などが検討事項。
+ * Phase0: idempotency_key は RECEIPT:{shipments.id}:IN / IMPORTER_INIT:{shipments.id}:...
+ * Phase1: idempotency_key は RECEIPT:{shipment_item_id}:IN / IMPORTER_INIT:{shipment_item_id}:...
  */
 export async function registerShipmentEffects(
-  shipmentRow: ShipmentRow
+  row: ShipmentEffectInputRow
 ): Promise<RegisterShipmentEffectsResult> {
-  const shipment = rowToShipment(shipmentRow);
+  const shipment = rowToShipment(row);
 
-  // 1. stock_movements に IN を登録（idempotency_key で再実行時は既存を返す）
-  const receiptIdempotencyKey = `RECEIPT:${shipmentRow.id}:IN`;
+  const phase1 = isPhase1EffectRow(row);
+  const receiptIdempotencyKey = phase1
+    ? `RECEIPT:${row.shipment_item_id}:IN`
+    : `RECEIPT:${row.id}:IN`;
+
   const movement = await insertStockMovement({
     movement_type: "IN",
-    supplier: shipmentRow.supplier,
-    part_no: shipmentRow.part_no,
-    part_name: shipmentRow.part_name,
-    quantity: shipmentRow.quantity,
-    shipment_id: shipmentRow.id,
+    supplier: row.supplier,
+    part_no: row.part_no,
+    part_name: row.part_name,
+    quantity: row.quantity,
+    shipment_id: phase1 ? row.shipment_header_id : row.id,
+    shipment_item_id: phase1 ? row.shipment_item_id : null,
     idempotency_key: receiptIdempotencyKey,
   });
 
-  // 2. inventory を増加（存在しなければ insert）
   const inventory = await increaseInventoryByReceipt({
-    supplier: shipmentRow.supplier,
-    part_no: shipmentRow.part_no,
-    part_name: shipmentRow.part_name,
-    quantity: shipmentRow.quantity,
+    supplier: row.supplier,
+    part_no: row.part_no,
+    part_name: row.part_name,
+    quantity: row.quantity,
   });
 
-  // 3. trace_events に初期イベントを登録（movement 登録後に stock_movement_id を設定）
   const traceEvent = await registerInitialTraceEventFromShipment(shipment, {
-    shipmentId: shipmentRow.id,
+    shipmentId: phase1 ? row.shipment_header_id : row.id,
+    shipmentItemId: phase1 ? row.shipment_item_id : null,
     stockMovementId: movement.id,
   });
 
   return {
-    shipment: shipmentRow,
+    shipment: row,
     movement,
     inventory,
     traceEvent,

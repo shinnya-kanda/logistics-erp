@@ -46,6 +46,8 @@ export type TraceEvent = {
   part_name: string | null
   issue_no: string | null
   shipment_id: string | null
+  /** Phase1: Expected 明細。レガシーでは null。 */
+  shipment_item_id: string | null
   stock_movement_id: string | null
   actor_type: TraceActorType | null
   actor_id: string | null
@@ -74,6 +76,7 @@ export type TraceEventInsertInput = {
   part_name?: string | null
   issue_no?: string | null
   shipment_id?: string | null
+  shipment_item_id?: string | null
   stock_movement_id?: string | null
   actor_type?: TraceActorType | null
   actor_id?: string | null
