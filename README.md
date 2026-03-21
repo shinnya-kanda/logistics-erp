@@ -12,6 +12,7 @@ pnpm モノレポで構成された物流向けERPシステムです。
 | `services/api` | Supabase連携 TypeScript API サービス |
 | `services/pdf-extractor` | PDF抽出 Python サービス |
 | `packages/db` | DBスキーマ・マイグレーション（Drizzle） |
+| `packages/schema` | 共有型（scan 入力・HTTP 応答など） |
 | `packages/ui` | 共通UIコンポーネント |
 | `packages/types` | 共通型定義 |
 | `docs` | ドキュメント |
@@ -46,9 +47,10 @@ pnpm install
 
 ### 4. パッケージのビルド
 
-共有パッケージ（db, types, ui）を先にビルドします。
+共有パッケージ（schema, db, types, ui）を先にビルドします。
 
 ```bash
+pnpm --filter "@logistics-erp/schema" build
 pnpm --filter "@logistics-erp/types" build
 pnpm --filter "@logistics-erp/db" build
 pnpm --filter "@logistics-erp/ui" build
@@ -91,8 +93,9 @@ DATABASE_URL=postgresql://user:password@localhost:5432/logistics_erp
 
 - SQL: `packages/db/sql/phase2_scan_foundation.sql`（Phase 1 の後に実行）
 - 説明: [docs/phase2-scan-foundation.md](docs/phase2-scan-foundation.md)
-- 最小 HTTP: `pnpm --filter @logistics-erp/api dev:scan` → `POST http://localhost:3040/scans`（JSON は `validateScanInput` 互換）
+- 最小 HTTP: `pnpm --filter @logistics-erp/api dev:scan` → `POST http://localhost:3040/scans`（JSON は `validateScanInput` 互換）。ブラウザから `driver-app` を使う場合は CORS 用に `SCAN_CORS_ORIGIN`（既定 `*`）を参照。
 - 冪等: リクエストに `idempotency_key`（非空・512 文字以内）を付与。SQL: `phase2_1_scan_events_idempotency.sql`。詳細は [docs/phase2-1-scan-idempotency.md](docs/phase2-1-scan-idempotency.md)。新規 **201** / 再送 replay **200**。
+- **Phase 2.2** 手入力 scanner shell（`apps/driver-app`）: [docs/phase2-2-pwa-scanner-shell.md](docs/phase2-2-pwa-scanner-shell.md)。環境変数 `VITE_SCAN_API_BASE_URL`（既定 `http://localhost:3040`）。カメラ・バーコードは未対応。
 
 ### 6. データベースのマイグレーション（任意）
 
@@ -117,7 +120,8 @@ pnpm --filter "@logistics-erp/admin-dashboard" dev
 # 荷主Web（http://localhost:3001）
 pnpm --filter "@logistics-erp/shipper-web" dev
 
-# ドライバーアプリ PWA（http://localhost:3002）
+# ドライバーアプリ PWA（http://localhost:3002）— 事前に schema をビルド推奨
+pnpm --filter "@logistics-erp/schema" build
 pnpm --filter "@logistics-erp/driver-app" dev
 ```
 

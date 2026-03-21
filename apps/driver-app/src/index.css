@@ -4,5 +4,259 @@
 
 body {
   margin: 0;
-  font-family: system-ui, sans-serif;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 18px;
+  line-height: 1.45;
+  color: #1a1a1a;
+  background: #f5f5f5;
+}
+
+.app-root {
+  min-height: 100dvh;
+}
+
+.scanner-shell {
+  max-width: 28rem;
+  margin: 0 auto;
+  padding: 1rem 1rem 2rem;
+}
+
+.scanner-header {
+  text-align: center;
+  margin-bottom: 1.25rem;
+}
+
+.scanner-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem;
+}
+
+.scanner-sub {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #555;
+}
+
+.scanner-panel {
+  background: #fff;
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.connection-panel .connection-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.connection-panel .btn {
+  margin-top: 0.5rem;
+  width: 100%;
+}
+
+.scanner-form .field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #444;
+}
+
+.input {
+  width: 100%;
+  font-size: 1rem;
+  padding: 0.75rem 0.85rem;
+  border: 2px solid #ccc;
+  border-radius: 10px;
+  min-height: 3rem;
+}
+
+.input.large {
+  font-size: 1.15rem;
+  min-height: 3.25rem;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #1976d2;
+}
+
+.optional-block {
+  margin-bottom: 1rem;
+  padding: 0.5rem 0;
+}
+
+.optional-block summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 0.5rem 0;
+  user-select: none;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-top: 0.5rem;
+}
+
+.btn {
+  font-size: 1.1rem;
+  font-weight: 600;
+  padding: 0.95rem 1rem;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  min-height: 3.25rem;
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn.primary {
+  background: #1976d2;
+  color: #fff;
+}
+
+.btn.secondary {
+  background: #e3f2fd;
+  color: #0d47a1;
+}
+
+.error-panel {
+  border: 2px solid #c62828;
+  background: #ffebee;
+}
+
+.error-panel .panel-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+}
+
+.error-message {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.result-banner {
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.result-banner-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.result-banner-sub {
+  margin-top: 0.35rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.tone-ok {
+  background: #e8f5e9;
+  color: #1b5e20;
+}
+
+.tone-ng {
+  background: #ffebee;
+  color: #b71c1c;
+}
+
+.tone-check {
+  background: #fff8e1;
+  color: #e65100;
+}
+
+.tone-neutral {
+  background: #eceff1;
+  color: #263238;
+}
+
+.result-meta {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+}
+
+.result-meta li {
+  margin-bottom: 0.4rem;
+  word-break: break-word;
+}
+
+.issue-box {
+  background: #fafafa;
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.result-details summary {
+  cursor: pointer;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.json-dump {
+  font-size: 0.7rem;
+  overflow: auto;
+  max-height: 12rem;
+  margin: 0;
+  padding: 0.5rem;
+  background: #263238;
+  color: #eceff1;
+  border-radius: 8px;
+}
+
+.next-scan {
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.scanner-footer {
+  text-align: center;
+  margin-top: 1.5rem;
+}
+
+.muted {
+  color: #666;
+}
+
+.small {
+  font-size: 0.85rem;
+}
+
+.mono {
+  font-family: ui-monospace, monospace;
+}
+
+.wrap {
+  word-break: break-all;
+}
+
+.ok-text {
+  color: #2e7d32;
+  font-weight: 700;
+}
+
+.ng-text {
+  color: #c62828;
+  font-weight: 700;
 }

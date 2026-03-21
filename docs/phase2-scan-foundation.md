@@ -77,10 +77,12 @@ pnpm --filter @logistics-erp/api dev:scan
 # POST http://localhost:3040/scans  JSON body = validateScanInput 互換
 ```
 
+ブラウザから叩く場合: **CORS**（`SCAN_CORS_ORIGIN`、既定 `*`）と **Phase 2.2** の [phase2-2-pwa-scanner-shell.md](./phase2-2-pwa-scanner-shell.md)（`apps/driver-app`）。
+
 ## 今回やっていないこと
 
-- PWA / カメラスキャン UI、本格 WMS ロケーション、スキャンの冪等キー、大量最適化、マルチテナント
+- カメラスキャン UI、本格 WMS ロケーション、大量最適化、マルチテナント（※ Phase 2.2 で手入力 PWA shell・冪等キー送信は別ドキュメント）
 
 ## 次の候補
 
-- PWA scanner shell、手入力 UI、trace timeline API、スキャン冪等キー、テスト整備
+- バーコード / カメラ、trace timeline API、ambiguous 解消 UI、スキャン自動テスト

@@ -64,6 +64,9 @@ importers:
 
   apps/driver-app:
     dependencies:
+      '@logistics-erp/schema':
+        specifier: workspace:*
+        version: link:../../packages/schema
       '@logistics-erp/types':
         specifier: workspace:*
         version: link:../../packages/types

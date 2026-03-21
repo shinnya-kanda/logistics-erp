@@ -7,8 +7,27 @@ loadEnv();
 
 /** POST /scans: 201 = 新規 scan_events 行作成, 200 = idempotency replay（同一 idempotency_key） */
 const port = Number(process.env.SCAN_HTTP_PORT ?? "3040");
+/** ブラウザ（driver-app 等）からの fetch 用。本番は特定オリジンを推奨 */
+const scanCorsOrigin = process.env.SCAN_CORS_ORIGIN ?? "*";
+
+function setCors(res: import("node:http").ServerResponse): void {
+  res.setHeader("Access-Control-Allow-Origin", scanCorsOrigin);
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization"
+  );
+}
 
 const server = createServer(async (req, res) => {
+  setCors(res);
+
+  if (req.method === "OPTIONS") {
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
   if (req.method === "POST" && req.url === "/scans") {
     const chunks: Buffer[] = [];
     try {

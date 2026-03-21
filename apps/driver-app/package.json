@@ -10,6 +10,7 @@
     "lint": "eslint . --ext ts,tsx"
   },
   "dependencies": {
+    "@logistics-erp/schema": "workspace:*",
     "@logistics-erp/ui": "workspace:*",
     "@logistics-erp/types": "workspace:*",
     "react": "^19.0.0",

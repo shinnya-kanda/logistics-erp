@@ -1,6 +1,7 @@
 export * from "./expectedData.js";
 export * from "./scanInput.js";
 export * from "./scanPhase2.js";
+export * from "./scanHttpResponse.js";
 export * from "./verificationResult.js";
 export * from "./inventory.js";
 export * from "./stockMovement.js";
