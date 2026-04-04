@@ -15,7 +15,7 @@ pnpm モノレポで構成された物流向けERPシステムです。
 | `packages/schema` | 共有型（scan 入力・HTTP 応答など） |
 | `packages/ui` | 共通UIコンポーネント |
 | `packages/types` | 共通型定義 |
-| `docs` | ドキュメント |
+| `docs` | ドキュメント（**ChatGPT 等への現状説明**: [docs/CHATGPT_SHARE.md](docs/CHATGPT_SHARE.md)） |
 
 ## 必要環境
 
@@ -98,6 +98,11 @@ DATABASE_URL=postgresql://user:password@localhost:5432/logistics_erp
 - **Phase 2.2** 手入力 scanner shell（`apps/driver-app`）: [docs/phase2-2-pwa-scanner-shell.md](docs/phase2-2-pwa-scanner-shell.md)。環境変数 `VITE_SCAN_API_BASE_URL`（既定 `http://localhost:3040`）。カメラ・バーコードは未対応。
 - **Phase 2.3** ambiguous 解消（候補表示 + `selected_shipment_item_id`）: [docs/phase2-3-ambiguous-resolution-ui.md](docs/phase2-3-ambiguous-resolution-ui.md)。候補確定の再送は **新しい idempotency_key** を使用。
 - **Phase 2.4** `POST /scans` / `GET /health` 契約テスト: [docs/phase2-4-scan-contract-tests.md](docs/phase2-4-scan-contract-tests.md)（`pnpm --filter "@logistics-erp/api" test`）。
+
+**Phase 1 在庫・パレット・請求根拠（イベント中心・最小スキーマ）**
+
+- SQL: `packages/db/sql/phase1_inventory_pallet_billing.sql`（上記 Phase 系 SQL 適用後に実行）。`inventory_transactions` / `pallet_units` / `pallet_transactions` / `pallet_item_links` / `billing_segments` / `billing_monthly` を追加するのみ。既存テーブルは変更しない。
+- 画面スコープの整理: [docs/inventory-spa-pwa-screen-definition.md](docs/inventory-spa-pwa-screen-definition.md)。前提資料: ルートの `INVENTORY_CONTEXT.md`。
 
 ### CI（GitHub Actions）
 
