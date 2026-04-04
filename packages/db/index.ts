@@ -14,4 +14,7 @@ export * from "./shipmentRepository.js";
 export * from "./src/inventoryRepository.js";
 export * from "./src/stockMovementRepository.js";
 export * from "./src/traceEventRepository.js";
+export * from "./src/inventoryTransactionRepository.js";
+export * from "./src/palletUnitRepository.js";
+export * from "./src/billingRepository.js";
 export * from "./src/schema/index.js";
