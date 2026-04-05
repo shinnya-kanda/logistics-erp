@@ -72,7 +72,8 @@ jobs:
             packages/db/sql/phase0_trace_events_idempotency.sql \
             packages/db/sql/phase1_expected_data.sql \
             packages/db/sql/phase2_scan_foundation.sql \
-            packages/db/sql/phase2_1_scan_events_idempotency.sql
+            packages/db/sql/phase2_1_scan_events_idempotency.sql \
+            packages/db/sql/phase_b1_inventory_pallet_simple.sql
           do
             echo "::group::psql -f $f"
             psql -h localhost -U postgres -d logistics_test -v ON_ERROR_STOP=1 -f "$f"
