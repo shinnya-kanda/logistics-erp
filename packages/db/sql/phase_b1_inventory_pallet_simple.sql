@@ -44,6 +44,8 @@ CREATE TRIGGER trigger_pallet_units_updated_at
 
 -- -----------------------------------------------------------------------------
 -- 2. inventory_transactions（部品在庫の事実ログ）
+-- warehouse_code / location_code = 移動元（IN/OUT/MOVE 共通。MOVE では from）
+-- to_warehouse_code / to_location_code = 移動先（MOVE 時のみ使用。1イベントで from/to を保持）
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.inventory_transactions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -54,6 +56,8 @@ CREATE TABLE IF NOT EXISTS public.inventory_transactions (
   quantity_unit text NOT NULL,
   warehouse_code text NOT NULL,
   location_code text NOT NULL,
+  to_warehouse_code text,
+  to_location_code text,
   inventory_type text NOT NULL,
   occurred_at timestamptz NOT NULL DEFAULT now(),
   source_type text,
@@ -63,11 +67,21 @@ CREATE TABLE IF NOT EXISTS public.inventory_transactions (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
+ALTER TABLE public.inventory_transactions
+  ADD COLUMN IF NOT EXISTS to_warehouse_code text;
+ALTER TABLE public.inventory_transactions
+  ADD COLUMN IF NOT EXISTS to_location_code text;
+
 CREATE INDEX IF NOT EXISTS idx_inventory_transactions_part_no ON public.inventory_transactions (part_no);
 CREATE INDEX IF NOT EXISTS idx_inventory_transactions_warehouse_code ON public.inventory_transactions (warehouse_code);
 CREATE INDEX IF NOT EXISTS idx_inventory_transactions_occurred_at ON public.inventory_transactions (occurred_at);
 
-COMMENT ON TABLE public.inventory_transactions IS '部品在庫の事実ログ（simple_managed 等）。真実はここ。';
+COMMENT ON TABLE public.inventory_transactions IS '部品在庫の事実ログ（simple_managed 等）。真実はここ。MOVE は同一行に移動元・移動先を保持。';
+
+COMMENT ON COLUMN public.inventory_transactions.warehouse_code IS '倉庫コード（移動元）。MOVE では from。';
+COMMENT ON COLUMN public.inventory_transactions.location_code IS 'ロケーション（移動元）。MOVE では from。';
+COMMENT ON COLUMN public.inventory_transactions.to_warehouse_code IS '移動先倉庫（MOVE 時。NULL 可）。';
+COMMENT ON COLUMN public.inventory_transactions.to_location_code IS '移動先ロケーション（MOVE 時。NULL 可）。';
 
 DROP TRIGGER IF EXISTS trigger_inventory_transactions_updated_at ON public.inventory_transactions;
 CREATE TRIGGER trigger_inventory_transactions_updated_at
@@ -193,7 +207,9 @@ END $$;
 
 -- -----------------------------------------------------------------------------
 -- inventory_current 集約キャッシュの自動更新（正本は inventory_transactions）
--- INSERT のみ対応。MOVE / ADJUST は後続対応。
+-- INSERT のみ。IN/OUT 現状維持。MOVE は Phase B-2: 移動元減算・移動先加算（同一 inventory_type）。
+-- inventory_current は集約キャッシュであり真実ではない。
+-- ADJUST は未対応（棚卸差異・補正ロジックは将来対応）。
 -- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.phase_b1_sync_inventory_current_from_transactions()
 RETURNS TRIGGER AS $$
@@ -216,8 +232,22 @@ BEGIN
       AND location_code = NEW.location_code
       AND inventory_type = NEW.inventory_type;
   ELSIF NEW.transaction_type = 'MOVE' THEN
-    -- MOVEは未対応（ロケーション間移動は将来対応）
-    NULL;
+    IF NEW.to_warehouse_code IS NOT NULL AND NEW.to_location_code IS NOT NULL THEN
+      -- MOVE: 1イベントで from/to を保持。移動元から減算（0 未満にしない）
+      UPDATE public.inventory_current
+      SET quantity_on_hand = GREATEST(0, quantity_on_hand - NEW.quantity),
+          updated_at = now()
+      WHERE part_no = NEW.part_no
+        AND warehouse_code = NEW.warehouse_code
+        AND location_code = NEW.location_code
+        AND inventory_type = NEW.inventory_type;
+      -- 移動先へ加算（なければ INSERT、あれば ON CONFLICT で加算）
+      INSERT INTO public.inventory_current (part_no, warehouse_code, location_code, inventory_type, quantity_on_hand, updated_at)
+      VALUES (NEW.part_no, NEW.to_warehouse_code, NEW.to_location_code, NEW.inventory_type, NEW.quantity, now())
+      ON CONFLICT ON CONSTRAINT uq_inventory_current_natural_key DO UPDATE SET
+        quantity_on_hand = public.inventory_current.quantity_on_hand + EXCLUDED.quantity_on_hand,
+        updated_at = now();
+    END IF;
   ELSIF NEW.transaction_type = 'ADJUST' THEN
     -- ADJUSTは未対応（棚卸差異・補正ロジックは将来対応）
     NULL;
@@ -227,10 +257,17 @@ END;
 $$ LANGUAGE plpgsql;
 
 COMMENT ON FUNCTION public.phase_b1_sync_inventory_current_from_transactions() IS
-  'Phase B-1: inventory_transactions INSERT に応じて inventory_current を更新する集約キャッシュ用。真実は inventory_transactions。';
+  'Phase B-1/B-2: inventory_transactions INSERT に応じて inventory_current を更新する集約キャッシュ用。真実は inventory_transactions。MOVE は移動元・移動先を反映。';
 
 DROP TRIGGER IF EXISTS trigger_phase_b1_inventory_transactions_sync_inventory_current ON public.inventory_transactions;
 CREATE TRIGGER trigger_phase_b1_inventory_transactions_sync_inventory_current
   AFTER INSERT ON public.inventory_transactions
   FOR EACH ROW
   EXECUTE PROCEDURE public.phase_b1_sync_inventory_current_from_transactions();
+
+-- -----------------------------------------------------------------------------
+-- MOVE 手動検証の例（Phase B-2）
+-- 1) IN 100 を WH01 / LOC01 / inventory_type NORMAL に入れる
+-- 2) MOVE 30 を from WH01・LOC01 → to WH01・LOC02（to_* 必須）で記録する
+-- 3) inventory_current 期待: WH01/LOC01/NORMAL=70、WH01/LOC02/NORMAL=30
+-- -----------------------------------------------------------------------------

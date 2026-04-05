@@ -18,6 +18,10 @@ export type InventoryTransactionRow = {
   quantity_unit: string
   warehouse_code: string | null
   location_code: string | null
+  /** MOVE 時の移動先倉庫（DB: to_warehouse_code） */
+  toWarehouseCode: string | null
+  /** MOVE 時の移動先ロケーション（DB: to_location_code） */
+  toLocationCode: string | null
   inventory_type: string
   occurred_at: string
   source_type: string | null
@@ -35,6 +39,9 @@ export type InventoryTransactionInsertInput = {
   quantity_unit: string
   warehouse_code?: string | null
   location_code?: string | null
+  /** MOVE 時。移動先が無い IN/OUT では省略可 */
+  toWarehouseCode?: string | null
+  toLocationCode?: string | null
   inventory_type: InventoryPhaseB1Kind | string
   occurred_at?: string
   source_type?: string | null
