@@ -207,61 +207,116 @@ END $$;
 
 -- -----------------------------------------------------------------------------
 -- inventory_current 集約キャッシュの自動更新（正本は inventory_transactions）
--- INSERT のみ。IN/OUT 現状維持。MOVE は Phase B-2: 移動元減算・移動先加算（同一 inventory_type）。
--- inventory_current は集約キャッシュであり真実ではない。
+-- AFTER INSERT / AFTER UPDATE。UPDATE 時は OLD を打ち消してから NEW を反映。
+-- IN/OUT/MOVE は既存設計。MOVE は from 減・to 加。quantity_on_hand は負にしない（GREATEST）。
 -- ADJUST は未対応（棚卸差異・補正ロジックは将来対応）。
 -- -----------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.phase_b1_sync_inventory_current_from_transactions()
-RETURNS TRIGGER AS $$
+
+CREATE OR REPLACE FUNCTION public.phase_b1_sync_apply_row_to_inventory_current(r public.inventory_transactions)
+RETURNS void
+LANGUAGE plpgsql
+AS $$
 BEGIN
-  IF NEW.transaction_type = 'IN' THEN
+  IF r.transaction_type = 'IN' THEN
     INSERT INTO public.inventory_current (part_no, warehouse_code, location_code, inventory_type, quantity_on_hand, updated_at)
-    VALUES (NEW.part_no, NEW.warehouse_code, NEW.location_code, NEW.inventory_type, NEW.quantity, now())
+    VALUES (r.part_no, r.warehouse_code, r.location_code, r.inventory_type, r.quantity, now())
     ON CONFLICT ON CONSTRAINT uq_inventory_current_natural_key DO UPDATE SET
       quantity_on_hand = public.inventory_current.quantity_on_hand + EXCLUDED.quantity_on_hand,
       updated_at = now();
-  ELSIF NEW.transaction_type = 'OUT' THEN
-    -- NOTE:
-    -- 対象在庫が存在しない場合は何も更新されない（Phase B-1では許容）
-    -- 将来的にはエラー or 補正対象とする
+  ELSIF r.transaction_type = 'OUT' THEN
     UPDATE public.inventory_current
-    SET quantity_on_hand = GREATEST(0, quantity_on_hand - NEW.quantity),
+    SET quantity_on_hand = GREATEST(0, quantity_on_hand - r.quantity),
         updated_at = now()
-    WHERE part_no = NEW.part_no
-      AND warehouse_code = NEW.warehouse_code
-      AND location_code = NEW.location_code
-      AND inventory_type = NEW.inventory_type;
-  ELSIF NEW.transaction_type = 'MOVE' THEN
-    IF NEW.to_warehouse_code IS NOT NULL AND NEW.to_location_code IS NOT NULL THEN
-      -- MOVE: 1イベントで from/to を保持。移動元から減算（0 未満にしない）
+    WHERE part_no = r.part_no
+      AND warehouse_code = r.warehouse_code
+      AND location_code = r.location_code
+      AND inventory_type = r.inventory_type;
+  ELSIF r.transaction_type = 'MOVE' THEN
+    IF r.to_warehouse_code IS NOT NULL AND r.to_location_code IS NOT NULL THEN
       UPDATE public.inventory_current
-      SET quantity_on_hand = GREATEST(0, quantity_on_hand - NEW.quantity),
+      SET quantity_on_hand = GREATEST(0, quantity_on_hand - r.quantity),
           updated_at = now()
-      WHERE part_no = NEW.part_no
-        AND warehouse_code = NEW.warehouse_code
-        AND location_code = NEW.location_code
-        AND inventory_type = NEW.inventory_type;
-      -- 移動先へ加算（なければ INSERT、あれば ON CONFLICT で加算）
+      WHERE part_no = r.part_no
+        AND warehouse_code = r.warehouse_code
+        AND location_code = r.location_code
+        AND inventory_type = r.inventory_type;
       INSERT INTO public.inventory_current (part_no, warehouse_code, location_code, inventory_type, quantity_on_hand, updated_at)
-      VALUES (NEW.part_no, NEW.to_warehouse_code, NEW.to_location_code, NEW.inventory_type, NEW.quantity, now())
+      VALUES (r.part_no, r.to_warehouse_code, r.to_location_code, r.inventory_type, r.quantity, now())
       ON CONFLICT ON CONSTRAINT uq_inventory_current_natural_key DO UPDATE SET
         quantity_on_hand = public.inventory_current.quantity_on_hand + EXCLUDED.quantity_on_hand,
         updated_at = now();
     END IF;
-  ELSIF NEW.transaction_type = 'ADJUST' THEN
-    -- ADJUSTは未対応（棚卸差異・補正ロジックは将来対応）
+  ELSIF r.transaction_type = 'ADJUST' THEN
     NULL;
+  END IF;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.phase_b1_sync_undo_row_from_inventory_current(r public.inventory_transactions)
+RETURNS void
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  IF r.transaction_type = 'IN' THEN
+    UPDATE public.inventory_current
+    SET quantity_on_hand = GREATEST(0, quantity_on_hand - r.quantity),
+        updated_at = now()
+    WHERE part_no = r.part_no
+      AND warehouse_code = r.warehouse_code
+      AND location_code = r.location_code
+      AND inventory_type = r.inventory_type;
+  ELSIF r.transaction_type = 'OUT' THEN
+    UPDATE public.inventory_current
+    SET quantity_on_hand = quantity_on_hand + r.quantity,
+        updated_at = now()
+    WHERE part_no = r.part_no
+      AND warehouse_code = r.warehouse_code
+      AND location_code = r.location_code
+      AND inventory_type = r.inventory_type;
+  ELSIF r.transaction_type = 'MOVE' THEN
+    IF r.to_warehouse_code IS NOT NULL AND r.to_location_code IS NOT NULL THEN
+      UPDATE public.inventory_current
+      SET quantity_on_hand = quantity_on_hand + r.quantity,
+          updated_at = now()
+      WHERE part_no = r.part_no
+        AND warehouse_code = r.warehouse_code
+        AND location_code = r.location_code
+        AND inventory_type = r.inventory_type;
+      UPDATE public.inventory_current
+      SET quantity_on_hand = GREATEST(0, quantity_on_hand - r.quantity),
+          updated_at = now()
+      WHERE part_no = r.part_no
+        AND warehouse_code = r.to_warehouse_code
+        AND location_code = r.to_location_code
+        AND inventory_type = r.inventory_type;
+    END IF;
+  ELSIF r.transaction_type = 'ADJUST' THEN
+    NULL;
+  END IF;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.phase_b1_sync_inventory_current_from_transactions()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  IF TG_OP = 'UPDATE' THEN
+    PERFORM public.phase_b1_sync_undo_row_from_inventory_current(OLD);
+  END IF;
+  IF TG_OP = 'INSERT' OR TG_OP = 'UPDATE' THEN
+    PERFORM public.phase_b1_sync_apply_row_to_inventory_current(NEW);
   END IF;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 COMMENT ON FUNCTION public.phase_b1_sync_inventory_current_from_transactions() IS
-  'Phase B-1/B-2: inventory_transactions INSERT に応じて inventory_current を更新する集約キャッシュ用。真実は inventory_transactions。MOVE は移動元・移動先を反映。';
+  'inventory_transactions の INSERT/UPDATE の後に inventory_current を同期。apply/undo 補助関数あり。UPDATE は OLD undo の後に NEW apply。';
 
 DROP TRIGGER IF EXISTS trigger_phase_b1_inventory_transactions_sync_inventory_current ON public.inventory_transactions;
 CREATE TRIGGER trigger_phase_b1_inventory_transactions_sync_inventory_current
-  AFTER INSERT ON public.inventory_transactions
+  AFTER INSERT OR UPDATE ON public.inventory_transactions
   FOR EACH ROW
   EXECUTE PROCEDURE public.phase_b1_sync_inventory_current_from_transactions();
 
@@ -271,3 +326,132 @@ CREATE TRIGGER trigger_phase_b1_inventory_transactions_sync_inventory_current
 -- 2) MOVE 30 を from WH01・LOC01 → to WH01・LOC02（to_* 必須）で記録する
 -- 3) inventory_current 期待: WH01/LOC01/NORMAL=70、WH01/LOC02/NORMAL=30
 -- -----------------------------------------------------------------------------
+
+-- -----------------------------------------------------------------------------
+-- Phase B-1 負在庫防止: inventory_current を参照し OUT / MOVE を検証（BEFORE INSERT OR UPDATE）
+-- 同期は AFTER INSERT OR UPDATE（本関数は BEFORE のみ）。
+-- -----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.phase_b1_undo_old_effect_on_key(
+  p_old public.inventory_transactions,
+  p_part text,
+  p_wh text,
+  p_loc text,
+  p_inv text
+) RETURNS numeric
+LANGUAGE plpgsql
+IMMUTABLE
+AS $$
+BEGIN
+  IF p_old.transaction_type = 'IN' THEN
+    IF p_old.part_no = p_part
+       AND p_old.warehouse_code = p_wh
+       AND p_old.location_code = p_loc
+       AND p_old.inventory_type = p_inv THEN
+      RETURN -p_old.quantity;
+    END IF;
+  ELSIF p_old.transaction_type = 'OUT' THEN
+    IF p_old.part_no = p_part
+       AND p_old.warehouse_code = p_wh
+       AND p_old.location_code = p_loc
+       AND p_old.inventory_type = p_inv THEN
+      RETURN p_old.quantity;
+    END IF;
+  ELSIF p_old.transaction_type = 'MOVE' THEN
+    IF p_old.part_no = p_part
+       AND p_old.warehouse_code = p_wh
+       AND p_old.location_code = p_loc
+       AND p_old.inventory_type = p_inv THEN
+      RETURN p_old.quantity;
+    END IF;
+    IF p_old.to_warehouse_code IS NOT NULL
+       AND p_old.to_location_code IS NOT NULL
+       AND p_old.part_no = p_part
+       AND p_old.to_warehouse_code = p_wh
+       AND p_old.to_location_code = p_loc
+       AND p_old.inventory_type = p_inv THEN
+      RETURN -p_old.quantity;
+    END IF;
+  END IF;
+  RETURN 0::numeric;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.phase_b1_prevent_negative_inventory_transactions()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_available numeric;
+  v_delta numeric;
+BEGIN
+  IF NEW.quantity IS NULL OR NEW.quantity <= 0 THEN
+    RAISE EXCEPTION
+      'phase_b1_negative_inventory: quantity must be positive (got %, transaction_type=%)',
+      NEW.quantity,
+      NEW.transaction_type
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  IF NEW.transaction_type NOT IN ('OUT', 'MOVE') THEN
+    RETURN NEW;
+  END IF;
+
+  IF NEW.warehouse_code IS NULL OR NEW.location_code IS NULL THEN
+    RAISE EXCEPTION
+      'phase_b1_negative_inventory: OUT/MOVE require warehouse_code and location_code (transaction_type=%)',
+      NEW.transaction_type
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  IF NEW.transaction_type = 'MOVE' THEN
+    IF NEW.to_warehouse_code IS NULL OR NEW.to_location_code IS NULL THEN
+      RAISE EXCEPTION
+        'phase_b1_negative_inventory: MOVE requires to_warehouse_code and to_location_code (part_no=%)',
+        NEW.part_no
+        USING ERRCODE = 'check_violation';
+    END IF;
+  END IF;
+
+  SELECT COALESCE(SUM(quantity_on_hand), 0::numeric) INTO v_available
+  FROM public.inventory_current
+  WHERE part_no = NEW.part_no
+    AND warehouse_code = NEW.warehouse_code
+    AND location_code = NEW.location_code
+    AND inventory_type = NEW.inventory_type;
+
+  IF TG_OP = 'UPDATE' THEN
+    v_delta := public.phase_b1_undo_old_effect_on_key(
+      OLD,
+      NEW.part_no,
+      NEW.warehouse_code,
+      NEW.location_code,
+      NEW.inventory_type
+    );
+    v_available := v_available + v_delta;
+  END IF;
+
+  IF v_available < NEW.quantity THEN
+    RAISE EXCEPTION
+      'phase_b1_negative_inventory: insufficient stock movement_type=% required=% available=% part_no=% warehouse_code=% location_code=% inventory_type=%',
+      NEW.transaction_type,
+      NEW.quantity,
+      v_available,
+      NEW.part_no,
+      NEW.warehouse_code,
+      NEW.location_code,
+      NEW.inventory_type
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+COMMENT ON FUNCTION public.phase_b1_prevent_negative_inventory_transactions() IS
+  'OUT/MOVE の出庫元で inventory_current に基づき負在庫を拒否。UPDATE 時は OLD 分をデルタで戻してから判定。phase_b1_undo_old_effect_on_key は OLD の影響をキー単位で打ち消すデルタ。';
+
+DROP TRIGGER IF EXISTS trg_phase_b1_prevent_negative_inventory_transactions ON public.inventory_transactions;
+CREATE TRIGGER trg_phase_b1_prevent_negative_inventory_transactions
+  BEFORE INSERT OR UPDATE ON public.inventory_transactions
+  FOR EACH ROW
+  EXECUTE PROCEDURE public.phase_b1_prevent_negative_inventory_transactions();
