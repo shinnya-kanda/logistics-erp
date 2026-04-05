@@ -190,3 +190,47 @@ BEGIN
     ADD CONSTRAINT chk_pallet_item_links_quantity
     CHECK (quantity > 0);
 END $$;
+
+-- -----------------------------------------------------------------------------
+-- inventory_current 集約キャッシュの自動更新（正本は inventory_transactions）
+-- INSERT のみ対応。MOVE / ADJUST は後続対応。
+-- -----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.phase_b1_sync_inventory_current_from_transactions()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.transaction_type = 'IN' THEN
+    INSERT INTO public.inventory_current (part_no, warehouse_code, location_code, inventory_type, quantity_on_hand, updated_at)
+    VALUES (NEW.part_no, NEW.warehouse_code, NEW.location_code, NEW.inventory_type, NEW.quantity, now())
+    ON CONFLICT ON CONSTRAINT uq_inventory_current_natural_key DO UPDATE SET
+      quantity_on_hand = public.inventory_current.quantity_on_hand + EXCLUDED.quantity_on_hand,
+      updated_at = now();
+  ELSIF NEW.transaction_type = 'OUT' THEN
+    -- NOTE:
+    -- 対象在庫が存在しない場合は何も更新されない（Phase B-1では許容）
+    -- 将来的にはエラー or 補正対象とする
+    UPDATE public.inventory_current
+    SET quantity_on_hand = GREATEST(0, quantity_on_hand - NEW.quantity),
+        updated_at = now()
+    WHERE part_no = NEW.part_no
+      AND warehouse_code = NEW.warehouse_code
+      AND location_code = NEW.location_code
+      AND inventory_type = NEW.inventory_type;
+  ELSIF NEW.transaction_type = 'MOVE' THEN
+    -- MOVEは未対応（ロケーション間移動は将来対応）
+    NULL;
+  ELSIF NEW.transaction_type = 'ADJUST' THEN
+    -- ADJUSTは未対応（棚卸差異・補正ロジックは将来対応）
+    NULL;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION public.phase_b1_sync_inventory_current_from_transactions() IS
+  'Phase B-1: inventory_transactions INSERT に応じて inventory_current を更新する集約キャッシュ用。真実は inventory_transactions。';
+
+DROP TRIGGER IF EXISTS trigger_phase_b1_inventory_transactions_sync_inventory_current ON public.inventory_transactions;
+CREATE TRIGGER trigger_phase_b1_inventory_transactions_sync_inventory_current
+  AFTER INSERT ON public.inventory_transactions
+  FOR EACH ROW
+  EXECUTE PROCEDURE public.phase_b1_sync_inventory_current_from_transactions();
