@@ -18,7 +18,8 @@ CREATE TABLE IF NOT EXISTS inventory (
   available_qty bigint NOT NULL DEFAULT 0 CHECK (available_qty >= 0),
   CONSTRAINT inventory_supplier_part_no_key UNIQUE (supplier, part_no),
   -- 運用: available_qty = on_hand_qty - allocated_qty。INSERT/UPDATE 時は必ずこの等式を満たすこと。
-  CONSTRAINT inventory_available_qty_check CHECK (available_qty = on_hand_qty - allocated_qty)
+  -- 列の CHECK (available_qty >= 0) は既定名が inventory_available_qty_check のため、等式側は別名にする。
+  CONSTRAINT inventory_available_qty_balance_check CHECK (available_qty = on_hand_qty - allocated_qty)
 );
 
 CREATE INDEX IF NOT EXISTS idx_inventory_supplier ON inventory (supplier);
