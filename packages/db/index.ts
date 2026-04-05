@@ -19,4 +19,5 @@ export * from "./src/palletUnitRepository.js";
 export * from "./src/palletTransactionRepository.js";
 export * from "./src/palletItemLinkRepository.js";
 export * from "./src/inventoryCurrentRepository.js";
+export * from "./src/billingRepository.js";
 export * from "./src/schema/index.js";
