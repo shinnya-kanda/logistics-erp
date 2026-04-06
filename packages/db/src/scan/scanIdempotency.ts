@@ -10,16 +10,51 @@ import type { ProcessScanOutput } from "./processScanTypes.js";
 
 type Sql = ReturnType<typeof postgres>;
 
+/** postgres.js / ドライバが cause で包む場合があるため連鎖を辿る */
+function* walkErrorChain(err: unknown): Generator<unknown> {
+  const seen = new Set<unknown>();
+  const stack: unknown[] = [err];
+  while (stack.length) {
+    const e = stack.pop();
+    if (e === undefined || e === null || typeof e !== "object") continue;
+    if (seen.has(e)) continue;
+    seen.add(e);
+    yield e;
+    if (e instanceof AggregateError && Array.isArray(e.errors)) {
+      for (const x of e.errors) stack.push(x);
+    }
+    const cause = (e as { cause?: unknown }).cause;
+    if (cause !== undefined && cause !== null) stack.push(cause);
+  }
+}
+
 export function isIdempotencyUniqueViolation(err: unknown): boolean {
-  const e = err as { code?: string; constraint_name?: string; message?: string };
-  if (e.code !== "23505") return false;
-  const c = (e.constraint_name ?? "").toLowerCase();
-  const m = (e.message ?? "").toLowerCase();
-  return (
-    c.includes("idempotency") ||
-    c.includes("uq_scan_events_idempotency") ||
-    m.includes("uq_scan_events_idempotency")
-  );
+  for (const e of walkErrorChain(err)) {
+    const o = e as {
+      code?: string;
+      constraint_name?: string;
+      message?: string;
+      detail?: string;
+      table_name?: string;
+    };
+    if (String(o.code ?? "") !== "23505") continue;
+    const c = (o.constraint_name ?? "").toLowerCase();
+    const m = (o.message ?? "").toLowerCase();
+    const d = (o.detail ?? "").toLowerCase();
+    const t = (o.table_name ?? "").toLowerCase();
+    // UNIQUE INDEX 名は環境により constraint_name が空のことがある。detail の Key (idempotency_key)= で判定。
+    if (
+      c.includes("idempotency") ||
+      c.includes("uq_scan_events_idempotency") ||
+      m.includes("uq_scan_events_idempotency") ||
+      m.includes("idempotency_key") ||
+      d.includes("idempotency_key") ||
+      (t === "scan_events" && m.includes("duplicate key"))
+    ) {
+      return true;
+    }
+  }
+  return false;
 }
 
 export async function findScanEventByIdempotencyKey(
