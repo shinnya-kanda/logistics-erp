@@ -14,9 +14,7 @@ import {
 import { requireDatabaseUrl } from "../expectedImportRepository.js";
 import { scanLogError, scanLogInfo, scanLogWarn } from "../scanLog.js";
 import {
-  buildIdempotentReplayOutput,
-  findScanEventByIdempotencyKey,
-  isIdempotencyUniqueViolation,
+  replayScanIfExistsByIdempotencyKey,
 } from "./scanIdempotency.js";
 import type { ProcessScanOutput } from "./processScanTypes.js";
 import { matchShipmentItemForScan } from "./matchShipmentItemForScan.js";
@@ -64,13 +62,17 @@ export async function processScanInput(rawBody: unknown): Promise<ProcessScanOut
 
   try {
     if (idemKey) {
-      const preExisting = await findScanEventByIdempotencyKey(sql, idemKey);
-      if (preExisting) {
+      const replay = await replayScanIfExistsByIdempotencyKey(
+        sql,
+        idemKey,
+        fetchProgress
+      );
+      if (replay) {
         scanLogInfo("scan idempotency hit (duplicate replay returned)", {
-          scan_event_id: preExisting.id,
+          scan_event_id: replay.scanEvent.id,
           idempotency_key: `${idemKey.slice(0, 24)}…`,
         });
-        return buildIdempotentReplayOutput(sql, preExisting, fetchProgress);
+        return replay;
       }
     }
 
@@ -196,6 +198,21 @@ export async function processScanInput(rawBody: unknown): Promise<ProcessScanOut
     try {
       return await sql.begin(async (tx) => {
         const q = tx as unknown as typeof sql;
+
+        if (idemKey) {
+          const replay = await replayScanIfExistsByIdempotencyKey(
+            q,
+            idemKey,
+            fetchProgress
+          );
+          if (replay) {
+            scanLogInfo("scan idempotency hit (pre-insert in tx)", {
+              scan_event_id: replay.scanEvent.id,
+              idempotency_key: `${idemKey.slice(0, 24)}…`,
+            });
+            return replay;
+          }
+        }
 
         const rawPayload = mergePayload(input, {
           match_kind: match.kind,
@@ -357,13 +374,17 @@ export async function processScanInput(rawBody: unknown): Promise<ProcessScanOut
         };
       });
     } catch (err) {
-      if (idemKey && isIdempotencyUniqueViolation(err)) {
-        scanLogInfo("scan unique conflict recovered — returning existing row", {
-          idempotency_key: `${idemKey.slice(0, 24)}…`,
-        });
-        const existing = await findScanEventByIdempotencyKey(sql, idemKey);
-        if (existing) {
-          return buildIdempotentReplayOutput(sql, existing, fetchProgress);
+      if (idemKey) {
+        const replay = await replayScanIfExistsByIdempotencyKey(
+          sql,
+          idemKey,
+          fetchProgress
+        );
+        if (replay) {
+          scanLogInfo("scan idempotency replay after tx error", {
+            idempotency_key: `${idemKey.slice(0, 24)}…`,
+          });
+          return replay;
         }
       }
       if (input.selected_shipment_item_id) {
@@ -391,18 +412,37 @@ async function insertScanOnly(
   idemKey: string | null
 ): Promise<ProcessScanOutput> {
   if (idemKey) {
-    const preExisting = await findScanEventByIdempotencyKey(sql, idemKey);
-    if (preExisting) {
+    const replay = await replayScanIfExistsByIdempotencyKey(
+      sql,
+      idemKey,
+      fetchProgress
+    );
+    if (replay) {
       scanLogInfo("scan idempotency hit (ambiguous/none duplicate replay)", {
-        scan_event_id: preExisting.id,
+        scan_event_id: replay.scanEvent.id,
       });
-      return buildIdempotentReplayOutput(sql, preExisting, fetchProgress);
+      return replay;
     }
   }
 
   try {
     return await sql.begin(async (tx) => {
       const q = tx as unknown as typeof sql;
+
+      if (idemKey) {
+        const replayTx = await replayScanIfExistsByIdempotencyKey(
+          q,
+          idemKey,
+          fetchProgress
+        );
+        if (replayTx) {
+          scanLogInfo("scan idempotency hit (pre-insert scan-only tx)", {
+            scan_event_id: replayTx.scanEvent.id,
+          });
+          return replayTx;
+        }
+      }
+
       const extra: Record<string, unknown> = { match_kind: match.kind };
       if (match.kind === "ambiguous") {
         extra.candidate_ids = match.candidate_ids;
@@ -472,13 +512,17 @@ async function insertScanOnly(
       };
     });
   } catch (err) {
-    if (idemKey && isIdempotencyUniqueViolation(err)) {
-      scanLogInfo("scan unique conflict recovered (scan-only path)", {
-        idempotency_key: `${idemKey.slice(0, 24)}…`,
-      });
-      const existing = await findScanEventByIdempotencyKey(sql, idemKey);
-      if (existing) {
-        return buildIdempotentReplayOutput(sql, existing, fetchProgress);
+    if (idemKey) {
+      const replay = await replayScanIfExistsByIdempotencyKey(
+        sql,
+        idemKey,
+        fetchProgress
+      );
+      if (replay) {
+        scanLogInfo("scan idempotency replay after scan-only tx error", {
+          idempotency_key: `${idemKey.slice(0, 24)}…`,
+        });
+        return replay;
       }
     }
     throw err;

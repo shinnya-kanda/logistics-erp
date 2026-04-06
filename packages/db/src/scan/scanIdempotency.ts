@@ -175,3 +175,20 @@ export async function buildIdempotentReplayOutput(
       match.kind === "ambiguous" ? match.candidates : null,
   };
 }
+
+/**
+ * INSERT 前・トランザクション失敗後の共通: 既存行があれば replay、なければ null。
+ * idempotency_key 重複時は 23505 以外のラップや環境差でも catch から復旧できるようにする。
+ */
+export async function replayScanIfExistsByIdempotencyKey(
+  sql: Sql,
+  idempotencyKey: string,
+  fetchProgress: (
+    s: Sql,
+    shipmentItemId: string
+  ) => Promise<ShipmentItemProgressRow | null>
+): Promise<ProcessScanOutput | null> {
+  const row = await findScanEventByIdempotencyKey(sql, idempotencyKey);
+  if (!row) return null;
+  return buildIdempotentReplayOutput(sql, row, fetchProgress);
+}

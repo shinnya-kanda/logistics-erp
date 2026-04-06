@@ -9,6 +9,7 @@ export * from "./src/scan/processScanTypes.js";
 export {
   findScanEventByIdempotencyKey,
   isIdempotencyUniqueViolation,
+  replayScanIfExistsByIdempotencyKey,
 } from "./src/scan/scanIdempotency.js";
 export * from "./shipmentRepository.js";
 export * from "./src/inventoryRepository.js";
