@@ -1,5 +1,7 @@
+import { createServer } from "node:http";
 import { loadEnv } from "@logistics-erp/db/load-env";
 import { createClient } from "@supabase/supabase-js";
+import { handleScanHttp } from "./scanHttpHandler.js";
 
 loadEnv();
 
@@ -15,24 +17,90 @@ if (!supabaseUrl || !supabaseKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
-async function verifySupabaseConnection(): Promise<void> {
-  const base = supabaseUrl.replace(/\/$/, "");
-  const res = await fetch(`${base}/auth/v1/health`, {
-    headers: {
-      apikey: supabaseKey,
-      Authorization: `Bearer ${supabaseKey}`,
-    },
-  });
+/** 既定 3040。PORT または SCAN_HTTP_PORT があれば優先（scanHttp.ts と揃える） */
+const port = Number(
+  process.env.PORT ?? process.env.SCAN_HTTP_PORT ?? "3040"
+);
 
-  if (!res.ok) {
-    console.error(
-      `Supabase への接続に失敗しました: HTTP ${res.status} ${res.statusText}（URL・anon key を確認してください）`
-    );
-    process.exitCode = 1;
+/**
+ * driver-app 等からのブラウザ fetch 用。未設定時は localhost:3002 のみ許可。
+ * 緩くしたい場合は SCAN_CORS_ORIGIN=* を指定。
+ */
+const corsOrigin =
+  process.env.SCAN_CORS_ORIGIN?.trim() || "http://localhost:3002";
+
+async function fetchSupabaseAuthHealth(): Promise<{
+  ok: boolean;
+  status: number | null;
+}> {
+  const base = supabaseUrl.replace(/\/$/, "");
+  try {
+    const res = await fetch(`${base}/auth/v1/health`, {
+      headers: {
+        apikey: supabaseKey,
+        Authorization: `Bearer ${supabaseKey}`,
+      },
+    });
+    return { ok: res.ok, status: res.status };
+  } catch {
+    return { ok: false, status: null };
+  }
+}
+
+const server = createServer((req, res) => {
+  const path = req.url?.split("?")[0] ?? "/";
+
+  if (req.method === "GET" && path === "/health") {
+    void (async () => {
+      try {
+        const auth = await fetchSupabaseAuthHealth();
+        const body = JSON.stringify({
+          ok: true,
+          service: "@logistics-erp/api",
+          scan: { ok: true, service: "scan-minimal" },
+          supabase: {
+            authHealth: auth.ok ? "ok" : "error",
+            authHttpStatus: auth.status,
+          },
+        });
+        res.setHeader("Content-Type", "application/json; charset=utf-8");
+        res.setHeader("Access-Control-Allow-Origin", corsOrigin);
+        res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+        res.setHeader(
+          "Access-Control-Allow-Headers",
+          "Content-Type, Authorization"
+        );
+        res.writeHead(200);
+        res.end(body);
+      } catch (e) {
+        console.error("[GET /health]", e);
+        res.setHeader("Content-Type", "application/json; charset=utf-8");
+        res.setHeader("Access-Control-Allow-Origin", corsOrigin);
+        res.writeHead(500);
+        res.end(JSON.stringify({ ok: false, error: "health check failed" }));
+      }
+    })();
     return;
   }
 
-  console.log("Supabase に接続できました（Auth health）。API service ready.");
-}
+  void handleScanHttp(req, res, { corsOrigin });
+});
 
-void verifySupabaseConnection();
+void (async () => {
+  const auth = await fetchSupabaseAuthHealth();
+  if (auth.ok) {
+    console.log(
+      `Supabase Auth health OK (HTTP ${auth.status})。HTTP サーバーを起動します。`
+    );
+  } else {
+    console.warn(
+      `Supabase Auth health が応答しません（status=${auth.status}）。サーバーは起動しますが設定を確認してください。`
+    );
+  }
+
+  server.listen(port, () => {
+    console.log(
+      `[@logistics-erp/api] http://localhost:${port}  GET /health  POST /scans  (CORS: ${corsOrigin})`
+    );
+  });
+})();
