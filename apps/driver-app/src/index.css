@@ -318,3 +318,68 @@ body {
   color: #c62828;
   font-weight: 700;
 }
+
+/* Magic Link / profile (B3-2) */
+.auth-panel {
+  margin-bottom: 1rem;
+}
+
+.auth-status {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #555;
+}
+
+.auth-msg {
+  margin: 0.75rem 0 0;
+  font-size: 0.95rem;
+}
+
+.auth-msg-error {
+  color: #b71c1c;
+}
+
+.auth-msg-info {
+  color: #2e7d32;
+}
+
+.auth-dl {
+  margin: 0 0 1rem;
+}
+
+.auth-dl > div {
+  margin-bottom: 0.65rem;
+}
+
+.auth-dl dt {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #555;
+  margin: 0;
+}
+
+.auth-dl dd {
+  margin: 0.15rem 0 0;
+  font-size: 0.95rem;
+}
+
+.auth-mono {
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+  word-break: break-all;
+}
+
+.auth-roles {
+  margin-bottom: 1rem;
+}
+
+.auth-role-list {
+  margin: 0.35rem 0 0;
+  padding-left: 1.2rem;
+  font-size: 0.9rem;
+}
+
+.auth-logout {
+  width: 100%;
+  margin-top: 0.25rem;
+}

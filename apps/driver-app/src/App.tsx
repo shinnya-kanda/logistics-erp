@@ -1,8 +1,32 @@
+import { useMemo } from "react";
+import { AuthPanel } from "./AuthPanel.js";
+import { getSupabaseBrowserClient } from "./supabaseClient.js";
 import { ScannerApp } from "./ScannerApp.js";
 
 export default function App() {
+  const supabase = useMemo(() => getSupabaseBrowserClient(), []);
+
+  if (!supabase) {
+    return (
+      <main className="app-root">
+        <div className="scanner-shell">
+          <div className="scanner-panel auth-panel">
+            <h2 className="scanner-title">設定が必要です</h2>
+            <p className="scanner-sub">
+              <code>.env</code> に <code>VITE_SUPABASE_URL</code> と{" "}
+              <code>VITE_SUPABASE_ANON_KEY</code>（anon key）を設定してください。
+            </p>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="app-root">
+      <div className="scanner-shell">
+        <AuthPanel client={supabase} />
+      </div>
       <ScannerApp />
     </main>
   );
