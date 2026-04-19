@@ -2,8 +2,33 @@ import { createServer } from "node:http";
 import { loadEnv } from "@logistics-erp/db/load-env";
 import { createClient } from "@supabase/supabase-js";
 import { handleScanHttp } from "./scanHttpHandler.js";
+import postgres from "postgres";
+
 
 loadEnv();
+
+const rawDbUrl = process.env.DATABASE_URL;
+if (rawDbUrl) {
+  const u = new URL(rawDbUrl);
+  console.log("[DB URL CHECK]", {
+    protocol: u.protocol,
+    username: u.username,
+    host: u.hostname,
+    port: u.port,
+    pathname: u.pathname,
+  });
+
+  try {
+    const sql = postgres(rawDbUrl, { ssl: "require" });
+    const result = await sql`select current_user, current_database()`;
+    console.log("[DB CONNECT TEST]", result);
+    await sql.end();
+  } catch (error) {
+    console.error("[DB CONNECT TEST ERROR]", error);
+  }
+} else {
+  console.log("[DB URL CHECK] DATABASE_URL is empty");
+}
 
 const supabaseUrl = (process.env.SUPABASE_URL ?? "").trim();
 const supabaseKey = (process.env.SUPABASE_ANON_KEY ?? "").trim();
