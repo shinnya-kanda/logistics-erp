@@ -1,7 +1,9 @@
-# logistics-erp — ChatGPT 共有用コンテキスト
+# logistics-erp — ChatGPT 共有用コンテキスト（短い版）
 
 このファイルを ChatGPT に貼り付けるか、リポジトリとあわせて「次のプロンプトで `@docs/CHATGPT_SHARE.md` を前提に」と指示してください。  
 **単体でも**プロジェクトの目的・構成・データモデル・実装の前提が伝わるように書いています。
+
+**より詳しい全体像（Phase B 在庫 Ledger / trace_id / rebuild / trace_events / B3 認証 / services/api HTTP 等）** は **[LOGISTICS_ERP_OVERVIEW_FOR_CHATGPT.md](./LOGISTICS_ERP_OVERVIEW_FOR_CHATGPT.md)** を参照してください（外部共有・ダウンロード向け）。
 
 ---
 

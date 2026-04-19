@@ -15,7 +15,7 @@ pnpm モノレポで構成された物流向けERPシステムです。
 | `packages/schema` | 共有型（scan 入力・HTTP 応答など） |
 | `packages/ui` | 共通UIコンポーネント |
 | `packages/types` | 共通型定義 |
-| `docs` | ドキュメント（**ChatGPT 等への現状説明**: [docs/CHATGPT_SHARE.md](docs/CHATGPT_SHARE.md)） |
+| `docs` | ドキュメント（**ChatGPT 等への現状説明**: [短い版](docs/CHATGPT_SHARE.md) / [**全体像・詳細版（ダウンロード共有向け）**](docs/LOGISTICS_ERP_OVERVIEW_FOR_CHATGPT.md)） |
 
 ## 必要環境
 
