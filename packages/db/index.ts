@@ -5,6 +5,7 @@ export * from "./src/scanLog.js";
 export * from "./src/scan/matchShipmentItemForScan.js";
 export * from "./src/scan/verifyScanAgainstShipmentItem.js";
 export * from "./src/scan/processScanInput.js";
+export * from "./src/scan/rebuildShipmentProgressAndIssues.js";
 export * from "./src/scan/processScanTypes.js";
 export {
   findScanEventByIdempotencyKey,
