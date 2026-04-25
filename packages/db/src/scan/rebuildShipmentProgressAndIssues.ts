@@ -21,7 +21,10 @@ type ProgressStatus =
   | "in_progress"
   | "matched"
   | "shortage"
-  | "excess";
+  | "excess"
+  | "wrong_part"
+  | "wrong_location"
+  | "unknown_item";
 
 export type RebuildShipmentResult = {
   shipment_id: string
@@ -42,12 +45,25 @@ type RebuildAggregateRow = {
   progress_status: ProgressStatus
 };
 
+type IssueForRebuild = {
+  shipment_item_id: string
+  trace_id: string
+  issue_type: ProgressStatus
+  severity: string
+  expected_value: string | null
+  actual_value: string
+  detected_at: string
+};
+
 const EMPTY_STATUSES: Record<ProgressStatus, number> = {
   planned: 0,
   in_progress: 0,
   matched: 0,
   shortage: 0,
   excess: 0,
+  wrong_part: 0,
+  wrong_location: 0,
+  unknown_item: 0,
 };
 
 function classifyProgress(actual: number, expected: number): ProgressStatus {
@@ -66,24 +82,54 @@ function buildAggregates(
   items: ShipmentItemForRebuild[],
   scanRows: {
     shipment_item_id: string
+    scanned_code: string
+    scanned_part_no: string | null
     quantity_scanned: string | null
+    unload_location_scanned: string | null
+    result_status: string
     scanned_at: string
   }[]
 ): RebuildAggregateRow[] {
   const byItem = new Map<
     string,
-    { total: number; first: string | null; last: string | null }
+    {
+      total: number
+      first: string | null
+      last: string | null
+      hasWrongPart: boolean
+      hasWrongLocation: boolean
+    }
   >();
+  const itemsById = new Map(items.map((item) => [item.id, item]));
 
   for (const row of scanRows) {
     const current = byItem.get(row.shipment_item_id) ?? {
       total: 0,
       first: null,
       last: null,
+      hasWrongPart: false,
+      hasWrongLocation: false,
     };
+    const item = itemsById.get(row.shipment_item_id);
     current.total += row.quantity_scanned === null
       ? 1
       : toFiniteNumber(row.quantity_scanned);
+    if (item && row.scanned_part_no?.trim()) {
+      current.hasWrongPart =
+        current.hasWrongPart ||
+        row.scanned_part_no.trim().toUpperCase() !==
+          item.part_no.trim().toUpperCase();
+    }
+    if (
+      item &&
+      item.unload_location?.trim() &&
+      row.unload_location_scanned?.trim()
+    ) {
+      current.hasWrongLocation =
+        current.hasWrongLocation ||
+        row.unload_location_scanned.trim().toUpperCase() !==
+          item.unload_location.trim().toUpperCase();
+    }
     if (!current.first || row.scanned_at < current.first) {
       current.first = row.scanned_at;
     }
@@ -94,9 +140,19 @@ function buildAggregates(
   }
 
   return items.map((item) => {
-    const scan = byItem.get(item.id) ?? { total: 0, first: null, last: null };
+    const scan = byItem.get(item.id) ?? {
+      total: 0,
+      first: null,
+      last: null,
+      hasWrongPart: false,
+      hasWrongLocation: false,
+    };
     const expected = toFiniteNumber(item.quantity_expected);
-    const status = classifyProgress(scan.total, expected);
+    const status = scan.hasWrongPart
+      ? "wrong_part"
+      : scan.hasWrongLocation
+        ? "wrong_location"
+        : classifyProgress(scan.total, expected);
     return {
       shipment_item_id: item.id,
       trace_id: item.trace_id,
@@ -162,16 +218,42 @@ export async function rebuildShipmentProgressAndIssuesWithSql(
     const scanRows = await q<
       {
         shipment_item_id: string
+        scanned_code: string
+        scanned_part_no: string | null
         quantity_scanned: string | null
+        unload_location_scanned: string | null
+        result_status: string
         scanned_at: string
       }[]
     >`
       SELECT
         shipment_item_id::text AS shipment_item_id,
+        scanned_code,
+        scanned_part_no,
         quantity_scanned::text AS quantity_scanned,
+        unload_location_scanned,
+        result_status,
         scanned_at::text AS scanned_at
       FROM public.scan_events
       WHERE shipment_item_id IN ${q(itemIds)}
+      ORDER BY scanned_at ASC, created_at ASC, id ASC
+    `;
+
+    const unknownRows = await q<
+      {
+        scanned_code: string
+        trace_id: string | null
+        scanned_at: string
+      }[]
+    >`
+      SELECT
+        scanned_code,
+        trace_id,
+        scanned_at::text AS scanned_at
+      FROM public.scan_events
+      WHERE result_status = 'unknown'
+        AND shipment_item_id IS NULL
+        AND raw_payload->>'shipment_id' = ${shipmentIdTrimmed}
       ORDER BY scanned_at ASC, created_at ASC, id ASC
     `;
 
@@ -215,19 +297,38 @@ export async function rebuildShipmentProgressAndIssuesWithSql(
         AND resolved_at IS NULL
     `;
 
-    const issueRows = aggregates
+    const issueRows: IssueForRebuild[] = aggregates
       .filter((row) =>
-        row.progress_status === "shortage" || row.progress_status === "excess"
+        row.progress_status === "shortage" ||
+        row.progress_status === "excess" ||
+        row.progress_status === "wrong_part" ||
+        row.progress_status === "wrong_location"
       )
       .map((row) => ({
         shipment_item_id: row.shipment_item_id,
         trace_id: row.trace_id,
         issue_type: row.progress_status,
-        severity: row.progress_status === "excess" ? "medium" : "low",
-        expected_value: row.quantity_expected,
+        severity: row.progress_status === "excess" ? "medium" : "high",
+        expected_value:
+          row.progress_status === "wrong_part" ||
+          row.progress_status === "wrong_location"
+            ? row.progress_status
+            : row.quantity_expected,
         actual_value: row.quantity_scanned_total,
         detected_at: row.last_scanned_at ?? new Date().toISOString(),
       }));
+
+    for (const row of unknownRows) {
+      issueRows.push({
+        shipment_item_id: items[0].id,
+        trace_id: row.trace_id ?? items[0].trace_id,
+        issue_type: "unknown_item",
+        severity: "medium",
+        expected_value: null,
+        actual_value: `scanned_code: ${row.scanned_code}`,
+        detected_at: row.scanned_at,
+      });
+    }
 
     let issuesRebuiltCount = 0;
     for (const row of issueRows) {
@@ -259,7 +360,10 @@ export async function rebuildShipmentProgressAndIssuesWithSql(
       item_count: items.length,
       progress_rebuilt_count: progressRebuiltCount,
       issues_rebuilt_count: issuesRebuiltCount,
-      statuses: countStatuses(aggregates),
+      statuses: {
+        ...countStatuses(aggregates),
+        unknown_item: unknownRows.length,
+      },
     };
   });
 }

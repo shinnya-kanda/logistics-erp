@@ -2,6 +2,11 @@ import { randomUUID } from "node:crypto";
 import { rebuildShipmentProgressAndIssuesWithSql } from "@logistics-erp/db";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createFixtureSql, type Sql } from "./fixtures/scanContractFixtures.js";
+import { postRebuild } from "./helpers/httpScanClient.js";
+import {
+  startTestScanServer,
+  type TestScanServer,
+} from "./helpers/testScanServer.js";
 
 const REBUILD_PREFIX = "rebuild-contract-test";
 
@@ -62,7 +67,8 @@ async function cleanupRebuildFixtures(sql: Sql): Promise<void> {
 async function seedSingleItemShipment(
   sql: Sql,
   quantityExpected: number,
-  scanQuantities: Array<number | null>
+  scanQuantities: Array<number | null>,
+  options?: { partNo?: string; unloadLocation?: string | null }
 ): Promise<FixtureIds> {
   const ids: FixtureIds = {
     sourceId: randomUUID(),
@@ -128,11 +134,11 @@ async function seedSingleItemShipment(
       ${ids.shipmentId}::uuid,
       1,
       ${traceId},
-      'REBUILD-PART',
+      ${options?.partNo ?? "REBUILD-PART"},
       'rebuild part',
       ${quantityExpected},
       'ea',
-      null,
+      ${options?.unloadLocation ?? null},
       null,
       null,
       'planned',
@@ -203,11 +209,13 @@ async function getOpenIssues(sql: Sql, itemId: string) {
 
 describe.skipIf(!dbEnabled)("rebuildShipmentProgressAndIssues", () => {
   let sql: Sql;
+  let server: TestScanServer;
 
   beforeAll(async () => {
     const url = process.env.DATABASE_URL?.trim();
     if (!url) throw new Error("DATABASE_URL missing after vitest.setup");
     sql = createFixtureSql(url);
+    server = await startTestScanServer();
   });
 
   beforeEach(async () => {
@@ -216,6 +224,7 @@ describe.skipIf(!dbEnabled)("rebuildShipmentProgressAndIssues", () => {
 
   afterAll(async () => {
     await cleanupRebuildFixtures(sql);
+    await server.close();
     await sql.end({ timeout: 5 });
   });
 
@@ -276,5 +285,153 @@ describe.skipIf(!dbEnabled)("rebuildShipmentProgressAndIssues", () => {
     const progress = await getProgress(sql, ids.itemId);
     expect(progress?.progress_status).toBe("matched");
     await expect(getOpenIssues(sql, ids.itemId)).resolves.toHaveLength(0);
+  });
+
+  it("regenerates unknown_item issue when raw_payload has shipment_id", async () => {
+    const ids = await seedSingleItemShipment(sql, 1, []);
+    await sql`
+      INSERT INTO public.scan_events (
+        trace_id,
+        shipment_item_id,
+        scan_type,
+        scanned_code,
+        quantity_scanned,
+        result_status,
+        scanned_at,
+        raw_payload
+      )
+      VALUES (
+        null,
+        null,
+        'unload',
+        'NG999',
+        null,
+        'unknown',
+        '2026-04-25T00:01:00.000Z'::timestamptz,
+        ${sql.json({ shipment_id: ids.shipmentId })}
+      )
+    `;
+
+    const result = await rebuildShipmentProgressAndIssuesWithSql(
+      sql,
+      ids.shipmentId
+    );
+
+    expect(result.issues_rebuilt_count).toBe(1);
+    expect(result.statuses.unknown_item).toBe(1);
+    const issues = await getOpenIssues(sql, ids.itemId);
+    expect(issues).toHaveLength(1);
+    expect(issues[0]?.issue_type).toBe("unknown_item");
+    expect(issues[0]?.actual_value).toContain("NG999");
+  });
+
+  it("regenerates wrong_part issue from scanned_part_no mismatch", async () => {
+    const ids = await seedSingleItemShipment(sql, 1, [], { partNo: "A001" });
+    await sql`
+      INSERT INTO public.scan_events (
+        trace_id,
+        shipment_item_id,
+        scan_type,
+        scanned_code,
+        scanned_part_no,
+        quantity_scanned,
+        result_status,
+        scanned_at
+      )
+      VALUES (
+        'tr-wrong-part',
+        ${ids.itemId}::uuid,
+        'unload',
+        'B999',
+        'B999',
+        1,
+        'wrong_part',
+        '2026-04-25T00:02:00.000Z'::timestamptz
+      )
+    `;
+
+    const result = await rebuildShipmentProgressAndIssuesWithSql(
+      sql,
+      ids.shipmentId
+    );
+
+    expect(result.statuses.wrong_part).toBe(1);
+    const issues = await getOpenIssues(sql, ids.itemId);
+    expect(issues.some((issue) => issue.issue_type === "wrong_part")).toBe(true);
+  });
+
+  it("regenerates wrong_location issue from unload location mismatch", async () => {
+    const ids = await seedSingleItemShipment(sql, 1, [], {
+      unloadLocation: "LOC-A",
+    });
+    await sql`
+      INSERT INTO public.scan_events (
+        trace_id,
+        shipment_item_id,
+        scan_type,
+        scanned_code,
+        quantity_scanned,
+        unload_location_scanned,
+        result_status,
+        scanned_at
+      )
+      VALUES (
+        'tr-wrong-location',
+        ${ids.itemId}::uuid,
+        'unload',
+        'REBUILD-PART',
+        1,
+        'LOC-B',
+        'wrong_location',
+        '2026-04-25T00:03:00.000Z'::timestamptz
+      )
+    `;
+
+    const result = await rebuildShipmentProgressAndIssuesWithSql(
+      sql,
+      ids.shipmentId
+    );
+
+    expect(result.statuses.wrong_location).toBe(1);
+    const issues = await getOpenIssues(sql, ids.itemId);
+    expect(issues.some((issue) => issue.issue_type === "wrong_location")).toBe(
+      true
+    );
+  });
+
+  it("POST /rebuild returns rebuild result", async () => {
+    const ids = await seedSingleItemShipment(sql, 1, [1]);
+
+    const { status, json } = await postRebuild(server.baseUrl, {
+      shipment_id: ids.shipmentId,
+    });
+
+    expect(status).toBe(200);
+    expect(json).toMatchObject({
+      ok: true,
+      shipment_id: ids.shipmentId,
+      item_count: 1,
+      progress_rebuilt_count: 1,
+      issues_rebuilt_count: 0,
+    });
+  });
+});
+
+describe("POST /rebuild validation", () => {
+  let server: TestScanServer;
+
+  beforeAll(async () => {
+    server = await startTestScanServer();
+  });
+
+  afterAll(async () => {
+    await server.close();
+  });
+
+  it("returns 400 when shipment_id is missing", async () => {
+    const { status, json } = await postRebuild(server.baseUrl, {});
+
+    expect(status).toBe(400);
+    expect(json).toEqual({ ok: false, error: "shipment_id is required" });
   });
 });
