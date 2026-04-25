@@ -2,13 +2,33 @@ import { randomUUID } from "node:crypto";
 import { rebuildShipmentProgressAndIssuesWithSql } from "@logistics-erp/db";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createFixtureSql, type Sql } from "./fixtures/scanContractFixtures.js";
-import { postRebuild } from "./helpers/httpScanClient.js";
 import {
   startTestScanServer,
   type TestScanServer,
 } from "./helpers/testScanServer.js";
 
 const REBUILD_PREFIX = "rebuild-contract-test";
+
+async function postRebuild(
+  baseUrl: string,
+  body: Record<string, unknown>
+): Promise<{ status: number; json: unknown; rawText: string }> {
+  const res = await fetch(`${baseUrl.replace(/\/$/, "")}/rebuild`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const rawText = await res.text();
+  let json: unknown = null;
+  if (rawText.trim()) {
+    try {
+      json = JSON.parse(rawText) as unknown;
+    } catch {
+      json = { _parseError: true, rawText };
+    }
+  }
+  return { status: res.status, json, rawText };
+}
 
 type FixtureIds = {
   sourceId: string
