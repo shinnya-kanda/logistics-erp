@@ -1,5 +1,5 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { processScanInput } from "@logistics-erp/db";
+import { processScanInput, rebuildShipment } from "@logistics-erp/db";
 import { ScanInputValidationError } from "@logistics-erp/schema";
 
 export type ScanHttpHandlerOptions = {
@@ -14,6 +14,19 @@ function setCors(res: ServerResponse, corsOrigin: string): void {
     "Access-Control-Allow-Headers",
     "Content-Type, Authorization"
   );
+}
+
+async function readJsonBody(req: IncomingMessage): Promise<unknown> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of req) {
+    chunks.push(chunk as Buffer);
+  }
+  const raw = Buffer.concat(chunks).toString("utf8");
+  return raw.trim() ? JSON.parse(raw) : {};
+}
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return v !== null && typeof v === "object" && !Array.isArray(v);
 }
 
 /**
@@ -34,15 +47,10 @@ export async function handleScanHttp(
   }
 
   if (req.method === "POST" && req.url === "/scans") {
-    const chunks: Buffer[] = [];
     try {
-      for await (const chunk of req) {
-        chunks.push(chunk as Buffer);
-      }
-      const raw = Buffer.concat(chunks).toString("utf8");
       let body: unknown;
       try {
-        body = raw.trim() ? JSON.parse(raw) : {};
+        body = await readJsonBody(req);
       } catch {
         res.writeHead(400, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: "Invalid JSON body" }));
@@ -66,6 +74,35 @@ export async function handleScanHttp(
           error: e instanceof Error ? e.message : "Internal error",
         })
       );
+    }
+    return;
+  }
+
+  if (req.method === "POST" && req.url === "/rebuild") {
+    try {
+      let body: unknown;
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "Invalid JSON body" }));
+        return;
+      }
+
+      const shipmentId = isRecord(body) ? body.shipment_id : undefined;
+      if (typeof shipmentId !== "string" || !shipmentId.trim()) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "shipment_id is required" }));
+        return;
+      }
+
+      const result = await rebuildShipment(shipmentId);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, ...result }));
+    } catch (e) {
+      console.error("[logistics-erp/rebuild-api]", e);
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: false, error: "failed to rebuild shipment" }));
     }
     return;
   }
