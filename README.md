@@ -17,6 +17,16 @@ pnpm モノレポで構成された物流向けERPシステムです。
 | `packages/types` | 共通型定義 |
 | `docs` | ドキュメント（**ChatGPT 等への現状説明**: [短い版](docs/CHATGPT_SHARE.md) / [**全体像・詳細版（ダウンロード共有向け）**](docs/LOGISTICS_ERP_OVERVIEW_FOR_CHATGPT.md)） |
 
+## 設計方針
+
+このプロジェクトは、通常のCRUDアプリではなく  
+物流業務におけるトランザクション中心設計を採用しています。
+
+詳細は以下を参照してください：
+
+- [ERP設計憲法.md](./ERP設計憲法.md)
+- [開発ルール.md](./開発ルール.md)
+
 ## 必要環境
 
 - **Node.js** 20 以上
