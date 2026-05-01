@@ -9,7 +9,12 @@ import {
   seedScanContractFixtures,
   type Sql,
 } from "./fixtures/scanContractFixtures.js";
-import { getHealth, optionsScans, postScans } from "./helpers/httpScanClient.js";
+import {
+  getHealth,
+  optionsScans,
+  postInventoryOut,
+  postScans,
+} from "./helpers/httpScanClient.js";
 import {
   startTestScanServer,
   type TestScanServer,
@@ -139,6 +144,41 @@ describe("scan minimal HTTP contract", () => {
       expect(res.status).toBe(400);
       const j = (await res.json()) as { error?: string };
       expect(j.error).toBe("Invalid JSON body");
+    });
+  });
+
+  describe("POST /inventory/out validation (no DB connection)", () => {
+    it("400 when part_no missing", async () => {
+      const { status, json } = await postInventoryOut(server.baseUrl, {
+        quantity: 1,
+        warehouse_code: "WH01",
+      });
+      expect(status).toBe(400);
+      expect(json).toEqual({ ok: false, error: "part_no is required" });
+    });
+
+    it("400 when quantity is not positive", async () => {
+      const { status, json } = await postInventoryOut(server.baseUrl, {
+        part_no: "P001",
+        quantity: 0,
+        warehouse_code: "WH01",
+      });
+      expect(status).toBe(400);
+      expect(json).toEqual({ ok: false, error: "quantity must be positive" });
+    });
+
+    it("400 when from_location_codes is not a string array", async () => {
+      const { status, json } = await postInventoryOut(server.baseUrl, {
+        part_no: "P001",
+        quantity: 1,
+        warehouse_code: "WH01",
+        from_location_codes: ["A-01", 123],
+      });
+      expect(status).toBe(400);
+      expect(json).toEqual({
+        ok: false,
+        error: "from_location_codes must be an array of strings",
+      });
     });
   });
 

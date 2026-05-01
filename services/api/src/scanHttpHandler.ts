@@ -1,6 +1,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { processScanInput, rebuildShipment } from "@logistics-erp/db";
+import { processScanInput, rebuildShipment, requireDatabaseUrl } from "@logistics-erp/db";
 import { ScanInputValidationError } from "@logistics-erp/schema";
+import postgres from "postgres";
 
 export type ScanHttpHandlerOptions = {
   /** Access-Control-Allow-Origin（既定 *） */
@@ -27,6 +28,25 @@ async function readJsonBody(req: IncomingMessage): Promise<unknown> {
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return v !== null && typeof v === "object" && !Array.isArray(v);
+}
+
+function stringOrNull(v: unknown): string | null {
+  return typeof v === "string" && v.trim() ? v.trim() : null;
+}
+
+function parsePositiveQuantity(v: unknown): number | null {
+  const n = typeof v === "number" ? v : typeof v === "string" ? Number(v) : NaN;
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+function parseStringArray(v: unknown): string[] | null {
+  if (v === undefined || v === null) return null;
+  if (!Array.isArray(v)) return null;
+  const out = v
+    .filter((x): x is string => typeof x === "string")
+    .map((x) => x.trim())
+    .filter(Boolean);
+  return out.length === v.length ? out : null;
 }
 
 /**
@@ -103,6 +123,88 @@ export async function handleScanHttp(
       console.error("[logistics-erp/rebuild-api]", e);
       res.writeHead(500, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ ok: false, error: "failed to rebuild shipment" }));
+    }
+    return;
+  }
+
+  if (req.method === "POST" && req.url === "/inventory/out") {
+    try {
+      let body: unknown;
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "Invalid JSON body" }));
+        return;
+      }
+
+      if (!isRecord(body)) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "request body must be an object" }));
+        return;
+      }
+
+      const partNo = stringOrNull(body.part_no);
+      const quantity = parsePositiveQuantity(body.quantity);
+      const warehouseCode = stringOrNull(body.warehouse_code);
+      const fromLocationCodes = parseStringArray(body.from_location_codes);
+
+      if (!partNo) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "part_no is required" }));
+        return;
+      }
+      if (quantity === null) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "quantity must be positive" }));
+        return;
+      }
+      if (!warehouseCode) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "warehouse_code is required" }));
+        return;
+      }
+      if (body.from_location_codes !== undefined && fromLocationCodes === null) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "from_location_codes must be an array of strings" }));
+        return;
+      }
+
+      const sql = postgres(requireDatabaseUrl(), { max: 1 });
+      try {
+        const rows = await sql`
+          SELECT *
+          FROM public.create_distributed_inventory_out(
+            p_part_no => ${partNo},
+            p_quantity => ${String(quantity)}::numeric,
+            p_warehouse_code => ${warehouseCode},
+            p_from_location_codes => ${fromLocationCodes}::text[],
+            p_inventory_type => ${stringOrNull(body.inventory_type) ?? "project"},
+            p_project_no => ${stringOrNull(body.project_no)},
+            p_mrp_key => ${stringOrNull(body.mrp_key)},
+            p_quantity_unit => ${stringOrNull(body.quantity_unit)},
+            p_idempotency_key => ${stringOrNull(body.idempotency_key)},
+            p_event_at => now(),
+            p_operator_id => ${stringOrNull(body.operator_id)},
+            p_operator_name => ${stringOrNull(body.operator_name)},
+            p_remarks => ${stringOrNull(body.remarks)}
+          )
+        `;
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true, transactions: rows }));
+      } finally {
+        await sql.end({ timeout: 5 });
+      }
+    } catch (e) {
+      const err = e as { code?: string; message?: string };
+      const status = err.code === "23514" ? 400 : 500;
+      res.writeHead(status, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          ok: false,
+          error: err.message ?? "failed to create inventory out",
+        })
+      );
     }
     return;
   }
