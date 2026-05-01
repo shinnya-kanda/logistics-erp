@@ -209,6 +209,89 @@ export async function handleScanHttp(
     return;
   }
 
+  if (req.method === "POST" && req.url === "/inventory/in") {
+    try {
+      let body: unknown;
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "Invalid JSON body" }));
+        return;
+      }
+
+      if (!isRecord(body)) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "request body must be an object" }));
+        return;
+      }
+
+      const partNo = stringOrNull(body.part_no);
+      const quantity = parsePositiveQuantity(body.quantity);
+      const warehouseCode = stringOrNull(body.warehouse_code);
+      const toLocationCode = stringOrNull(body.to_location_code);
+
+      if (!partNo) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "part_no is required" }));
+        return;
+      }
+      if (quantity === null) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "quantity must be positive" }));
+        return;
+      }
+      if (!warehouseCode) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "warehouse_code is required" }));
+        return;
+      }
+      if (!toLocationCode) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "to_location_code is required" }));
+        return;
+      }
+
+      const sql = postgres(requireDatabaseUrl(), { max: 1 });
+      try {
+        const rows = await sql`
+          SELECT *
+          FROM public.create_inventory_in(
+            p_part_no => ${partNo},
+            p_quantity => ${String(quantity)}::numeric,
+            p_warehouse_code => ${warehouseCode},
+            p_to_location_code => ${toLocationCode},
+            p_part_name => ${stringOrNull(body.part_name)},
+            p_inventory_type => ${stringOrNull(body.inventory_type) ?? "project"},
+            p_project_no => ${stringOrNull(body.project_no)},
+            p_mrp_key => ${stringOrNull(body.mrp_key)},
+            p_quantity_unit => ${stringOrNull(body.quantity_unit)},
+            p_idempotency_key => ${stringOrNull(body.idempotency_key)},
+            p_event_at => now(),
+            p_operator_id => ${stringOrNull(body.operator_id)},
+            p_operator_name => ${stringOrNull(body.operator_name)},
+            p_remarks => ${stringOrNull(body.remarks)}
+          )
+        `;
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true, transaction: rows[0] ?? null }));
+      } finally {
+        await sql.end({ timeout: 5 });
+      }
+    } catch (e) {
+      const err = e as { code?: string; message?: string };
+      const status = err.code === "23514" ? 400 : 500;
+      res.writeHead(status, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          ok: false,
+          error: err.message ?? "failed to create inventory in",
+        })
+      );
+    }
+    return;
+  }
+
   if (req.method === "GET" && req.url === "/health") {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ ok: true, service: "scan-minimal" }));

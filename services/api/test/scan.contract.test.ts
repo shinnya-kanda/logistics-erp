@@ -12,6 +12,7 @@ import {
 import {
   getHealth,
   optionsScans,
+  postInventoryIn,
   postInventoryOut,
   postScans,
 } from "./helpers/httpScanClient.js";
@@ -179,6 +180,39 @@ describe("scan minimal HTTP contract", () => {
         ok: false,
         error: "from_location_codes must be an array of strings",
       });
+    });
+  });
+
+  describe("POST /inventory/in validation (no DB connection)", () => {
+    it("400 when part_no missing", async () => {
+      const { status, json } = await postInventoryIn(server.baseUrl, {
+        quantity: 1,
+        warehouse_code: "WH01",
+        to_location_code: "LOC01",
+      });
+      expect(status).toBe(400);
+      expect(json).toEqual({ ok: false, error: "part_no is required" });
+    });
+
+    it("400 when quantity is not positive", async () => {
+      const { status, json } = await postInventoryIn(server.baseUrl, {
+        part_no: "P001",
+        quantity: 0,
+        warehouse_code: "WH01",
+        to_location_code: "LOC01",
+      });
+      expect(status).toBe(400);
+      expect(json).toEqual({ ok: false, error: "quantity must be positive" });
+    });
+
+    it("400 when to_location_code missing", async () => {
+      const { status, json } = await postInventoryIn(server.baseUrl, {
+        part_no: "P001",
+        quantity: 1,
+        warehouse_code: "WH01",
+      });
+      expect(status).toBe(400);
+      expect(json).toEqual({ ok: false, error: "to_location_code is required" });
     });
   });
 
