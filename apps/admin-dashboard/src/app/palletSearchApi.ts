@@ -21,6 +21,7 @@ type PalletSearchParams = {
   warehouseCode?: string;
   status?: PalletSearchStatus;
   partNo?: string;
+  palletCode?: string;
 };
 
 const API_BASE = "http://localhost:3040";
@@ -47,21 +48,26 @@ export async function searchPallets({
   warehouseCode,
   status = "ALL",
   partNo,
+  palletCode,
 }: PalletSearchParams): Promise<PalletSearchResponse> {
-  const params = new URLSearchParams();
+  const params: string[] = [];
   const trimmedWarehouseCode = warehouseCode?.trim();
   const trimmedPartNo = partNo?.trim();
+  const trimmedPalletCode = palletCode?.trim();
   if (trimmedWarehouseCode) {
-    params.set("warehouse_code", trimmedWarehouseCode);
+    params.push(`warehouse_code=${encodeURIComponent(trimmedWarehouseCode)}`);
   }
   if (status === "ACTIVE" || status === "OUT") {
-    params.set("status", status);
+    params.push(`status=${encodeURIComponent(status)}`);
   }
   if (trimmedPartNo) {
-    params.set("part_no", trimmedPartNo);
+    params.push(`part_no=${encodeURIComponent(trimmedPartNo)}`);
+  }
+  if (trimmedPalletCode) {
+    params.push(`pallet_code=${encodeURIComponent(trimmedPalletCode)}`);
   }
 
-  const res = await fetch(`${API_BASE}/pallets/search?${params.toString()}`);
+  const res = await fetch(`${API_BASE}/pallets/search?${params.join("&")}`);
   let json: unknown;
   try {
     json = await res.json();

@@ -660,9 +660,15 @@ export async function handleScanHttp(
     const rawStatus = requestUrl.searchParams.get("status")?.trim().toUpperCase();
     const statusFilter = rawStatus && rawStatus !== "ALL" ? rawStatus : null;
     const partNo = requestUrl.searchParams.get("part_no")?.trim();
-    if (!warehouseCode && !partNo) {
+    const palletCode = requestUrl.searchParams.get("pallet_code")?.trim();
+    if (!warehouseCode && !partNo && !palletCode) {
       res.writeHead(400, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ ok: false, error: "warehouse_code or part_no is required" }));
+      res.end(
+        JSON.stringify({
+          ok: false,
+          error: "warehouse_code or part_no or pallet_code is required",
+        })
+      );
       return;
     }
     if (statusFilter !== null && statusFilter !== "ACTIVE" && statusFilter !== "OUT") {
@@ -720,12 +726,13 @@ export async function handleScanHttp(
           WHERE ($1::text IS NULL OR pu.warehouse_code = $1)
             AND ($2::text IS NULL OR pu.current_status = $2)
             AND ($3::text IS NULL OR pil.part_no ILIKE ('%' || $3 || '%'))
+            AND ($4::text IS NULL OR pu.pallet_code ILIKE ('%' || $4 || '%'))
           ORDER BY
             pu.current_location_code ASC NULLS LAST,
             pu.pallet_code ASC,
             pil.part_no ASC NULLS LAST
         `,
-        [warehouseCode || null, statusFilter, partNo || null]
+        [warehouseCode || null, statusFilter, partNo || null, palletCode || null]
       );
 
       res.writeHead(200, { "Content-Type": "application/json" });

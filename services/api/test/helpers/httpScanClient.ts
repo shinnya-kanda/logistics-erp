@@ -197,7 +197,8 @@ export async function getPalletSearch(
   baseUrl: string,
   warehouseCode?: string,
   status?: string,
-  partNo?: string
+  partNo?: string,
+  palletCode?: string
 ): Promise<ScanPostResult> {
   const url = new URL(`${baseUrl.replace(/\/$/, "")}/pallets/search`);
   if (warehouseCode !== undefined) {
@@ -208,6 +209,9 @@ export async function getPalletSearch(
   }
   if (partNo !== undefined) {
     url.searchParams.set("part_no", partNo);
+  }
+  if (palletCode !== undefined) {
+    url.searchParams.set("pallet_code", palletCode);
   }
   const res = await fetch(url);
   const rawText = await res.text();

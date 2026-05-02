@@ -138,10 +138,12 @@ export function PalletSearchSection() {
   const [warehouseCode, setWarehouseCode] = useState("KOMATSU");
   const [statusFilter, setStatusFilter] = useState<PalletSearchStatus>("ALL");
   const [partNo, setPartNo] = useState("");
+  const [palletCode, setPalletCode] = useState("");
   const [rows, setRows] = useState<PalletSearchRow[]>([]);
   const [searchedWarehouseCode, setSearchedWarehouseCode] = useState("");
   const [searchedStatus, setSearchedStatus] = useState<PalletSearchStatus>("ALL");
   const [searchedPartNo, setSearchedPartNo] = useState("");
+  const [searchedPalletCode, setSearchedPalletCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const activeCount = rows.filter((row) => row.current_status === "ACTIVE").length;
@@ -150,6 +152,7 @@ export function PalletSearchSection() {
     searchedWarehouseCode ? `warehouse_code: ${searchedWarehouseCode}` : null,
     searchedStatus === "ALL" ? null : `status: ${searchedStatus}`,
     searchedPartNo ? `part_no: ${searchedPartNo}` : null,
+    searchedPalletCode ? `pallet_code: ${searchedPalletCode}` : null,
   ]
     .filter(Boolean)
     .join(" / ");
@@ -158,10 +161,11 @@ export function PalletSearchSection() {
     e.preventDefault();
     const code = warehouseCode.trim();
     const part = partNo.trim();
+    const pallet = palletCode.trim();
     setError(null);
 
-    if (!code && !part) {
-      setError("warehouse_code または part_no を入力してください。");
+    if (!code && !part && !pallet) {
+      setError("warehouse_code、part_no、pallet_code のいずれかを入力してください。");
       return;
     }
 
@@ -171,6 +175,7 @@ export function PalletSearchSection() {
         warehouseCode: code,
         status: statusFilter,
         partNo: part,
+        palletCode: pallet,
       });
       if (!result.ok) {
         setRows([]);
@@ -181,6 +186,7 @@ export function PalletSearchSection() {
       setSearchedWarehouseCode(code);
       setSearchedStatus(statusFilter);
       setSearchedPartNo(part);
+      setSearchedPalletCode(pallet);
     } catch (err) {
       setRows([]);
       setError(err instanceof Error ? err.message : "検索中にエラーが発生しました。");
@@ -192,7 +198,7 @@ export function PalletSearchSection() {
   return (
     <section style={styles.panel}>
       <h2>パレット検索</h2>
-      <p>warehouse_code または part_no を指定して、パレットと積載品番を一覧表示します。</p>
+      <p>warehouse_code、part_no、pallet_code を組み合わせて検索できます。</p>
 
       <form style={styles.form} onSubmit={handleSubmit}>
         <label style={styles.field}>
@@ -210,6 +216,15 @@ export function PalletSearchSection() {
             style={styles.input}
             value={partNo}
             onChange={(e) => setPartNo(e.target.value)}
+            autoComplete="off"
+          />
+        </label>
+        <label style={styles.field}>
+          <span>パレットコード（PL）</span>
+          <input
+            style={styles.input}
+            value={palletCode}
+            onChange={(e) => setPalletCode(e.target.value)}
             autoComplete="off"
           />
         </label>
