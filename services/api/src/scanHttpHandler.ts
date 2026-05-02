@@ -50,6 +50,10 @@ function parseStringArray(v: unknown): string[] | null {
   return out.length === v.length ? out : null;
 }
 
+function parseRequestUrl(req: IncomingMessage): URL {
+  return new URL(req.url ?? "/", "http://localhost");
+}
+
 /**
  * POST /scans, GET /health, OPTIONS, 404。scanHttp.ts と契約テストで共有。
  */
@@ -60,6 +64,8 @@ export async function handleScanHttp(
 ): Promise<void> {
   const corsOrigin = options?.corsOrigin ?? "*";
   setCors(res, corsOrigin);
+  const requestUrl = parseRequestUrl(req);
+  const pathname = requestUrl.pathname;
 
   if (req.method === "OPTIONS") {
     res.writeHead(204);
@@ -67,7 +73,7 @@ export async function handleScanHttp(
     return;
   }
 
-  if (req.method === "POST" && req.url === "/scans") {
+  if (req.method === "POST" && pathname === "/scans") {
     try {
       let body: unknown;
       try {
@@ -99,7 +105,7 @@ export async function handleScanHttp(
     return;
   }
 
-  if (req.method === "POST" && req.url === "/rebuild") {
+  if (req.method === "POST" && pathname === "/rebuild") {
     try {
       let body: unknown;
       try {
@@ -128,7 +134,7 @@ export async function handleScanHttp(
     return;
   }
 
-  if (req.method === "POST" && req.url === "/inventory/out") {
+  if (req.method === "POST" && pathname === "/inventory/out") {
     try {
       let body: unknown;
       try {
@@ -210,7 +216,7 @@ export async function handleScanHttp(
     return;
   }
 
-  if (req.method === "POST" && req.url === "/inventory/in") {
+  if (req.method === "POST" && pathname === "/inventory/in") {
     try {
       let body: unknown;
       try {
@@ -293,7 +299,7 @@ export async function handleScanHttp(
     return;
   }
 
-  if (req.method === "POST" && req.url === "/inventory/move") {
+  if (req.method === "POST" && pathname === "/inventory/move") {
     try {
       let body: unknown;
       try {
@@ -390,7 +396,7 @@ export async function handleScanHttp(
     return;
   }
 
-  if (req.method === "POST" && req.url === "/pallets/create") {
+  if (req.method === "POST" && pathname === "/pallets/create") {
     try {
       let body: unknown;
       try {
@@ -448,7 +454,7 @@ export async function handleScanHttp(
     return;
   }
 
-  if (req.method === "POST" && req.url === "/pallets/items/add") {
+  if (req.method === "POST" && pathname === "/pallets/items/add") {
     try {
       let body: unknown;
       try {
@@ -522,7 +528,7 @@ export async function handleScanHttp(
     return;
   }
 
-  if (req.method === "POST" && req.url === "/pallets/move") {
+  if (req.method === "POST" && pathname === "/pallets/move") {
     try {
       let body: unknown;
       try {
@@ -591,7 +597,7 @@ export async function handleScanHttp(
     return;
   }
 
-  if (req.method === "POST" && req.url === "/pallets/out") {
+  if (req.method === "POST" && pathname === "/pallets/out") {
     try {
       let body: unknown;
       try {
@@ -653,7 +659,87 @@ export async function handleScanHttp(
     return;
   }
 
-  if (req.method === "GET" && req.url === "/health") {
+  if (req.method === "GET" && pathname === "/pallets/search") {
+    const warehouseCode = requestUrl.searchParams.get("warehouse_code")?.trim();
+    if (!warehouseCode) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: false, error: "warehouse_code is required" }));
+      return;
+    }
+
+    const sql = postgres(requireDatabaseUrl(), { max: 1 });
+    try {
+      const linkColumnRows = await sql<{ column_name: string }[]>`
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'pallet_item_links'
+          AND column_name IN ('part_name', 'unlinked_at', 'updated_at')
+      `;
+      const unitColumnRows = await sql<{ column_name: string }[]>`
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'pallet_units'
+          AND column_name IN ('updated_at')
+      `;
+      const linkColumns = new Set(linkColumnRows.map((row) => row.column_name));
+      const unitColumns = new Set(unitColumnRows.map((row) => row.column_name));
+      const partNameSelect = linkColumns.has("part_name") ? "pil.part_name" : "null::text";
+      const unlinkedJoin = linkColumns.has("unlinked_at")
+        ? "and pil.unlinked_at is null"
+        : "";
+      const unitUpdatedAtSelect = unitColumns.has("updated_at")
+        ? "pu.updated_at"
+        : "null::timestamptz";
+      const updatedAtSelect = linkColumns.has("updated_at")
+        ? `coalesce(pil.updated_at, ${unitUpdatedAtSelect}, pu.created_at)`
+        : `coalesce(${unitUpdatedAtSelect}, pu.created_at)`;
+
+      const rows = await sql.unsafe(
+        `
+          SELECT
+            pu.id AS pallet_id,
+            pu.pallet_code,
+            pu.warehouse_code,
+            pu.current_location_code,
+            pu.current_status,
+            pil.part_no,
+            ${partNameSelect} AS part_name,
+            pil.quantity,
+            pil.quantity_unit,
+            ${updatedAtSelect} AS updated_at
+          FROM public.pallet_units pu
+          LEFT JOIN public.pallet_item_links pil
+            ON pil.pallet_id = pu.id
+            ${unlinkedJoin}
+          WHERE pu.warehouse_code = $1
+          ORDER BY
+            pu.current_location_code ASC NULLS LAST,
+            pu.pallet_code ASC,
+            pil.part_no ASC NULLS LAST
+        `,
+        [warehouseCode]
+      );
+
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, pallets: rows }));
+    } catch (e) {
+      const err = e as { message?: string };
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          ok: false,
+          error: err.message ?? "failed to search pallets",
+        })
+      );
+    } finally {
+      await sql.end({ timeout: 5 });
+    }
+    return;
+  }
+
+  if (req.method === "GET" && pathname === "/health") {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ ok: true, service: "scan-minimal" }));
     return;

@@ -10,6 +10,7 @@ import {
   type Sql,
 } from "./fixtures/scanContractFixtures.js";
 import {
+  getPalletSearch,
   getHealth,
   optionsScans,
   postInventoryIn,
@@ -364,6 +365,15 @@ describe("scan minimal HTTP contract", () => {
 
       expect(status).toBe(400);
       expect(json).toEqual({ ok: false, error: "pallet_code is required" });
+    });
+  });
+
+  describe("GET /pallets/search validation (no DB connection)", () => {
+    it("400 when warehouse_code is missing", async () => {
+      const { status, json } = await getPalletSearch(server.baseUrl);
+
+      expect(status).toBe(400);
+      expect(json).toEqual({ ok: false, error: "warehouse_code is required" });
     });
   });
 
