@@ -257,6 +257,38 @@ body {
   margin-top: 0.5rem;
 }
 
+.part-location-results {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.part-location-card {
+  border: 2px solid #bbdefb;
+  border-radius: 12px;
+  padding: 1rem;
+  background: #f7fbff;
+}
+
+.part-location-main {
+  font-size: 1.7rem;
+  font-weight: 900;
+  color: #0d47a1;
+  line-height: 1.15;
+}
+
+.part-location-pl {
+  margin-top: 0.35rem;
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.part-location-qty {
+  margin-top: 0.35rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
 .ambiguous-panel {
   margin-bottom: 1rem;
   padding-top: 0.25rem;
