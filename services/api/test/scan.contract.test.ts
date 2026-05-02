@@ -18,6 +18,7 @@ import {
   postPalletCreate,
   postPalletItemAdd,
   postPalletMove,
+  postPalletOut,
   postScans,
 } from "./helpers/httpScanClient.js";
 import {
@@ -352,6 +353,17 @@ describe("scan minimal HTTP contract", () => {
 
       expect(status).toBe(400);
       expect(json).toEqual({ ok: false, error: "to_location_code is required" });
+    });
+  });
+
+  describe("POST /pallets/out validation (no DB connection)", () => {
+    it("400 when pallet_code is missing", async () => {
+      const { status, json } = await postPalletOut(server.baseUrl, {
+        warehouse_code: "KOMATSU",
+      });
+
+      expect(status).toBe(400);
+      expect(json).toEqual({ ok: false, error: "pallet_code is required" });
     });
   });
 

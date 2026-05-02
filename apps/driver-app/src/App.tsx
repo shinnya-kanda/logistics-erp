@@ -5,6 +5,7 @@ import { InventoryMoveApp } from "./InventoryMoveApp.js";
 import { PalletCreateApp } from "./PalletCreateApp.js";
 import { PalletItemAddApp } from "./PalletItemAddApp.js";
 import { PalletMoveApp } from "./PalletMoveApp.js";
+import { PalletOutApp } from "./PalletOutApp.js";
 import { ScannerApp } from "./ScannerApp.js";
 
 export default function App() {
@@ -35,6 +36,7 @@ export default function App() {
       <PalletCreateApp />
       <PalletItemAddApp />
       <PalletMoveApp />
+      <PalletOutApp />
       <ScannerApp />
     </main>
   );

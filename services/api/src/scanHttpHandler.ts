@@ -591,6 +591,68 @@ export async function handleScanHttp(
     return;
   }
 
+  if (req.method === "POST" && req.url === "/pallets/out") {
+    try {
+      let body: unknown;
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "Invalid JSON body" }));
+        return;
+      }
+
+      if (!isRecord(body)) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "request body must be an object" }));
+        return;
+      }
+
+      const palletCode = stringOrNull(body.pallet_code);
+      const warehouseCode = stringOrNull(body.warehouse_code) ?? "KOMATSU";
+
+      if (!palletCode) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "pallet_code is required" }));
+        return;
+      }
+      if (!warehouseCode) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "warehouse_code is required" }));
+        return;
+      }
+
+      const idempotencyKey = stringOrNull(body.idempotency_key) ?? randomUUID();
+      const sql = postgres(requireDatabaseUrl(), { max: 1 });
+      try {
+        const rows = await sql<{ result: unknown }[]>`
+          SELECT public.out_pallet(
+            p_pallet_code => ${palletCode},
+            p_warehouse_code => ${warehouseCode},
+            p_operator_id => ${stringOrNull(body.operator_id)},
+            p_operator_name => ${stringOrNull(body.operator_name)},
+            p_remarks => ${stringOrNull(body.remarks)},
+            p_idempotency_key => ${idempotencyKey}
+          ) AS result
+        `;
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(rows[0]?.result ?? { ok: false, error: "empty out_pallet result" }));
+      } finally {
+        await sql.end({ timeout: 5 });
+      }
+    } catch (e) {
+      const err = e as { message?: string };
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          ok: false,
+          error: err.message ?? "failed to out pallet",
+        })
+      );
+    }
+    return;
+  }
+
   if (req.method === "GET" && req.url === "/health") {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ ok: true, service: "scan-minimal" }));
