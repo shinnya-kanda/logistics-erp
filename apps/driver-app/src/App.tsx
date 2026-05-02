@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { AuthPanel } from "./AuthPanel.js";
 import { getSupabaseBrowserClient } from "./supabaseClient.js";
 import { InventoryMoveApp } from "./InventoryMoveApp.js";
+import { PalletCreateApp } from "./PalletCreateApp.js";
 import { ScannerApp } from "./ScannerApp.js";
 
 export default function App() {
@@ -29,6 +30,7 @@ export default function App() {
         <AuthPanel client={supabase} />
       </div>
       <InventoryMoveApp />
+      <PalletCreateApp />
       <ScannerApp />
     </main>
   );

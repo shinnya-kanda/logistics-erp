@@ -426,7 +426,8 @@ export async function handleScanHttp(
             p_pallet_code => ${palletCode},
             p_warehouse_code => ${warehouseCode},
             p_created_by => ${stringOrNull(body.created_by)},
-            p_remarks => ${stringOrNull(body.remarks)}
+            p_remarks => ${stringOrNull(body.remarks)},
+            p_inventory_type => ${stringOrNull(body.inventory_type) ?? "project"}
           ) AS result
         `;
         res.writeHead(200, { "Content-Type": "application/json" });
