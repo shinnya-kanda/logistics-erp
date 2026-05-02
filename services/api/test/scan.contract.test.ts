@@ -10,6 +10,7 @@ import {
   type Sql,
 } from "./fixtures/scanContractFixtures.js";
 import {
+  getPalletDetail,
   getPalletSearch,
   getHealth,
   optionsScans,
@@ -436,6 +437,22 @@ describe("scan minimal HTTP contract", () => {
 
       expect(status).toBe(400);
       expect(json).toEqual({ ok: false, error: "status must be ACTIVE or OUT" });
+    });
+  });
+
+  describe("GET /pallets/detail validation (no DB connection)", () => {
+    it("400 when pallet_code is missing", async () => {
+      const { status, json } = await getPalletDetail(server.baseUrl);
+
+      expect(status).toBe(400);
+      expect(json).toEqual({ ok: false, error: "pallet_code is required" });
+    });
+
+    it("500 reaches DB layer when pallet_code is valid", async () => {
+      const { status, json } = await getPalletDetail(server.baseUrl, "PL-001");
+
+      expect(status).toBe(500);
+      expect(errMessage(json)).toBeTruthy();
     });
   });
 

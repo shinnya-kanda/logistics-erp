@@ -781,6 +781,125 @@ export async function handleScanHttp(
     return;
   }
 
+  if (req.method === "GET" && pathname === "/pallets/detail") {
+    const palletCode = requestUrl.searchParams.get("pallet_code")?.trim();
+    if (!palletCode) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: false, error: "pallet_code is required" }));
+      return;
+    }
+
+    const sql = postgres(requireDatabaseUrl(), { max: 1 });
+    try {
+      const linkColumnRows = await sql<{ column_name: string }[]>`
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'pallet_item_links'
+          AND column_name IN ('pallet_id', 'pallet_unit_id', 'part_name', 'unlinked_at', 'linked_at', 'updated_at')
+      `;
+      const unitColumnRows = await sql<{ column_name: string }[]>`
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'pallet_units'
+          AND column_name IN ('updated_at')
+      `;
+      const linkColumns = new Set(linkColumnRows.map((row) => row.column_name));
+      const unitColumns = new Set(unitColumnRows.map((row) => row.column_name));
+      const unitUpdatedAtSelect = unitColumns.has("updated_at")
+        ? "updated_at"
+        : "null::timestamptz";
+
+      const palletRows = await sql.unsafe(
+        `
+          SELECT
+            id AS pallet_id,
+            pallet_code,
+            warehouse_code,
+            current_location_code,
+            current_status,
+            created_at,
+            ${unitUpdatedAtSelect} AS updated_at
+          FROM public.pallet_units
+          WHERE pallet_code = $1
+          LIMIT 1
+        `,
+        [palletCode]
+      );
+      const pallet = palletRows[0] as unknown as { pallet_id: string };
+      if (!pallet) {
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "pallet_not_found" }));
+        return;
+      }
+
+      const palletId = (pallet as { pallet_id: string }).pallet_id;
+      const partNameSelect = linkColumns.has("part_name") ? "part_name" : "null::text";
+      const linkedAtSelect = linkColumns.has("linked_at") ? "linked_at" : "created_at";
+      const linkUpdatedAtSelect = linkColumns.has("updated_at")
+        ? "updated_at"
+        : "null::timestamptz";
+      const linkWhereColumns = [
+        linkColumns.has("pallet_id") ? "pallet_id = $1" : null,
+        linkColumns.has("pallet_unit_id") ? "pallet_unit_id = $1" : null,
+      ].filter(Boolean);
+      const unlinkedWhere = linkColumns.has("unlinked_at") ? "AND unlinked_at IS NULL" : "";
+      const items = linkWhereColumns.length
+        ? await sql.unsafe(
+            `
+              SELECT
+                part_no,
+                ${partNameSelect} AS part_name,
+                quantity,
+                quantity_unit,
+                ${linkedAtSelect} AS linked_at,
+                ${linkUpdatedAtSelect} AS updated_at
+              FROM public.pallet_item_links
+              WHERE (${linkWhereColumns.join(" OR ")})
+                ${unlinkedWhere}
+              ORDER BY part_no ASC NULLS LAST
+            `,
+            [palletId]
+          )
+        : [];
+
+      const transactions = await sql.unsafe(
+        `
+          SELECT
+            transaction_type,
+            from_location_code,
+            to_location_code,
+            operator_name,
+            remarks,
+            idempotency_key,
+            occurred_at
+          FROM public.pallet_transactions
+          WHERE pallet_code = $1
+            OR pallet_unit_id = $2
+            OR pallet_id = $2
+          ORDER BY occurred_at DESC
+        `,
+        [palletCode, palletId]
+      );
+
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, pallet, items, transactions }));
+    } catch (e) {
+      const err = e as { message?: string };
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          ok: false,
+          error: err.message ?? "failed to get pallet detail",
+        })
+      );
+    } finally {
+      await sql.end({ timeout: 5 });
+    }
+    return;
+  }
+
   if (req.method === "GET" && pathname === "/health") {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ ok: true, service: "scan-minimal" }));

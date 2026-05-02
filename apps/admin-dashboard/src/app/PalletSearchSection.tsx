@@ -2,7 +2,9 @@
 
 import { useState, type FormEvent } from "react";
 import {
+  getPalletDetail,
   searchPallets,
+  type PalletDetail,
   type PalletSearchRow,
   type PalletSearchStatus,
 } from "./palletSearchApi";
@@ -132,6 +134,43 @@ const styles = {
     background: "#eceff1",
     color: "#455a64",
   },
+  linkButton: {
+    border: "none",
+    padding: 0,
+    background: "transparent",
+    color: "#1565c0",
+    cursor: "pointer",
+    font: "inherit",
+    fontWeight: 700,
+    textDecoration: "underline",
+  },
+  detailPanel: {
+    margin: "1rem 0",
+    padding: "1rem",
+    border: "1px solid #cfd8dc",
+    borderRadius: "10px",
+    background: "#fafafa",
+  },
+  detailHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: "1rem",
+    alignItems: "center",
+    marginBottom: "0.75rem",
+  },
+  detailGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(14rem, 1fr))",
+    gap: "0.4rem 1rem",
+    marginBottom: "1rem",
+  },
+  secondaryButton: {
+    padding: "0.45rem 0.75rem",
+    border: "1px solid #aaa",
+    borderRadius: "8px",
+    background: "#fff",
+    cursor: "pointer",
+  },
 };
 
 export function PalletSearchSection() {
@@ -146,6 +185,9 @@ export function PalletSearchSection() {
   const [searchedPalletCode, setSearchedPalletCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [detail, setDetail] = useState<PalletDetail | null>(null);
+  const [detailLoadingCode, setDetailLoadingCode] = useState<string | null>(null);
+  const [detailError, setDetailError] = useState<string | null>(null);
   const activeCount = rows.filter((row) => row.current_status === "ACTIVE").length;
   const outCount = rows.filter((row) => row.current_status === "OUT").length;
   const searchConditionText = [
@@ -163,6 +205,7 @@ export function PalletSearchSection() {
     const part = partNo.trim();
     const pallet = palletCode.trim();
     setError(null);
+    setDetailError(null);
 
     if (!code && !part && !pallet) {
       setError("warehouse_code、part_no、pallet_code のいずれかを入力してください。");
@@ -179,10 +222,12 @@ export function PalletSearchSection() {
       });
       if (!result.ok) {
         setRows([]);
+        setDetail(null);
         setError(result.error);
         return;
       }
       setRows(result.pallets);
+      setDetail(null);
       setSearchedWarehouseCode(code);
       setSearchedStatus(statusFilter);
       setSearchedPartNo(part);
@@ -192,6 +237,31 @@ export function PalletSearchSection() {
       setError(err instanceof Error ? err.message : "検索中にエラーが発生しました。");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleOpenDetail(code: string) {
+    setDetailError(null);
+    setDetailLoadingCode(code);
+    try {
+      const result = await getPalletDetail(code);
+      if (!result.ok) {
+        setDetail(null);
+        setDetailError(result.error);
+        return;
+      }
+      setDetail({
+        pallet: result.pallet,
+        items: result.items,
+        transactions: result.transactions,
+      });
+    } catch (err) {
+      setDetail(null);
+      setDetailError(
+        err instanceof Error ? err.message : "パレット詳細の取得中にエラーが発生しました。"
+      );
+    } finally {
+      setDetailLoadingCode(null);
     }
   }
 
@@ -246,6 +316,7 @@ export function PalletSearchSection() {
       </form>
 
       {error ? <div style={styles.error}>{error}</div> : null}
+      {detailError ? <div style={styles.error}>{detailError}</div> : null}
 
       <div style={styles.resultSummary}>
         <span>
@@ -256,6 +327,112 @@ export function PalletSearchSection() {
           ACTIVE: {activeCount} / OUT: {outCount}
         </span>
       </div>
+
+      {detailLoadingCode ? (
+        <div style={styles.resultSummary}>パレット詳細を取得中です: {detailLoadingCode}</div>
+      ) : null}
+
+      {detail ? (
+        <section style={styles.detailPanel} aria-label="パレット詳細">
+          <div style={styles.detailHeader}>
+            <h3>パレット詳細</h3>
+            <button
+              type="button"
+              style={styles.secondaryButton}
+              onClick={() => {
+                setDetail(null);
+                setDetailError(null);
+              }}
+            >
+              閉じる
+            </button>
+          </div>
+
+          <h4>パレット基本情報</h4>
+          <div style={styles.detailGrid}>
+            <div>
+              <strong>PL:</strong> {detail.pallet.pallet_code}
+            </div>
+            <div>
+              <strong>warehouse_code:</strong> {detail.pallet.warehouse_code}
+            </div>
+            <div>
+              <strong>current_location_code:</strong>{" "}
+              {displayValue(detail.pallet.current_location_code)}
+            </div>
+            <div>
+              <strong>current_status:</strong> {statusLabel(detail.pallet.current_status)}
+            </div>
+            <div>
+              <strong>updated_at:</strong> {formatUpdatedAt(detail.pallet.updated_at)}
+            </div>
+          </div>
+
+          <h4>積載品番一覧</h4>
+          {detail.items.length === 0 ? (
+            <p>積載品番はありません</p>
+          ) : (
+            <div style={styles.tableWrap}>
+              <table style={styles.table}>
+                <thead>
+                  <tr>
+                    <th style={styles.th}>part_no</th>
+                    <th style={styles.th}>part_name</th>
+                    <th style={styles.th}>quantity</th>
+                    <th style={styles.th}>quantity_unit</th>
+                    <th style={styles.th}>linked_at</th>
+                    <th style={styles.th}>updated_at</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {detail.items.map((item, index) => (
+                    <tr key={`${item.part_no ?? "item"}-${index}`}>
+                      <td style={styles.td}>{displayValue(item.part_no)}</td>
+                      <td style={styles.td}>{displayValue(item.part_name)}</td>
+                      <td style={styles.td}>{displayValue(item.quantity)}</td>
+                      <td style={styles.td}>{displayValue(item.quantity_unit)}</td>
+                      <td style={styles.td}>{formatUpdatedAt(item.linked_at)}</td>
+                      <td style={styles.td}>{formatUpdatedAt(item.updated_at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <h4>履歴</h4>
+          {detail.transactions.length === 0 ? (
+            <p>履歴はありません</p>
+          ) : (
+            <div style={styles.tableWrap}>
+              <table style={styles.table}>
+                <thead>
+                  <tr>
+                    <th style={styles.th}>transaction_type</th>
+                    <th style={styles.th}>from_location_code</th>
+                    <th style={styles.th}>to_location_code</th>
+                    <th style={styles.th}>operator_name</th>
+                    <th style={styles.th}>remarks</th>
+                    <th style={styles.th}>occurred_at</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {detail.transactions.map((transaction, index) => (
+                    <tr key={`${transaction.occurred_at ?? "tx"}-${index}`}>
+                      <td style={styles.td}>{displayValue(transaction.transaction_type)}</td>
+                      <td style={styles.td}>{displayValue(transaction.from_location_code)}</td>
+                      <td style={styles.td}>{displayValue(transaction.to_location_code)}</td>
+                      <td style={styles.td}>{displayValue(transaction.operator_name)}</td>
+                      <td style={styles.td}>{displayValue(transaction.remarks)}</td>
+                      <td style={styles.td}>{formatUpdatedAt(transaction.occurred_at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      ) : null}
 
       <div style={styles.tableWrap}>
         <table style={styles.table}>
@@ -288,7 +465,15 @@ export function PalletSearchSection() {
                 >
                   <td style={styles.td}>{row.warehouse_code}</td>
                   <td style={styles.td}>{displayValue(row.current_location_code)}</td>
-                  <td style={styles.td}>{row.pallet_code}</td>
+                  <td style={styles.td}>
+                    <button
+                      type="button"
+                      style={styles.linkButton}
+                      onClick={() => void handleOpenDetail(row.pallet_code)}
+                    >
+                      {row.pallet_code}
+                    </button>
+                  </td>
                   <td style={styles.td}>
                     <span style={{ ...styles.statusBadge, ...statusStyle }}>
                       {statusLabel(row.current_status)}
