@@ -268,6 +268,27 @@ export async function getPalletDetail(
   return { status: res.status, json, rawText };
 }
 
+export async function getEmptyPallets(
+  baseUrl: string,
+  warehouseCode?: string
+): Promise<ScanPostResult> {
+  const url = new URL(`${baseUrl.replace(/\/$/, "")}/pallets/empty`);
+  if (warehouseCode !== undefined) {
+    url.searchParams.set("warehouse_code", warehouseCode);
+  }
+  const res = await fetch(url);
+  const rawText = await res.text();
+  let json: unknown = null;
+  if (rawText.trim()) {
+    try {
+      json = JSON.parse(rawText) as unknown;
+    } catch {
+      json = { _parseError: true, rawText };
+    }
+  }
+  return { status: res.status, json, rawText };
+}
+
 export async function getHealth(baseUrl: string): Promise<{
   status: number;
   json: unknown;

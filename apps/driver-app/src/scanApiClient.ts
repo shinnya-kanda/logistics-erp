@@ -143,6 +143,20 @@ export type PalletSearchSuccessBody = {
   pallets: PalletSearchRow[];
 };
 
+export type EmptyPalletRow = {
+  pallet_id: string;
+  pallet_code: string;
+  warehouse_code: string;
+  current_location_code: string | null;
+  current_status: string | null;
+  updated_at: string | null;
+};
+
+export type EmptyPalletsSuccessBody = {
+  ok: true;
+  pallets: EmptyPalletRow[];
+};
+
 function isRecord(v: unknown): v is Record<string, unknown> {
   return v !== null && typeof v === "object";
 }
@@ -1066,6 +1080,106 @@ function isPalletSearchSuccessBody(v: unknown): v is PalletSearchSuccessBody {
 }
 
 function isPalletSearchRow(v: unknown): v is PalletSearchRow {
+  if (!isRecord(v)) return false;
+  return (
+    typeof v.pallet_id === "string" &&
+    typeof v.pallet_code === "string" &&
+    typeof v.warehouse_code === "string"
+  );
+}
+
+export async function getEmptyPallets(
+  warehouseCode: string,
+  options?: { signal?: AbortSignal; timeoutMs?: number }
+): Promise<
+  | { ok: true; status: 200; data: EmptyPalletsSuccessBody }
+  | { ok: false; error: ScanApiError }
+> {
+  const base = getScanApiBaseUrl();
+  const timeoutMs = options?.timeoutMs ?? 10_000;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  if (options?.signal) {
+    linkAbort(options.signal, controller);
+  }
+
+  const query = new URLSearchParams({
+    warehouse_code: warehouseCode,
+  });
+
+  let res: Response;
+  try {
+    res = await fetch(`${base}/pallets/empty?${query.toString()}`, {
+      method: "GET",
+      signal: controller.signal,
+    });
+  } catch (e) {
+    clearTimeout(timeoutId);
+    if (e instanceof DOMException && e.name === "AbortError") {
+      return {
+        ok: false,
+        error: {
+          kind: "timeout",
+          message: "API通信タイムアウト",
+        },
+      };
+    }
+    return {
+      ok: false,
+      error: {
+        kind: "network",
+        message: "ネットワークに接続できません。API の起動を確認してください。",
+      },
+    };
+  }
+  clearTimeout(timeoutId);
+
+  let json: unknown;
+  try {
+    json = await res.json();
+  } catch {
+    return {
+      ok: false,
+      error: {
+        kind: "parse",
+        message: "サーバーから JSON 以外の応答が返りました。",
+        status: res.status,
+      },
+    };
+  }
+
+  if (res.status === 200) {
+    if (isEmptyPalletsSuccessBody(json)) {
+      return { ok: true, status: 200, data: json };
+    }
+    return {
+      ok: false,
+      error: {
+        kind: "parse",
+        message: "空パレット検索結果の形式が想定と異なります。",
+        status: 200,
+      },
+    };
+  }
+
+  return {
+    ok: false,
+    error: {
+      kind: res.status >= 500 ? "server" : "unknown",
+      message: parseErrorBody(json),
+      status: res.status,
+    },
+  };
+}
+
+function isEmptyPalletsSuccessBody(v: unknown): v is EmptyPalletsSuccessBody {
+  if (!isRecord(v)) return false;
+  if (v.ok !== true) return false;
+  if (!Array.isArray(v.pallets)) return false;
+  return v.pallets.every(isEmptyPalletRow);
+}
+
+function isEmptyPalletRow(v: unknown): v is EmptyPalletRow {
   if (!isRecord(v)) return false;
   return (
     typeof v.pallet_id === "string" &&

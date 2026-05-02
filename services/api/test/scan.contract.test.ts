@@ -10,6 +10,7 @@ import {
   type Sql,
 } from "./fixtures/scanContractFixtures.js";
 import {
+  getEmptyPallets,
   getPalletDetail,
   getPalletSearch,
   getHealth,
@@ -487,6 +488,22 @@ describe("scan minimal HTTP contract", () => {
 
     it("500 reaches DB layer when pallet_code is valid", async () => {
       const { status, json } = await getPalletDetail(server.baseUrl, "PL-001");
+
+      expect(status).toBe(500);
+      expect(errMessage(json)).toBeTruthy();
+    });
+  });
+
+  describe("GET /pallets/empty validation (no DB connection)", () => {
+    it("500 reaches DB layer when warehouse_code is omitted", async () => {
+      const { status, json } = await getEmptyPallets(server.baseUrl);
+
+      expect(status).toBe(500);
+      expect(errMessage(json)).toBeTruthy();
+    });
+
+    it("500 reaches DB layer when warehouse_code is provided", async () => {
+      const { status, json } = await getEmptyPallets(server.baseUrl, "KOMATSU");
 
       expect(status).toBe(500);
       expect(errMessage(json)).toBeTruthy();

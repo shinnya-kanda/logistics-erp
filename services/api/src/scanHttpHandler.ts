@@ -874,6 +874,32 @@ export async function handleScanHttp(
     return;
   }
 
+  if (req.method === "GET" && pathname === "/pallets/empty") {
+    const warehouseCode = requestUrl.searchParams.get("warehouse_code")?.trim() || "KOMATSU";
+    const sql = postgres(requireDatabaseUrl(), { max: 1 });
+    try {
+      const rows = await sql`
+        SELECT *
+        FROM public.get_empty_pallets(${warehouseCode})
+      `;
+
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, pallets: rows }));
+    } catch (e) {
+      const err = e as { message?: string };
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          ok: false,
+          error: err.message ?? "failed to get empty pallets",
+        })
+      );
+    } finally {
+      await sql.end({ timeout: 5 });
+    }
+    return;
+  }
+
   if (req.method === "GET" && pathname === "/pallets/detail") {
     const palletCode = requestUrl.searchParams.get("pallet_code")?.trim();
     if (!palletCode) {
