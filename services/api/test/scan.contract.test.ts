@@ -13,6 +13,7 @@ import {
   getHealth,
   optionsScans,
   postInventoryIn,
+  postInventoryMove,
   postInventoryOut,
   postScans,
 } from "./helpers/httpScanClient.js";
@@ -213,6 +214,46 @@ describe("scan minimal HTTP contract", () => {
       });
       expect(status).toBe(400);
       expect(json).toEqual({ ok: false, error: "to_location_code is required" });
+    });
+  });
+
+  describe("POST /inventory/move validation (no DB connection)", () => {
+    it("400 when required part_no is missing", async () => {
+      const { status, json } = await postInventoryMove(server.baseUrl, {
+        quantity: 1,
+        warehouse_code: "WH01",
+        from_location_code: "LOC01",
+        to_location_code: "LOC02",
+      });
+      expect(status).toBe(400);
+      expect(json).toEqual({ ok: false, error: "part_no is required" });
+    });
+
+    it("400 when quantity is not positive", async () => {
+      const { status, json } = await postInventoryMove(server.baseUrl, {
+        part_no: "P001",
+        quantity: 0,
+        warehouse_code: "WH01",
+        from_location_code: "LOC01",
+        to_location_code: "LOC02",
+      });
+      expect(status).toBe(400);
+      expect(json).toEqual({ ok: false, error: "quantity must be positive" });
+    });
+
+    it("400 when from_location_code and to_location_code are the same", async () => {
+      const { status, json } = await postInventoryMove(server.baseUrl, {
+        part_no: "P001",
+        quantity: 1,
+        warehouse_code: "WH01",
+        from_location_code: "LOC01",
+        to_location_code: "LOC01",
+      });
+      expect(status).toBe(400);
+      expect(json).toEqual({
+        ok: false,
+        error: "from_location_code and to_location_code must differ",
+      });
     });
   });
 
