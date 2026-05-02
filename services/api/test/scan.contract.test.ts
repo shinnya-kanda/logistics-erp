@@ -15,6 +15,7 @@ import {
   postInventoryIn,
   postInventoryMove,
   postInventoryOut,
+  postPalletCreate,
   postScans,
 } from "./helpers/httpScanClient.js";
 import {
@@ -253,6 +254,32 @@ describe("scan minimal HTTP contract", () => {
       expect(json).toEqual({
         ok: false,
         error: "from_location_code and to_location_code must differ",
+      });
+    });
+  });
+
+  describe("POST /pallets/create validation (no DB connection)", () => {
+    it("400 when pallet_code is missing", async () => {
+      const { status, json } = await postPalletCreate(server.baseUrl, {
+        warehouse_code: "KOMATSU",
+      });
+
+      expect(status).toBe(400);
+      expect(json).toEqual({
+        ok: false,
+        error: "pallet_code and warehouse_code required",
+      });
+    });
+
+    it("400 when warehouse_code is missing", async () => {
+      const { status, json } = await postPalletCreate(server.baseUrl, {
+        pallet_code: "PL-KM-260502-0001",
+      });
+
+      expect(status).toBe(400);
+      expect(json).toEqual({
+        ok: false,
+        error: "pallet_code and warehouse_code required",
       });
     });
   });

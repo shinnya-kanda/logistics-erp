@@ -390,6 +390,63 @@ export async function handleScanHttp(
     return;
   }
 
+  if (req.method === "POST" && req.url === "/pallets/create") {
+    try {
+      let body: unknown;
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "Invalid JSON body" }));
+        return;
+      }
+
+      if (!isRecord(body)) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "request body must be an object" }));
+        return;
+      }
+
+      const palletCode = stringOrNull(body.pallet_code);
+      const warehouseCode = stringOrNull(body.warehouse_code);
+
+      if (!palletCode || !warehouseCode) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({
+          ok: false,
+          error: "pallet_code and warehouse_code required",
+        }));
+        return;
+      }
+
+      const sql = postgres(requireDatabaseUrl(), { max: 1 });
+      try {
+        const rows = await sql<{ result: unknown }[]>`
+          SELECT public.create_pallet(
+            p_pallet_code => ${palletCode},
+            p_warehouse_code => ${warehouseCode},
+            p_created_by => ${stringOrNull(body.created_by)},
+            p_remarks => ${stringOrNull(body.remarks)}
+          ) AS result
+        `;
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(rows[0]?.result ?? { ok: false, error: "empty create_pallet result" }));
+      } finally {
+        await sql.end({ timeout: 5 });
+      }
+    } catch (e) {
+      const err = e as { message?: string };
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          ok: false,
+          error: err.message ?? "failed to create pallet",
+        })
+      );
+    }
+    return;
+  }
+
   if (req.method === "GET" && req.url === "/health") {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ ok: true, service: "scan-minimal" }));
