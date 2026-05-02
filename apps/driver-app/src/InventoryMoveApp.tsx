@@ -17,6 +17,11 @@ type MoveFormFields = {
 
 type ReaderTarget = "part_no" | "from_location_code" | "to_location_code";
 
+type ParsedCode39 = {
+  partNo: string | null;
+  quantity: number | null;
+};
+
 const emptyMoveForm: MoveFormFields = {
   part_no: "",
   quantity: "",
@@ -33,18 +38,38 @@ function trimOrUndefined(s: string): string | undefined {
 }
 
 function normalizeCode39Input(raw: string): string {
-  const withoutNewlines = raw.replace(/[\r\n]/g, "");
-  const halfWidth = withoutNewlines.replace(/[！-～]/g, (ch) =>
-    String.fromCharCode(ch.charCodeAt(0) - 0xfee0)
-  );
-  const normalized = halfWidth.replace(/\u3000/g, " ").trim().toUpperCase();
-  return normalized.replace(/^[*＊]+/, "").replace(/[*＊]+$/, "").trim();
+  return raw
+    .replace(/[＊*]/g, "")
+    .replace(/[Ａ-Ｚａ-ｚ０-９]/g, (ch) =>
+      String.fromCharCode(ch.charCodeAt(0) - 0xfee0)
+    )
+    .replace(/\u3000/g, " ")
+    .replace(/[\r\n]+/g, "")
+    .toUpperCase()
+    .trim();
 }
 
-function extractPartNoFromCode39(raw: string): string | null {
+function parseCode39PartAndQuantity(raw: string): ParsedCode39 {
   const normalized = normalizeCode39Input(raw);
-  const firstToken = normalized.split(/\s+/)[0] ?? "";
-  return /^[A-Z0-9]{10,12}$/.test(firstToken) ? firstToken : null;
+  const tokens = normalized.split(/[ .]+/).filter(Boolean);
+  const partIndex = tokens.findIndex((token) => /^[A-Z0-9]{10,12}$/.test(token));
+  if (partIndex < 0) {
+    return { partNo: null, quantity: null };
+  }
+
+  const partNo = tokens[partIndex];
+  const quantityToken = tokens
+    .slice(partIndex + 1)
+    .find((token) => /^[0-9]+$/.test(token));
+  if (!quantityToken) {
+    return { partNo, quantity: null };
+  }
+
+  const quantity = Number.parseInt(quantityToken, 10);
+  return {
+    partNo,
+    quantity: Number.isFinite(quantity) && quantity > 0 ? quantity : null,
+  };
 }
 
 function nextReaderTarget(target: ReaderTarget): ReaderTarget {
@@ -75,13 +100,21 @@ export function InventoryMoveApp() {
     setError(null);
 
     if (readerTarget === "part_no") {
-      const partNo = extractPartNoFromCode39(readerValue);
-      if (!partNo) {
+      const parsed = parseCode39PartAndQuantity(readerValue);
+      if (!parsed.partNo) {
         setReaderMessage("品番を抽出できません。10〜12桁の英数字を読み取ってください。");
         return;
       }
-      setFields((f) => ({ ...f, part_no: partNo }));
-      setReaderMessage(`品番 ${partNo} を反映しました。`);
+      setFields((f) => ({
+        ...f,
+        part_no: parsed.partNo ?? f.part_no,
+        quantity: parsed.quantity !== null ? String(parsed.quantity) : f.quantity,
+      }));
+      setReaderMessage(
+        parsed.quantity !== null
+          ? `品番 ${parsed.partNo}、数量 ${parsed.quantity} を反映しました。`
+          : `品番 ${parsed.partNo} を反映しました。数量は変更していません。`
+      );
     } else {
       const locationCode = normalizeCode39Input(readerValue);
       if (!locationCode) {
