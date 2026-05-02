@@ -4,6 +4,7 @@ import { getSupabaseBrowserClient } from "./supabaseClient.js";
 import { InventoryMoveApp } from "./InventoryMoveApp.js";
 import { PalletCreateApp } from "./PalletCreateApp.js";
 import { PalletItemAddApp } from "./PalletItemAddApp.js";
+import { PalletMoveApp } from "./PalletMoveApp.js";
 import { ScannerApp } from "./ScannerApp.js";
 
 export default function App() {
@@ -33,6 +34,7 @@ export default function App() {
       <InventoryMoveApp />
       <PalletCreateApp />
       <PalletItemAddApp />
+      <PalletMoveApp />
       <ScannerApp />
     </main>
   );

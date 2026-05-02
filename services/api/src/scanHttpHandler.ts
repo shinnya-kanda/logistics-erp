@@ -522,6 +522,75 @@ export async function handleScanHttp(
     return;
   }
 
+  if (req.method === "POST" && req.url === "/pallets/move") {
+    try {
+      let body: unknown;
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "Invalid JSON body" }));
+        return;
+      }
+
+      if (!isRecord(body)) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "request body must be an object" }));
+        return;
+      }
+
+      const palletCode = stringOrNull(body.pallet_code);
+      const toLocationCode = stringOrNull(body.to_location_code);
+      const warehouseCode = stringOrNull(body.warehouse_code) ?? "KOMATSU";
+
+      if (!palletCode) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "pallet_code is required" }));
+        return;
+      }
+      if (!toLocationCode) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "to_location_code is required" }));
+        return;
+      }
+      if (!warehouseCode) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "warehouse_code is required" }));
+        return;
+      }
+
+      const idempotencyKey = stringOrNull(body.idempotency_key) ?? randomUUID();
+      const sql = postgres(requireDatabaseUrl(), { max: 1 });
+      try {
+        const rows = await sql<{ result: unknown }[]>`
+          SELECT public.move_pallet(
+            p_pallet_code => ${palletCode},
+            p_to_location_code => ${toLocationCode},
+            p_warehouse_code => ${warehouseCode},
+            p_operator_id => ${stringOrNull(body.operator_id)},
+            p_operator_name => ${stringOrNull(body.operator_name)},
+            p_remarks => ${stringOrNull(body.remarks)},
+            p_idempotency_key => ${idempotencyKey}
+          ) AS result
+        `;
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(rows[0]?.result ?? { ok: false, error: "empty move_pallet result" }));
+      } finally {
+        await sql.end({ timeout: 5 });
+      }
+    } catch (e) {
+      const err = e as { message?: string };
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          ok: false,
+          error: err.message ?? "failed to move pallet",
+        })
+      );
+    }
+    return;
+  }
+
   if (req.method === "GET" && req.url === "/health") {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ ok: true, service: "scan-minimal" }));
