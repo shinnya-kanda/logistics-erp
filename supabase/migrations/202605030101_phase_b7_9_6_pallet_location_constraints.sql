@@ -18,28 +18,8 @@
 
 begin;
 
-do $$
-begin
-  if not exists (
-    select 1
-    from pg_index i
-    join pg_class t on t.oid = i.indrelid
-    join pg_namespace n on n.oid = t.relnamespace
-    where n.nspname = 'public'
-      and t.relname = 'pallet_units'
-      and i.indisunique
-      and i.indpred is null
-      and array(
-        select a.attname
-        from unnest(i.indkey) with ordinality as k(attnum, ord)
-        join pg_attribute a on a.attrelid = t.oid and a.attnum = k.attnum
-        order by k.ord
-      ) = array['pallet_code']
-  ) then
-    create unique index ux_pallet_units_pallet_code
-      on public.pallet_units (pallet_code);
-  end if;
-end $$;
+create unique index if not exists ux_pallet_units_pallet_code
+  on public.pallet_units (pallet_code);
 
 create unique index if not exists ux_active_pallet_location
   on public.pallet_units (warehouse_code, current_location_code)
