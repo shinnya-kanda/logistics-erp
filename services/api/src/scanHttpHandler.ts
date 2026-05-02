@@ -448,6 +448,80 @@ export async function handleScanHttp(
     return;
   }
 
+  if (req.method === "POST" && req.url === "/pallets/items/add") {
+    try {
+      let body: unknown;
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "Invalid JSON body" }));
+        return;
+      }
+
+      if (!isRecord(body)) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "request body must be an object" }));
+        return;
+      }
+
+      const palletCode = stringOrNull(body.pallet_code);
+      const partNo = stringOrNull(body.part_no);
+      const quantity = parsePositiveQuantity(body.quantity);
+      const warehouseCode = stringOrNull(body.warehouse_code);
+
+      if (!palletCode) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "pallet_code is required" }));
+        return;
+      }
+      if (!partNo) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "part_no is required" }));
+        return;
+      }
+      if (quantity === null) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "quantity must be positive" }));
+        return;
+      }
+      if (!warehouseCode) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "warehouse_code is required" }));
+        return;
+      }
+
+      const sql = postgres(requireDatabaseUrl(), { max: 1 });
+      try {
+        const rows = await sql<{ result: unknown }[]>`
+          SELECT public.add_pallet_item(
+            p_pallet_code => ${palletCode},
+            p_part_no => ${partNo},
+            p_quantity => ${String(quantity)}::numeric,
+            p_warehouse_code => ${warehouseCode},
+            p_quantity_unit => ${stringOrNull(body.quantity_unit) ?? "pcs"},
+            p_created_by => ${stringOrNull(body.created_by)},
+            p_remarks => ${stringOrNull(body.remarks)}
+          ) AS result
+        `;
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(rows[0]?.result ?? { ok: false, error: "empty add_pallet_item result" }));
+      } finally {
+        await sql.end({ timeout: 5 });
+      }
+    } catch (e) {
+      const err = e as { message?: string };
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          ok: false,
+          error: err.message ?? "failed to add pallet item",
+        })
+      );
+    }
+    return;
+  }
+
   if (req.method === "GET" && req.url === "/health") {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ ok: true, service: "scan-minimal" }));

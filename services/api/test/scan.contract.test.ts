@@ -16,6 +16,7 @@ import {
   postInventoryMove,
   postInventoryOut,
   postPalletCreate,
+  postPalletItemAdd,
   postScans,
 } from "./helpers/httpScanClient.js";
 import {
@@ -281,6 +282,53 @@ describe("scan minimal HTTP contract", () => {
         ok: false,
         error: "pallet_code and warehouse_code required",
       });
+    });
+  });
+
+  describe("POST /pallets/items/add validation (no DB connection)", () => {
+    it("400 when pallet_code is missing", async () => {
+      const { status, json } = await postPalletItemAdd(server.baseUrl, {
+        part_no: "741R129590",
+        quantity: 10,
+        warehouse_code: "KOMATSU",
+      });
+
+      expect(status).toBe(400);
+      expect(json).toEqual({ ok: false, error: "pallet_code is required" });
+    });
+
+    it("400 when part_no is missing", async () => {
+      const { status, json } = await postPalletItemAdd(server.baseUrl, {
+        pallet_code: "PL-KM-260502-0001",
+        quantity: 10,
+        warehouse_code: "KOMATSU",
+      });
+
+      expect(status).toBe(400);
+      expect(json).toEqual({ ok: false, error: "part_no is required" });
+    });
+
+    it("400 when quantity is not positive", async () => {
+      const { status, json } = await postPalletItemAdd(server.baseUrl, {
+        pallet_code: "PL-KM-260502-0001",
+        part_no: "741R129590",
+        quantity: 0,
+        warehouse_code: "KOMATSU",
+      });
+
+      expect(status).toBe(400);
+      expect(json).toEqual({ ok: false, error: "quantity must be positive" });
+    });
+
+    it("400 when warehouse_code is missing", async () => {
+      const { status, json } = await postPalletItemAdd(server.baseUrl, {
+        pallet_code: "PL-KM-260502-0001",
+        part_no: "741R129590",
+        quantity: 10,
+      });
+
+      expect(status).toBe(400);
+      expect(json).toEqual({ ok: false, error: "warehouse_code is required" });
     });
   });
 
