@@ -59,6 +59,23 @@ export type PalletCreateSuccessBody = {
   created: boolean;
 };
 
+export type PalletItemAddPayload = {
+  pallet_code: string;
+  part_no: string;
+  quantity: number;
+  warehouse_code: string;
+  quantity_unit?: string;
+  created_by?: string;
+  remarks?: string;
+};
+
+export type PalletItemAddSuccessBody = {
+  ok: true;
+  pallet_code: string;
+  part_no: string;
+  quantity_added: number;
+};
+
 function isRecord(v: unknown): v is Record<string, unknown> {
   return v !== null && typeof v === "object";
 }
@@ -466,6 +483,108 @@ function isPalletCreateSuccessBody(v: unknown): v is PalletCreateSuccessBody {
   if (typeof v.pallet_id !== "string") return false;
   if (typeof v.pallet_code !== "string") return false;
   if (typeof v.created !== "boolean") return false;
+  return true;
+}
+
+export async function postPalletItemAdd(
+  body: PalletItemAddPayload,
+  options?: { signal?: AbortSignal; timeoutMs?: number }
+): Promise<
+  | { ok: true; status: 200; data: PalletItemAddSuccessBody }
+  | { ok: false; error: ScanApiError }
+> {
+  const base = getScanApiBaseUrl();
+  const timeoutMs = options?.timeoutMs ?? 10_000;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  if (options?.signal) {
+    linkAbort(options.signal, controller);
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(`${base}/pallets/items/add`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+  } catch (e) {
+    clearTimeout(timeoutId);
+    if (e instanceof DOMException && e.name === "AbortError") {
+      return {
+        ok: false,
+        error: {
+          kind: "timeout",
+          message: "API通信タイムアウト",
+        },
+      };
+    }
+    return {
+      ok: false,
+      error: {
+        kind: "network",
+        message: "ネットワークに接続できません。API の起動を確認してください。",
+      },
+    };
+  }
+  clearTimeout(timeoutId);
+
+  let json: unknown;
+  try {
+    json = await res.json();
+  } catch {
+    return {
+      ok: false,
+      error: {
+        kind: "parse",
+        message: "サーバーから JSON 以外の応答が返りました。",
+        status: res.status,
+      },
+    };
+  }
+
+  if (res.status === 200) {
+    if (isPalletItemAddSuccessBody(json)) {
+      return { ok: true, status: 200, data: json };
+    }
+    return {
+      ok: false,
+      error: {
+        kind: "server",
+        message: parseErrorBody(json),
+        status: 200,
+      },
+    };
+  }
+
+  if (res.status === 400) {
+    return {
+      ok: false,
+      error: {
+        kind: "validation",
+        message: parseErrorBody(json),
+        status: 400,
+      },
+    };
+  }
+
+  return {
+    ok: false,
+    error: {
+      kind: res.status >= 500 ? "server" : "unknown",
+      message: parseErrorBody(json),
+      status: res.status,
+    },
+  };
+}
+
+function isPalletItemAddSuccessBody(v: unknown): v is PalletItemAddSuccessBody {
+  if (!isRecord(v)) return false;
+  if (v.ok !== true) return false;
+  if (typeof v.pallet_code !== "string") return false;
+  if (typeof v.part_no !== "string") return false;
+  if (typeof v.quantity_added !== "number") return false;
   return true;
 }
 
