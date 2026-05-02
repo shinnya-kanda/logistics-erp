@@ -233,38 +233,55 @@ export async function getHealth(options?: {
 
 export async function postInventoryMove(
   body: InventoryMovePayload,
-  options?: { signal?: AbortSignal; timeoutMs?: number }
+  options?: {
+    signal?: AbortSignal;
+    timeoutMs?: number;
+    onDebug?: (message: string) => void;
+  }
 ): Promise<
   | { ok: true; status: 200; data: InventoryMoveSuccessBody }
   | { ok: false; error: ScanApiError }
 > {
   const base = getScanApiBaseUrl();
-  const timeoutMs = options?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  const timeoutMs = options?.timeoutMs ?? 10_000;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   if (options?.signal) {
     linkAbort(options.signal, controller);
   }
 
+  const url = `${base}/inventory/move`;
+  console.log("[MOVE API] URL:", url);
+  console.log("[MOVE API] BODY:", body);
+  options?.onDebug?.(`[MOVE API] URL: ${url}`);
+  options?.onDebug?.(`[MOVE API] BODY: ${JSON.stringify(body)}`);
+
   let res: Response;
   try {
-    res = await fetch(`${base}/inventory/move`, {
+    res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
       signal: controller.signal,
     });
+    console.log("[MOVE API] RESPONSE STATUS:", res.status);
+    options?.onDebug?.(`[MOVE API] RESPONSE STATUS: ${res.status}`);
   } catch (e) {
+    console.error("[MOVE API] FETCH ERROR:", e);
     clearTimeout(timeoutId);
     if (e instanceof DOMException && e.name === "AbortError") {
+      options?.onDebug?.("[MOVE API] FETCH ERROR: API通信タイムアウト");
       return {
         ok: false,
         error: {
           kind: "timeout",
-          message: `応答が ${timeoutMs / 1000} 秒以内に返りませんでした。`,
+          message: "API通信タイムアウト",
         },
       };
     }
+    options?.onDebug?.(
+      `[MOVE API] FETCH ERROR: ${e instanceof Error ? e.message : String(e)}`
+    );
     return {
       ok: false,
       error: {
@@ -278,7 +295,10 @@ export async function postInventoryMove(
   let json: unknown;
   try {
     json = await res.json();
+    console.log("[MOVE API] RESPONSE JSON:", json);
+    options?.onDebug?.(`[MOVE API] RESPONSE JSON: ${JSON.stringify(json)}`);
   } catch {
+    options?.onDebug?.("[MOVE API] RESPONSE JSON: parse failed");
     return {
       ok: false,
       error: {
