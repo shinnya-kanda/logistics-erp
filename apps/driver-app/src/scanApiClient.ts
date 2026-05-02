@@ -26,6 +26,25 @@ export type ScanApiError = {
   status?: number;
 };
 
+export type InventoryMovePayload = {
+  part_no: string;
+  quantity: number;
+  warehouse_code: string;
+  from_location_code: string;
+  to_location_code: string;
+  operator_name?: string;
+  remarks?: string;
+  idempotency_key: string;
+};
+
+export type InventoryMoveSuccessBody = {
+  ok: true;
+  move: {
+    out_transaction: Record<string, unknown>;
+    in_transaction: Record<string, unknown>;
+  };
+};
+
 function isRecord(v: unknown): v is Record<string, unknown> {
   return v !== null && typeof v === "object";
 }
@@ -210,6 +229,108 @@ export async function getHealth(options?: {
       },
     };
   }
+}
+
+export async function postInventoryMove(
+  body: InventoryMovePayload,
+  options?: { signal?: AbortSignal; timeoutMs?: number }
+): Promise<
+  | { ok: true; status: 200; data: InventoryMoveSuccessBody }
+  | { ok: false; error: ScanApiError }
+> {
+  const base = getScanApiBaseUrl();
+  const timeoutMs = options?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  if (options?.signal) {
+    linkAbort(options.signal, controller);
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(`${base}/inventory/move`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+  } catch (e) {
+    clearTimeout(timeoutId);
+    if (e instanceof DOMException && e.name === "AbortError") {
+      return {
+        ok: false,
+        error: {
+          kind: "timeout",
+          message: `応答が ${timeoutMs / 1000} 秒以内に返りませんでした。`,
+        },
+      };
+    }
+    return {
+      ok: false,
+      error: {
+        kind: "network",
+        message: "ネットワークに接続できません。API の起動を確認してください。",
+      },
+    };
+  }
+  clearTimeout(timeoutId);
+
+  let json: unknown;
+  try {
+    json = await res.json();
+  } catch {
+    return {
+      ok: false,
+      error: {
+        kind: "parse",
+        message: "サーバーから JSON 以外の応答が返りました。",
+        status: res.status,
+      },
+    };
+  }
+
+  if (res.status === 200) {
+    if (!isInventoryMoveSuccessBody(json)) {
+      return {
+        ok: false,
+        error: {
+          kind: "parse",
+          message: "棚移動結果の形式が想定と異なります。",
+          status: 200,
+        },
+      };
+    }
+    return { ok: true, status: 200, data: json };
+  }
+
+  if (res.status === 400) {
+    return {
+      ok: false,
+      error: {
+        kind: "validation",
+        message: parseErrorBody(json),
+        status: 400,
+      },
+    };
+  }
+
+  return {
+    ok: false,
+    error: {
+      kind: res.status >= 500 ? "server" : "unknown",
+      message: parseErrorBody(json),
+      status: res.status,
+    },
+  };
+}
+
+function isInventoryMoveSuccessBody(v: unknown): v is InventoryMoveSuccessBody {
+  if (!isRecord(v)) return false;
+  if (v.ok !== true) return false;
+  if (!isRecord(v.move)) return false;
+  if (!isRecord(v.move.out_transaction)) return false;
+  if (!isRecord(v.move.in_transaction)) return false;
+  return true;
 }
 
 export type { ScanHttpPostScansSuccessBody };

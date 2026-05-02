@@ -91,6 +91,11 @@ body {
   border-color: #1976d2;
 }
 
+.textarea {
+  min-height: 6rem;
+  resize: vertical;
+}
+
 .optional-block {
   margin-bottom: 1rem;
   padding: 0.5rem 0;
