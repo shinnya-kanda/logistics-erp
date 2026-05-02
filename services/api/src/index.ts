@@ -47,12 +47,7 @@ const port = Number(
   process.env.PORT ?? process.env.SCAN_HTTP_PORT ?? "3040"
 );
 
-/**
- * driver-app 等からのブラウザ fetch 用。未設定時は localhost:3002 のみ許可。
- * 緩くしたい場合は SCAN_CORS_ORIGIN=* を指定。
- */
-const corsOrigin =
-  process.env.SCAN_CORS_ORIGIN?.trim() || "http://localhost:3002";
+const corsOrigin = "*";
 
 async function fetchSupabaseAuthHealth(): Promise<{
   ok: boolean;
@@ -89,12 +84,9 @@ const server = createServer((req, res) => {
           },
         });
         res.setHeader("Content-Type", "application/json; charset=utf-8");
-        res.setHeader("Access-Control-Allow-Origin", corsOrigin);
-        res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-        res.setHeader(
-          "Access-Control-Allow-Headers",
-          "Content-Type, Authorization"
-        );
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+        res.setHeader("Access-Control-Allow-Headers", "Content-Type");
         res.writeHead(200);
         res.end(body);
       } catch (e) {

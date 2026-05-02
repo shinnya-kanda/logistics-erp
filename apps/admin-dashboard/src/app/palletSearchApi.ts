@@ -15,12 +15,7 @@ type PalletSearchResponse =
   | { ok: true; pallets: PalletSearchRow[] }
   | { ok: false; error: string };
 
-function getScanApiBaseUrl(): string {
-  return (
-    process.env.NEXT_PUBLIC_SCAN_API_BASE_URL?.replace(/\/$/, "") ??
-    "http://localhost:3040"
-  );
-}
+const API_BASE = "http://localhost:3040";
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return v !== null && typeof v === "object" && !Array.isArray(v);
@@ -43,10 +38,9 @@ function parseError(json: unknown): string {
 export async function searchPalletsByWarehouseCode(
   warehouseCode: string
 ): Promise<PalletSearchResponse> {
-  const url = new URL(`${getScanApiBaseUrl()}/pallets/search`);
-  url.searchParams.set("warehouse_code", warehouseCode);
-
-  const res = await fetch(url);
+  const res = await fetch(
+    `${API_BASE}/pallets/search?warehouse_code=${encodeURIComponent(warehouseCode)}`
+  );
   let json: unknown;
   try {
     json = await res.json();

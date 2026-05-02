@@ -9,13 +9,10 @@ export type ScanHttpHandlerOptions = {
   corsOrigin?: string;
 };
 
-function setCors(res: ServerResponse, corsOrigin: string): void {
-  res.setHeader("Access-Control-Allow-Origin", corsOrigin);
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Authorization"
-  );
+function setCors(res: ServerResponse): void {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 }
 
 async function readJsonBody(req: IncomingMessage): Promise<unknown> {
@@ -62,8 +59,7 @@ export async function handleScanHttp(
   res: ServerResponse,
   options?: ScanHttpHandlerOptions
 ): Promise<void> {
-  const corsOrigin = options?.corsOrigin ?? "*";
-  setCors(res, corsOrigin);
+  setCors(res);
   const requestUrl = parseRequestUrl(req);
   const pathname = requestUrl.pathname;
 
