@@ -151,6 +151,27 @@ export async function postPalletItemAdd(
   return { status: res.status, json, rawText };
 }
 
+export async function postPalletItemOut(
+  baseUrl: string,
+  body: Record<string, unknown>
+): Promise<ScanPostResult> {
+  const res = await fetch(`${baseUrl.replace(/\/$/, "")}/pallets/items/out`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const rawText = await res.text();
+  let json: unknown = null;
+  if (rawText.trim()) {
+    try {
+      json = JSON.parse(rawText) as unknown;
+    } catch {
+      json = { _parseError: true, rawText };
+    }
+  }
+  return { status: res.status, json, rawText };
+}
+
 export async function postPalletMove(
   baseUrl: string,
   body: Record<string, unknown>

@@ -56,6 +56,14 @@ function errorCodeOf(v: unknown): string | null {
   return v.error;
 }
 
+function palletItemOutMessage(error: string): string | null {
+  if (error === "pallet_not_found") return "パレットが見つかりません";
+  if (error === "pallet_already_out") return "出庫済みパレットです";
+  if (error === "pallet_item_not_found") return "このパレットに対象品番がありません";
+  if (error === "insufficient_pallet_item_quantity") return "パレット内数量が不足しています";
+  return null;
+}
+
 /**
  * POST /scans, GET /health, OPTIONS, 404。scanHttp.ts と契約テストで共有。
  */
@@ -535,6 +543,91 @@ export async function handleScanHttp(
         JSON.stringify({
           ok: false,
           error: err.message ?? "failed to add pallet item",
+        })
+      );
+    }
+    return;
+  }
+
+  if (req.method === "POST" && pathname === "/pallets/items/out") {
+    try {
+      let body: unknown;
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "Invalid JSON body" }));
+        return;
+      }
+
+      if (!isRecord(body)) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "request body must be an object" }));
+        return;
+      }
+
+      const palletCode = stringOrNull(body.pallet_code);
+      const partNo = stringOrNull(body.part_no);
+      const quantity = parsePositiveQuantity(body.quantity);
+      const warehouseCode = stringOrNull(body.warehouse_code) ?? "KOMATSU";
+
+      if (!palletCode) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "pallet_code is required" }));
+        return;
+      }
+      if (!partNo) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "part_no is required" }));
+        return;
+      }
+      if (quantity === null) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "quantity must be positive" }));
+        return;
+      }
+      if (!warehouseCode) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "warehouse_code is required" }));
+        return;
+      }
+
+      const idempotencyKey = stringOrNull(body.idempotency_key) ?? randomUUID();
+      const sql = postgres(requireDatabaseUrl(), { max: 1 });
+      try {
+        const rows = await sql<{ result: unknown }[]>`
+          SELECT public.out_pallet_item(
+            p_pallet_code => ${palletCode},
+            p_part_no => ${partNo},
+            p_quantity => ${String(quantity)}::numeric,
+            p_warehouse_code => ${warehouseCode},
+            p_operator_id => ${stringOrNull(body.operator_id)},
+            p_operator_name => ${stringOrNull(body.operator_name)},
+            p_remarks => ${stringOrNull(body.remarks)},
+            p_idempotency_key => ${idempotencyKey}
+          ) AS result
+        `;
+        const result = rows[0]?.result ?? { ok: false, error: "empty out_pallet_item result" };
+        const errorCode = errorCodeOf(result);
+        const message = errorCode ? palletItemOutMessage(errorCode) : null;
+        if (errorCode && message) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: errorCode, message }));
+          return;
+        }
+
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(result));
+      } finally {
+        await sql.end({ timeout: 5 });
+      }
+    } catch (e) {
+      const err = e as { message?: string };
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          ok: false,
+          error: err.message ?? "failed to out pallet item",
         })
       );
     }
