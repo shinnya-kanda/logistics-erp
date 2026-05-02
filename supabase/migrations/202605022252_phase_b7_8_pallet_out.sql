@@ -182,7 +182,10 @@ begin
     )
   );
   v_warehouse_code := trim(coalesce(p_warehouse_code, 'KOMATSU'));
-  v_idempotency_key := nullif(trim(coalesce(p_idempotency_key, '')), '');
+  v_idempotency_key := coalesce(
+    nullif(trim(coalesce(p_idempotency_key, '')), ''),
+    'pallet-out:' || gen_random_uuid()::text
+  );
 
   if v_pallet_code = '' then
     return json_build_object('ok', false, 'error', 'pallet_code_required');
@@ -192,18 +195,17 @@ begin
     return json_build_object('ok', false, 'error', 'warehouse_code_required');
   end if;
 
-  if v_idempotency_key is not null then
-    select *
-    into v_transaction
-    from public.pallet_transactions
-    where idempotency_key = v_idempotency_key;
+  select *
+  into v_transaction
+  from public.pallet_transactions
+  where idempotency_key = v_idempotency_key
+    and transaction_type = 'OUT';
 
-    if found then
-      return json_build_object(
-        'ok', true,
-        'transaction', row_to_json(v_transaction)
-      );
-    end if;
+  if found then
+    return json_build_object(
+      'ok', true,
+      'transaction', row_to_json(v_transaction)
+    );
   end if;
 
   select id, current_location_code, current_status
@@ -216,6 +218,20 @@ begin
   end if;
 
   if v_current_status = 'OUT' then
+    select *
+    into v_transaction
+    from public.pallet_transactions
+    where idempotency_key = v_idempotency_key
+      and pallet_unit_id = v_pallet_unit_id
+      and transaction_type = 'OUT';
+
+    if found then
+      return json_build_object(
+        'ok', true,
+        'transaction', row_to_json(v_transaction)
+      );
+    end if;
+
     return json_build_object('ok', false, 'error', 'pallet_already_out');
   end if;
 
@@ -261,18 +277,17 @@ begin
 
 exception
   when unique_violation then
-    if v_idempotency_key is not null then
-      select *
-      into v_transaction
-      from public.pallet_transactions
-      where idempotency_key = v_idempotency_key;
+    select *
+    into v_transaction
+    from public.pallet_transactions
+    where idempotency_key = v_idempotency_key
+      and transaction_type = 'OUT';
 
-      if found then
-        return json_build_object(
-          'ok', true,
-          'transaction', row_to_json(v_transaction)
-        );
-      end if;
+    if found then
+      return json_build_object(
+        'ok', true,
+        'transaction', row_to_json(v_transaction)
+      );
     end if;
 
     return json_build_object('ok', false, 'error', sqlerrm);
