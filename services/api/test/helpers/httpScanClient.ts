@@ -196,7 +196,8 @@ export async function postPalletOut(
 export async function getPalletSearch(
   baseUrl: string,
   warehouseCode?: string,
-  status?: string
+  status?: string,
+  partNo?: string
 ): Promise<ScanPostResult> {
   const url = new URL(`${baseUrl.replace(/\/$/, "")}/pallets/search`);
   if (warehouseCode !== undefined) {
@@ -204,6 +205,9 @@ export async function getPalletSearch(
   }
   if (status !== undefined) {
     url.searchParams.set("status", status);
+  }
+  if (partNo !== undefined) {
+    url.searchParams.set("part_no", partNo);
   }
   const res = await fetch(url);
   const rawText = await res.text();

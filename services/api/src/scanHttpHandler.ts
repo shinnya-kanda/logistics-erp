@@ -659,9 +659,10 @@ export async function handleScanHttp(
     const warehouseCode = requestUrl.searchParams.get("warehouse_code")?.trim();
     const rawStatus = requestUrl.searchParams.get("status")?.trim().toUpperCase();
     const statusFilter = rawStatus && rawStatus !== "ALL" ? rawStatus : null;
-    if (!warehouseCode) {
+    const partNo = requestUrl.searchParams.get("part_no")?.trim();
+    if (!warehouseCode && !partNo) {
       res.writeHead(400, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ ok: false, error: "warehouse_code is required" }));
+      res.end(JSON.stringify({ ok: false, error: "warehouse_code or part_no is required" }));
       return;
     }
     if (statusFilter !== null && statusFilter !== "ACTIVE" && statusFilter !== "OUT") {
@@ -716,14 +717,15 @@ export async function handleScanHttp(
           LEFT JOIN public.pallet_item_links pil
             ON pil.pallet_id = pu.id
             ${unlinkedJoin}
-          WHERE pu.warehouse_code = $1
+          WHERE ($1::text IS NULL OR pu.warehouse_code = $1)
             AND ($2::text IS NULL OR pu.current_status = $2)
+            AND ($3::text IS NULL OR pil.part_no ILIKE ('%' || $3 || '%'))
           ORDER BY
             pu.current_location_code ASC NULLS LAST,
             pu.pallet_code ASC,
             pil.part_no ASC NULLS LAST
         `,
-        [warehouseCode, statusFilter]
+        [warehouseCode || null, statusFilter, partNo || null]
       );
 
       res.writeHead(200, { "Content-Type": "application/json" });

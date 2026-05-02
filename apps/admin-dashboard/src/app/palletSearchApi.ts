@@ -17,6 +17,12 @@ type PalletSearchResponse =
 
 export type PalletSearchStatus = "ALL" | "ACTIVE" | "OUT";
 
+type PalletSearchParams = {
+  warehouseCode?: string;
+  status?: PalletSearchStatus;
+  partNo?: string;
+};
+
 const API_BASE = "http://localhost:3040";
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -37,15 +43,25 @@ function parseError(json: unknown): string {
   return "パレット検索に失敗しました。";
 }
 
-export async function searchPalletsByWarehouseCode(
-  warehouseCode: string,
-  status: PalletSearchStatus = "ALL"
-): Promise<PalletSearchResponse> {
-  const statusQuery =
-    status === "ALL" ? "" : `&status=${encodeURIComponent(status)}`;
-  const res = await fetch(
-    `${API_BASE}/pallets/search?warehouse_code=${encodeURIComponent(warehouseCode)}${statusQuery}`
-  );
+export async function searchPallets({
+  warehouseCode,
+  status = "ALL",
+  partNo,
+}: PalletSearchParams): Promise<PalletSearchResponse> {
+  const params = new URLSearchParams();
+  const trimmedWarehouseCode = warehouseCode?.trim();
+  const trimmedPartNo = partNo?.trim();
+  if (trimmedWarehouseCode) {
+    params.set("warehouse_code", trimmedWarehouseCode);
+  }
+  if (status === "ACTIVE" || status === "OUT") {
+    params.set("status", status);
+  }
+  if (trimmedPartNo) {
+    params.set("part_no", trimmedPartNo);
+  }
+
+  const res = await fetch(`${API_BASE}/pallets/search?${params.toString()}`);
   let json: unknown;
   try {
     json = await res.json();

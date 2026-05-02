@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import {
-  searchPalletsByWarehouseCode,
+  searchPallets,
   type PalletSearchRow,
   type PalletSearchStatus,
 } from "./palletSearchApi";
@@ -137,27 +137,41 @@ const styles = {
 export function PalletSearchSection() {
   const [warehouseCode, setWarehouseCode] = useState("KOMATSU");
   const [statusFilter, setStatusFilter] = useState<PalletSearchStatus>("ALL");
+  const [partNo, setPartNo] = useState("");
   const [rows, setRows] = useState<PalletSearchRow[]>([]);
   const [searchedWarehouseCode, setSearchedWarehouseCode] = useState("");
   const [searchedStatus, setSearchedStatus] = useState<PalletSearchStatus>("ALL");
+  const [searchedPartNo, setSearchedPartNo] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const activeCount = rows.filter((row) => row.current_status === "ACTIVE").length;
   const outCount = rows.filter((row) => row.current_status === "OUT").length;
+  const searchConditionText = [
+    searchedWarehouseCode ? `warehouse_code: ${searchedWarehouseCode}` : null,
+    searchedStatus === "ALL" ? null : `status: ${searchedStatus}`,
+    searchedPartNo ? `part_no: ${searchedPartNo}` : null,
+  ]
+    .filter(Boolean)
+    .join(" / ");
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     const code = warehouseCode.trim();
+    const part = partNo.trim();
     setError(null);
 
-    if (!code) {
-      setError("warehouse_code を入力してください。");
+    if (!code && !part) {
+      setError("warehouse_code または part_no を入力してください。");
       return;
     }
 
     setLoading(true);
     try {
-      const result = await searchPalletsByWarehouseCode(code, statusFilter);
+      const result = await searchPallets({
+        warehouseCode: code,
+        status: statusFilter,
+        partNo: part,
+      });
       if (!result.ok) {
         setRows([]);
         setError(result.error);
@@ -166,6 +180,7 @@ export function PalletSearchSection() {
       setRows(result.pallets);
       setSearchedWarehouseCode(code);
       setSearchedStatus(statusFilter);
+      setSearchedPartNo(part);
     } catch (err) {
       setRows([]);
       setError(err instanceof Error ? err.message : "検索中にエラーが発生しました。");
@@ -177,7 +192,7 @@ export function PalletSearchSection() {
   return (
     <section style={styles.panel}>
       <h2>パレット検索</h2>
-      <p>warehouse_code を指定して、パレットと積載品番を一覧表示します。</p>
+      <p>warehouse_code または part_no を指定して、パレットと積載品番を一覧表示します。</p>
 
       <form style={styles.form} onSubmit={handleSubmit}>
         <label style={styles.field}>
@@ -186,6 +201,15 @@ export function PalletSearchSection() {
             style={styles.input}
             value={warehouseCode}
             onChange={(e) => setWarehouseCode(e.target.value)}
+            autoComplete="off"
+          />
+        </label>
+        <label style={styles.field}>
+          <span>品番（part_no）</span>
+          <input
+            style={styles.input}
+            value={partNo}
+            onChange={(e) => setPartNo(e.target.value)}
             autoComplete="off"
           />
         </label>
@@ -211,11 +235,7 @@ export function PalletSearchSection() {
       <div style={styles.resultSummary}>
         <span>
           検索結果：{rows.length}件
-          {searchedWarehouseCode
-            ? `（warehouse_code: ${searchedWarehouseCode}${
-                searchedStatus === "ALL" ? "" : ` / status: ${searchedStatus}`
-              }）`
-            : ""}
+          {searchConditionText ? `（${searchConditionText}）` : ""}
         </span>
         <span style={styles.resultSummarySub}>
           ACTIVE: {activeCount} / OUT: {outCount}

@@ -369,15 +369,39 @@ describe("scan minimal HTTP contract", () => {
   });
 
   describe("GET /pallets/search validation (no DB connection)", () => {
-    it("400 when warehouse_code is missing", async () => {
+    it("400 when warehouse_code and part_no are missing", async () => {
       const { status, json } = await getPalletSearch(server.baseUrl);
 
       expect(status).toBe(400);
-      expect(json).toEqual({ ok: false, error: "warehouse_code is required" });
+      expect(json).toEqual({ ok: false, error: "warehouse_code or part_no is required" });
     });
 
-    it("500 reaches DB layer when status ACTIVE is valid", async () => {
-      const { status, json } = await getPalletSearch(server.baseUrl, "KOMATSU", "ACTIVE");
+    it("500 reaches DB layer when warehouse_code only is valid", async () => {
+      const { status, json } = await getPalletSearch(server.baseUrl, "KOMATSU");
+
+      expect(status).toBe(500);
+      expect(errMessage(json)).toBeTruthy();
+    });
+
+    it("500 reaches DB layer when part_no only is valid", async () => {
+      const { status, json } = await getPalletSearch(
+        server.baseUrl,
+        undefined,
+        undefined,
+        "741R129590"
+      );
+
+      expect(status).toBe(500);
+      expect(errMessage(json)).toBeTruthy();
+    });
+
+    it("500 reaches DB layer when status ACTIVE is combined", async () => {
+      const { status, json } = await getPalletSearch(
+        server.baseUrl,
+        "KOMATSU",
+        "ACTIVE",
+        "741R129590"
+      );
 
       expect(status).toBe(500);
       expect(errMessage(json)).toBeTruthy();
