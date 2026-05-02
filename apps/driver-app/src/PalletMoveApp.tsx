@@ -96,6 +96,13 @@ function palletMoveErrorTitle(error: ScanApiError): string {
   return "不明なエラー";
 }
 
+function palletMoveErrorMessage(error: ScanApiError): string {
+  if (error.message === "location_already_occupied") {
+    return "この棚はすでに別のパレットで使用中です";
+  }
+  return error.message;
+}
+
 function transactionText(transaction: Record<string, unknown>, key: string): string {
   const value = transaction[key];
   return typeof value === "string" ? value : "";
@@ -364,7 +371,7 @@ export function PalletMoveApp() {
       {error ? (
         <section className="scanner-panel error-panel" role="alert">
           <h2 className="panel-title">{palletMoveErrorTitle(error)}</h2>
-          <p className="error-message">{error.message}</p>
+          <p className="error-message">{palletMoveErrorMessage(error)}</p>
           {error.status != null ? (
             <p className="muted small">HTTP {error.status}</p>
           ) : null}

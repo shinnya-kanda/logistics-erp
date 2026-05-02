@@ -110,6 +110,9 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 }
 
 function parseErrorBody(json: unknown): string {
+  if (isRecord(json) && typeof json.message === "string") {
+    return json.message;
+  }
   if (isRecord(json) && typeof json.error === "string") {
     return json.error;
   }

@@ -51,6 +51,11 @@ function parseRequestUrl(req: IncomingMessage): URL {
   return new URL(req.url ?? "/", "http://localhost");
 }
 
+function errorCodeOf(v: unknown): string | null {
+  if (!isRecord(v) || v.ok !== false || typeof v.error !== "string") return null;
+  return v.error;
+}
+
 /**
  * POST /scans, GET /health, OPTIONS, 404。scanHttp.ts と契約テストで共有。
  */
@@ -432,8 +437,20 @@ export async function handleScanHttp(
             p_inventory_type => ${stringOrNull(body.inventory_type) ?? "project"}
           ) AS result
         `;
+        const result = rows[0]?.result ?? { ok: false, error: "empty create_pallet result" };
+        if (errorCodeOf(result) === "pallet_code_already_exists") {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(
+            JSON.stringify({
+              ok: false,
+              error: "pallet_code_already_exists",
+              message: "このPLコードはすでに登録されています",
+            })
+          );
+          return;
+        }
         res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify(rows[0]?.result ?? { ok: false, error: "empty create_pallet result" }));
+        res.end(JSON.stringify(result));
       } finally {
         await sql.end({ timeout: 5 });
       }
@@ -575,8 +592,20 @@ export async function handleScanHttp(
             p_idempotency_key => ${idempotencyKey}
           ) AS result
         `;
+        const result = rows[0]?.result ?? { ok: false, error: "empty move_pallet result" };
+        if (errorCodeOf(result) === "location_already_occupied") {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(
+            JSON.stringify({
+              ok: false,
+              error: "location_already_occupied",
+              message: "この棚はすでに別のパレットで使用中です",
+            })
+          );
+          return;
+        }
         res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify(rows[0]?.result ?? { ok: false, error: "empty move_pallet result" }));
+        res.end(JSON.stringify(result));
       } finally {
         await sql.end({ timeout: 5 });
       }

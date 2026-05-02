@@ -77,6 +77,13 @@ function palletErrorTitle(error: ScanApiError): string {
   return "不明なエラー";
 }
 
+function palletCreateErrorMessage(error: ScanApiError): string {
+  if (error.message === "pallet_code_already_exists") {
+    return "このPLコードはすでに登録されています";
+  }
+  return error.message;
+}
+
 export function PalletCreateApp() {
   const palletCodeInputRef = useRef<HTMLInputElement>(null);
   const [fields, setFields] = useState<PalletCreateFields>(emptyFields);
@@ -245,7 +252,7 @@ export function PalletCreateApp() {
       {error ? (
         <section className="scanner-panel error-panel" role="alert">
           <h2 className="panel-title">{palletErrorTitle(error)}</h2>
-          <p className="error-message">{error.message}</p>
+          <p className="error-message">{palletCreateErrorMessage(error)}</p>
           {error.status != null ? (
             <p className="muted small">HTTP {error.status}</p>
           ) : null}
