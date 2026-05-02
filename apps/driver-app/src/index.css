@@ -46,6 +46,19 @@ body {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
+.panel-title {
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+}
+
+.reader-panel .btn {
+  width: 100%;
+}
+
+.reader-message {
+  margin: 0.75rem 0 0.25rem;
+}
+
 .connection-panel .connection-row {
   display: flex;
   flex-wrap: wrap;

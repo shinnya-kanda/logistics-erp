@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type KeyboardEvent } from "react";
 import {
   postInventoryMove,
   type InventoryMoveSuccessBody,
@@ -15,6 +15,8 @@ type MoveFormFields = {
   remarks: string;
 };
 
+type ReaderTarget = "part_no" | "from_location_code" | "to_location_code";
+
 const emptyMoveForm: MoveFormFields = {
   part_no: "",
   quantity: "",
@@ -30,11 +32,75 @@ function trimOrUndefined(s: string): string | undefined {
   return t || undefined;
 }
 
+function normalizeCode39Input(raw: string): string {
+  const withoutNewlines = raw.replace(/[\r\n]/g, "");
+  const halfWidth = withoutNewlines.replace(/[！-～]/g, (ch) =>
+    String.fromCharCode(ch.charCodeAt(0) - 0xfee0)
+  );
+  const normalized = halfWidth.replace(/\u3000/g, " ").trim().toUpperCase();
+  return normalized.replace(/^[*＊]+/, "").replace(/[*＊]+$/, "").trim();
+}
+
+function extractPartNoFromCode39(raw: string): string | null {
+  const normalized = normalizeCode39Input(raw);
+  const firstToken = normalized.split(/\s+/)[0] ?? "";
+  return /^[A-Z0-9]{10,12}$/.test(firstToken) ? firstToken : null;
+}
+
+function nextReaderTarget(target: ReaderTarget): ReaderTarget {
+  if (target === "part_no") return "from_location_code";
+  if (target === "from_location_code") return "to_location_code";
+  return "to_location_code";
+}
+
+function readerTargetLabel(target: ReaderTarget): string {
+  if (target === "part_no") return "品番";
+  if (target === "from_location_code") return "移動元棚";
+  return "移動先棚";
+}
+
 export function InventoryMoveApp() {
   const [fields, setFields] = useState<MoveFormFields>(emptyMoveForm);
+  const [readerTarget, setReaderTarget] = useState<ReaderTarget>("part_no");
+  const [readerValue, setReaderValue] = useState("");
+  const [readerMessage, setReaderMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<InventoryMoveSuccessBody | null>(null);
   const [error, setError] = useState<ScanApiError | null>(null);
+
+  function applyReaderValue() {
+    if (!readerValue.trim()) return;
+
+    setResult(null);
+    setError(null);
+
+    if (readerTarget === "part_no") {
+      const partNo = extractPartNoFromCode39(readerValue);
+      if (!partNo) {
+        setReaderMessage("品番を抽出できません。10〜12桁の英数字を読み取ってください。");
+        return;
+      }
+      setFields((f) => ({ ...f, part_no: partNo }));
+      setReaderMessage(`品番 ${partNo} を反映しました。`);
+    } else {
+      const locationCode = normalizeCode39Input(readerValue);
+      if (!locationCode) {
+        setReaderMessage("棚番を読み取れませんでした。");
+        return;
+      }
+      setFields((f) => ({ ...f, [readerTarget]: locationCode }));
+      setReaderMessage(`${readerTargetLabel(readerTarget)} ${locationCode} を反映しました。`);
+    }
+
+    setReaderValue("");
+    setReaderTarget((target) => nextReaderTarget(target));
+  }
+
+  function handleReaderKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    applyReaderValue();
+  }
 
   async function sendMove() {
     const partNo = fields.part_no.trim();
@@ -89,6 +155,7 @@ export function InventoryMoveApp() {
 
     if (res.ok) {
       setResult(res.data);
+      setReaderMessage(null);
       setFields((f) => ({
         ...emptyMoveForm,
         warehouse_code: f.warehouse_code,
@@ -111,6 +178,49 @@ export function InventoryMoveApp() {
         <h1 className="scanner-title">棚移動</h1>
         <p className="scanner-sub">手入力で在庫の棚間移動を登録します</p>
       </header>
+
+      <section className="scanner-panel reader-panel" aria-label="Bluetoothリーダー入力">
+        <h2 className="panel-title">Bluetoothリーダー入力</h2>
+        <label className="field">
+          <span className="label">読み取り対象</span>
+          <select
+            className="input"
+            value={readerTarget}
+            onChange={(e) => setReaderTarget(e.target.value as ReaderTarget)}
+            disabled={submitting}
+          >
+            <option value="part_no">品番</option>
+            <option value="from_location_code">移動元棚</option>
+            <option value="to_location_code">移動先棚</option>
+          </select>
+        </label>
+        <label className="field">
+          <span className="label">リーダー入力（Enterで確定）</span>
+          <input
+            className="input large"
+            value={readerValue}
+            onChange={(e) => setReaderValue(e.target.value)}
+            onKeyDown={handleReaderKeyDown}
+            disabled={submitting}
+            autoComplete="off"
+            autoCapitalize="characters"
+            inputMode="text"
+            placeholder="例: *1234567890      001*"
+          />
+        </label>
+        <button
+          type="button"
+          className="btn secondary"
+          disabled={submitting || !readerValue.trim()}
+          onClick={applyReaderValue}
+        >
+          読み取りを反映
+        </button>
+        {readerMessage ? <p className="muted small reader-message">{readerMessage}</p> : null}
+        <p className="muted small">
+          品番読み取りでは先頭トークンのみ反映します。数量は手入力してください。
+        </p>
+      </section>
 
       <form className="scanner-form" onSubmit={handleSubmit}>
         <label className="field">
