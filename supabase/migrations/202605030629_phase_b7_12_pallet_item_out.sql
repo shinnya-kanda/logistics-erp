@@ -283,17 +283,11 @@ begin
     return json_build_object('ok', false, 'error', 'pallet_item_not_found');
   end if;
 
-  if v_link_quantity < v_quantity then
-    return json_build_object(
-      'ok', false,
-      'error', 'insufficient_pallet_item_quantity',
-      'available_quantity', v_link_quantity
-    );
-  end if;
-
   v_remaining_quantity := v_link_quantity - v_quantity;
 
-  if v_remaining_quantity = 0 then
+  if v_remaining_quantity < 0 then
+    raise exception 'insufficient_pallet_item_quantity';
+  elsif v_remaining_quantity = 0 then
     update public.pallet_item_links
     set quantity = 0,
         unlinked_at = now(),
