@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type KeyboardEvent } from "react";
+import { useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import {
   postInventoryMove,
   type InventoryMoveSuccessBody,
@@ -108,7 +108,37 @@ function moveErrorTitle(error: ScanApiError): string {
   return "不明なエラー";
 }
 
+function playSuccessBeep() {
+  try {
+    const audioWindow = window as Window & {
+      AudioContext?: typeof AudioContext;
+      webkitAudioContext?: typeof AudioContext;
+    };
+    const AudioContextClass =
+      audioWindow.AudioContext || audioWindow.webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    const oscillator = ctx.createOscillator();
+    const gain = ctx.createGain();
+    oscillator.type = "sine";
+    oscillator.frequency.value = 880;
+    gain.gain.value = 0.08;
+    oscillator.connect(gain);
+    gain.connect(ctx.destination);
+    oscillator.start();
+    oscillator.stop(ctx.currentTime + 0.12);
+    oscillator.addEventListener("ended", () => void ctx.close(), { once: true });
+  } catch {
+    // 音が鳴らない環境でも業務処理は止めない。
+  }
+}
+
+function vibrateOnError() {
+  navigator.vibrate?.([100, 50, 100]);
+}
+
 export function InventoryMoveApp() {
+  const readerInputRef = useRef<HTMLInputElement>(null);
   const [fields, setFields] = useState<MoveFormFields>(emptyMoveForm);
   const [readerTarget, setReaderTarget] = useState<ReaderTarget>("part_no");
   const [readerValue, setReaderValue] = useState("");
@@ -117,6 +147,7 @@ export function InventoryMoveApp() {
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<InventoryMoveSuccessBody | null>(null);
   const [moveSummary, setMoveSummary] = useState<{
+    partNo: string;
     fromLocation: string;
     toLocation: string;
     quantity: number;
@@ -232,14 +263,19 @@ export function InventoryMoveApp() {
 
       if (res.ok) {
         appendDebug("移動完了");
+        playSuccessBeep();
         setResult(res.data);
-        setMoveSummary({ fromLocation, toLocation, quantity });
+        setMoveSummary({ partNo, fromLocation, toLocation, quantity });
         setReaderMessage(null);
+        setReaderValue("");
+        setReaderTarget("part_no");
         setFields((f) => ({
           ...emptyMoveForm,
           warehouse_code: f.warehouse_code,
           operator_name: f.operator_name,
+          remarks: f.remarks,
         }));
+        requestAnimationFrame(() => readerInputRef.current?.focus());
         return;
       }
 
@@ -248,10 +284,12 @@ export function InventoryMoveApp() {
           ? "API通信タイムアウト"
           : `移動失敗: ${res.error.message}`
       );
+      vibrateOnError();
       setError(res.error);
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
       appendDebug(`送信処理エラー: ${message}`);
+      vibrateOnError();
       setError({ kind: "unknown", message });
     } finally {
       setSubmitting(false);
@@ -288,6 +326,7 @@ export function InventoryMoveApp() {
         <label className="field">
           <span className="label">リーダー入力（Enterで確定）</span>
           <input
+            ref={readerInputRef}
             className="input large"
             value={readerValue}
             onChange={(e) => setReaderValue(e.target.value)}
@@ -419,11 +458,15 @@ export function InventoryMoveApp() {
         <section className="scanner-panel result-panel" aria-label="棚移動結果">
           <div className="result-banner tone-ok">
             <div className="result-banner-title">移動完了</div>
-            <div className="result-banner-sub">
-              {moveSummary
-                ? `${moveSummary.fromLocation} → ${moveSummary.toLocation} / 数量: ${moveSummary.quantity}`
-                : "OUT / IN が作成されました"}
-            </div>
+            {moveSummary ? (
+              <div className="move-success-summary">
+                <div className="mono">{moveSummary.partNo}</div>
+                <div>{moveSummary.fromLocation} → {moveSummary.toLocation}</div>
+                <div>数量: {moveSummary.quantity}</div>
+              </div>
+            ) : (
+              <div className="result-banner-sub">OUT / IN が作成されました</div>
+            )}
           </div>
           <details className="result-details">
             <summary>詳細 JSON</summary>
