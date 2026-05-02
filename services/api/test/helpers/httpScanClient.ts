@@ -195,11 +195,15 @@ export async function postPalletOut(
 
 export async function getPalletSearch(
   baseUrl: string,
-  warehouseCode?: string
+  warehouseCode?: string,
+  status?: string
 ): Promise<ScanPostResult> {
   const url = new URL(`${baseUrl.replace(/\/$/, "")}/pallets/search`);
   if (warehouseCode !== undefined) {
     url.searchParams.set("warehouse_code", warehouseCode);
+  }
+  if (status !== undefined) {
+    url.searchParams.set("status", status);
   }
   const res = await fetch(url);
   const rawText = await res.text();

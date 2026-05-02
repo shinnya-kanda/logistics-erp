@@ -375,6 +375,27 @@ describe("scan minimal HTTP contract", () => {
       expect(status).toBe(400);
       expect(json).toEqual({ ok: false, error: "warehouse_code is required" });
     });
+
+    it("500 reaches DB layer when status ACTIVE is valid", async () => {
+      const { status, json } = await getPalletSearch(server.baseUrl, "KOMATSU", "ACTIVE");
+
+      expect(status).toBe(500);
+      expect(errMessage(json)).toBeTruthy();
+    });
+
+    it("500 reaches DB layer when status OUT is valid", async () => {
+      const { status, json } = await getPalletSearch(server.baseUrl, "KOMATSU", "OUT");
+
+      expect(status).toBe(500);
+      expect(errMessage(json)).toBeTruthy();
+    });
+
+    it("400 when status is invalid", async () => {
+      const { status, json } = await getPalletSearch(server.baseUrl, "KOMATSU", "INVALID");
+
+      expect(status).toBe(400);
+      expect(json).toEqual({ ok: false, error: "status must be ACTIVE or OUT" });
+    });
   });
 
   describe.skipIf(!dbEnabled)("POST /scans with database fixtures", () => {

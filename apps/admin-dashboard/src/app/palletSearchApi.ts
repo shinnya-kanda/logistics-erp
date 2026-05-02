@@ -15,6 +15,8 @@ type PalletSearchResponse =
   | { ok: true; pallets: PalletSearchRow[] }
   | { ok: false; error: string };
 
+export type PalletSearchStatus = "ALL" | "ACTIVE" | "OUT";
+
 const API_BASE = "http://localhost:3040";
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -36,10 +38,13 @@ function parseError(json: unknown): string {
 }
 
 export async function searchPalletsByWarehouseCode(
-  warehouseCode: string
+  warehouseCode: string,
+  status: PalletSearchStatus = "ALL"
 ): Promise<PalletSearchResponse> {
+  const statusQuery =
+    status === "ALL" ? "" : `&status=${encodeURIComponent(status)}`;
   const res = await fetch(
-    `${API_BASE}/pallets/search?warehouse_code=${encodeURIComponent(warehouseCode)}`
+    `${API_BASE}/pallets/search?warehouse_code=${encodeURIComponent(warehouseCode)}${statusQuery}`
   );
   let json: unknown;
   try {

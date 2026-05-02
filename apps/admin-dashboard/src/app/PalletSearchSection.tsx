@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import {
   searchPalletsByWarehouseCode,
   type PalletSearchRow,
+  type PalletSearchStatus,
 } from "./palletSearchApi";
 
 function displayValue(value: string | number | null | undefined): string {
@@ -135,8 +136,10 @@ const styles = {
 
 export function PalletSearchSection() {
   const [warehouseCode, setWarehouseCode] = useState("KOMATSU");
+  const [statusFilter, setStatusFilter] = useState<PalletSearchStatus>("ALL");
   const [rows, setRows] = useState<PalletSearchRow[]>([]);
   const [searchedWarehouseCode, setSearchedWarehouseCode] = useState("");
+  const [searchedStatus, setSearchedStatus] = useState<PalletSearchStatus>("ALL");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const activeCount = rows.filter((row) => row.current_status === "ACTIVE").length;
@@ -154,7 +157,7 @@ export function PalletSearchSection() {
 
     setLoading(true);
     try {
-      const result = await searchPalletsByWarehouseCode(code);
+      const result = await searchPalletsByWarehouseCode(code, statusFilter);
       if (!result.ok) {
         setRows([]);
         setError(result.error);
@@ -162,6 +165,7 @@ export function PalletSearchSection() {
       }
       setRows(result.pallets);
       setSearchedWarehouseCode(code);
+      setSearchedStatus(statusFilter);
     } catch (err) {
       setRows([]);
       setError(err instanceof Error ? err.message : "検索中にエラーが発生しました。");
@@ -185,6 +189,18 @@ export function PalletSearchSection() {
             autoComplete="off"
           />
         </label>
+        <label style={styles.field}>
+          <span>status</span>
+          <select
+            style={styles.input}
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as PalletSearchStatus)}
+          >
+            <option value="ALL">全て</option>
+            <option value="ACTIVE">ACTIVE</option>
+            <option value="OUT">OUT</option>
+          </select>
+        </label>
         <button style={styles.button} type="submit" disabled={loading}>
           {loading ? "検索中..." : "検索"}
         </button>
@@ -195,7 +211,11 @@ export function PalletSearchSection() {
       <div style={styles.resultSummary}>
         <span>
           検索結果：{rows.length}件
-          {searchedWarehouseCode ? `（warehouse_code: ${searchedWarehouseCode}）` : ""}
+          {searchedWarehouseCode
+            ? `（warehouse_code: ${searchedWarehouseCode}${
+                searchedStatus === "ALL" ? "" : ` / status: ${searchedStatus}`
+              }）`
+            : ""}
         </span>
         <span style={styles.resultSummarySub}>
           ACTIVE: {activeCount} / OUT: {outCount}

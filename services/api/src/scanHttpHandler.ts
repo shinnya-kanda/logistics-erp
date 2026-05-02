@@ -657,9 +657,16 @@ export async function handleScanHttp(
 
   if (req.method === "GET" && pathname === "/pallets/search") {
     const warehouseCode = requestUrl.searchParams.get("warehouse_code")?.trim();
+    const rawStatus = requestUrl.searchParams.get("status")?.trim().toUpperCase();
+    const statusFilter = rawStatus && rawStatus !== "ALL" ? rawStatus : null;
     if (!warehouseCode) {
       res.writeHead(400, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ ok: false, error: "warehouse_code is required" }));
+      return;
+    }
+    if (statusFilter !== null && statusFilter !== "ACTIVE" && statusFilter !== "OUT") {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: false, error: "status must be ACTIVE or OUT" }));
       return;
     }
 
@@ -710,12 +717,13 @@ export async function handleScanHttp(
             ON pil.pallet_id = pu.id
             ${unlinkedJoin}
           WHERE pu.warehouse_code = $1
+            AND ($2::text IS NULL OR pu.current_status = $2)
           ORDER BY
             pu.current_location_code ASC NULLS LAST,
             pu.pallet_code ASC,
             pil.part_no ASC NULLS LAST
         `,
-        [warehouseCode]
+        [warehouseCode, statusFilter]
       );
 
       res.writeHead(200, { "Content-Type": "application/json" });
