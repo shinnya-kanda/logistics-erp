@@ -18,6 +18,16 @@ function formatUpdatedAt(value: string | null): string {
   return date.toLocaleString("ja-JP");
 }
 
+function isOutRow(row: PalletSearchRow): boolean {
+  return row.current_status === "OUT";
+}
+
+function statusLabel(status: string | null): string {
+  if (status === "OUT") return "OUT（出庫済み）";
+  if (status === "ACTIVE") return "ACTIVE";
+  return displayValue(status);
+}
+
 const styles = {
   panel: {
     marginTop: "2rem",
@@ -62,6 +72,21 @@ const styles = {
     background: "#ffebee",
     color: "#b71c1c",
   },
+  resultSummary: {
+    display: "flex",
+    flexWrap: "wrap" as const,
+    gap: "0.5rem 1rem",
+    alignItems: "baseline",
+    margin: "1rem 0",
+    padding: "0.75rem 0.9rem",
+    borderRadius: "10px",
+    background: "#f5f7fb",
+    fontWeight: 700,
+  },
+  resultSummarySub: {
+    color: "#555",
+    fontWeight: 600,
+  },
   tableWrap: {
     overflowX: "auto" as const,
   },
@@ -81,6 +106,31 @@ const styles = {
     padding: "0.55rem",
     whiteSpace: "nowrap" as const,
   },
+  outRow: {
+    background: "#f1f1f1",
+    color: "#666",
+  },
+  statusBadge: {
+    display: "inline-block",
+    minWidth: "4.5rem",
+    padding: "0.2rem 0.45rem",
+    borderRadius: "999px",
+    fontSize: "0.82rem",
+    fontWeight: 700,
+    textAlign: "center" as const,
+  },
+  statusActive: {
+    background: "#e8f5e9",
+    color: "#1b5e20",
+  },
+  statusOut: {
+    background: "#e0e0e0",
+    color: "#424242",
+  },
+  statusUnknown: {
+    background: "#eceff1",
+    color: "#455a64",
+  },
 };
 
 export function PalletSearchSection() {
@@ -89,6 +139,8 @@ export function PalletSearchSection() {
   const [searchedWarehouseCode, setSearchedWarehouseCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const activeCount = rows.filter((row) => row.current_status === "ACTIVE").length;
+  const outCount = rows.filter((row) => row.current_status === "OUT").length;
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -140,10 +192,15 @@ export function PalletSearchSection() {
 
       {error ? <div style={styles.error}>{error}</div> : null}
 
-      <p>
-        件数: {rows.length}
-        {searchedWarehouseCode ? `（${searchedWarehouseCode}）` : ""}
-      </p>
+      <div style={styles.resultSummary}>
+        <span>
+          検索結果：{rows.length}件
+          {searchedWarehouseCode ? `（warehouse_code: ${searchedWarehouseCode}）` : ""}
+        </span>
+        <span style={styles.resultSummarySub}>
+          ACTIVE: {activeCount} / OUT: {outCount}
+        </span>
+      </div>
 
       <div style={styles.tableWrap}>
         <table style={styles.table}>
@@ -161,19 +218,35 @@ export function PalletSearchSection() {
             </tr>
           </thead>
           <tbody>
-            {rows.map((row, index) => (
-              <tr key={`${row.pallet_id}-${row.part_no ?? "empty"}-${index}`}>
-                <td style={styles.td}>{row.warehouse_code}</td>
-                <td style={styles.td}>{displayValue(row.current_location_code)}</td>
-                <td style={styles.td}>{row.pallet_code}</td>
-                <td style={styles.td}>{displayValue(row.current_status)}</td>
-                <td style={styles.td}>{displayValue(row.part_no)}</td>
-                <td style={styles.td}>{displayValue(row.part_name)}</td>
-                <td style={styles.td}>{displayValue(row.quantity)}</td>
-                <td style={styles.td}>{displayValue(row.quantity_unit)}</td>
-                <td style={styles.td}>{formatUpdatedAt(row.updated_at)}</td>
-              </tr>
-            ))}
+            {rows.map((row, index) => {
+              const out = isOutRow(row);
+              const statusStyle =
+                row.current_status === "ACTIVE"
+                  ? styles.statusActive
+                  : out
+                    ? styles.statusOut
+                    : styles.statusUnknown;
+              return (
+                <tr
+                  key={`${row.pallet_id}-${row.part_no ?? "empty"}-${index}`}
+                  style={out ? styles.outRow : undefined}
+                >
+                  <td style={styles.td}>{row.warehouse_code}</td>
+                  <td style={styles.td}>{displayValue(row.current_location_code)}</td>
+                  <td style={styles.td}>{row.pallet_code}</td>
+                  <td style={styles.td}>
+                    <span style={{ ...styles.statusBadge, ...statusStyle }}>
+                      {statusLabel(row.current_status)}
+                    </span>
+                  </td>
+                  <td style={styles.td}>{displayValue(row.part_no)}</td>
+                  <td style={styles.td}>{displayValue(row.part_name)}</td>
+                  <td style={styles.td}>{displayValue(row.quantity)}</td>
+                  <td style={styles.td}>{displayValue(row.quantity_unit)}</td>
+                  <td style={styles.td}>{formatUpdatedAt(row.updated_at)}</td>
+                </tr>
+              );
+            })}
             {rows.length === 0 ? (
               <tr>
                 <td style={styles.td} colSpan={9}>
