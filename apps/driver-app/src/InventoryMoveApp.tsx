@@ -84,13 +84,43 @@ function readerTargetLabel(target: ReaderTarget): string {
   return "移動先棚";
 }
 
+function createClientIdempotencyKey(prefix: string): string {
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+  ) {
+    return `${prefix}-${crypto.randomUUID()}`;
+  }
+
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function moveErrorTitle(error: ScanApiError): string {
+  if (error.kind === "network") return "通信エラー";
+  if (error.kind === "timeout") return "API通信タイムアウト";
+  if (error.kind === "validation") {
+    if (error.message.includes("insufficient stock")) return "在庫不足";
+    if (error.message.includes("from_location_code and to_location_code")) {
+      return "棚番エラー";
+    }
+    return "入力エラー";
+  }
+  return "不明なエラー";
+}
+
 export function InventoryMoveApp() {
   const [fields, setFields] = useState<MoveFormFields>(emptyMoveForm);
   const [readerTarget, setReaderTarget] = useState<ReaderTarget>("part_no");
   const [readerValue, setReaderValue] = useState("");
   const [readerMessage, setReaderMessage] = useState<string | null>(null);
+  const [debugMessage, setDebugMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<InventoryMoveSuccessBody | null>(null);
+  const [moveSummary, setMoveSummary] = useState<{
+    fromLocation: string;
+    toLocation: string;
+    quantity: number;
+  } | null>(null);
   const [error, setError] = useState<ScanApiError | null>(null);
 
   function applyReaderValue() {
@@ -136,6 +166,8 @@ export function InventoryMoveApp() {
   }
 
   async function sendMove() {
+    if (submitting) return;
+
     const partNo = fields.part_no.trim();
     const warehouseCode = fields.warehouse_code.trim();
     const fromLocation = fields.from_location_code.trim();
@@ -143,7 +175,9 @@ export function InventoryMoveApp() {
     const quantity = Number(fields.quantity);
 
     setResult(null);
+    setMoveSummary(null);
     setError(null);
+    setDebugMessage("");
 
     if (!partNo) {
       setError({ kind: "validation", message: "part_no を入力してください。" });
@@ -174,30 +208,54 @@ export function InventoryMoveApp() {
     }
 
     setSubmitting(true);
-    const res = await postInventoryMove({
-      part_no: partNo,
-      quantity,
-      warehouse_code: warehouseCode,
-      from_location_code: fromLocation,
-      to_location_code: toLocation,
-      operator_name: trimOrUndefined(fields.operator_name),
-      remarks: trimOrUndefined(fields.remarks),
-      idempotency_key: crypto.randomUUID(),
-    });
-    setSubmitting(false);
+    setDebugMessage("送信開始");
+    const appendDebug = (message: string) => {
+      setDebugMessage((current) => (current ? `${current}\n${message}` : message));
+    };
+    try {
+      const res = await postInventoryMove(
+        {
+          part_no: partNo,
+          quantity,
+          warehouse_code: warehouseCode,
+          from_location_code: fromLocation,
+          to_location_code: toLocation,
+          operator_name: trimOrUndefined(fields.operator_name),
+          remarks: trimOrUndefined(fields.remarks),
+          idempotency_key: createClientIdempotencyKey("inventory-move"),
+        },
+        {
+          timeoutMs: 10_000,
+          onDebug: appendDebug,
+        }
+      );
 
-    if (res.ok) {
-      setResult(res.data);
-      setReaderMessage(null);
-      setFields((f) => ({
-        ...emptyMoveForm,
-        warehouse_code: f.warehouse_code,
-        operator_name: f.operator_name,
-      }));
-      return;
+      if (res.ok) {
+        appendDebug("移動完了");
+        setResult(res.data);
+        setMoveSummary({ fromLocation, toLocation, quantity });
+        setReaderMessage(null);
+        setFields((f) => ({
+          ...emptyMoveForm,
+          warehouse_code: f.warehouse_code,
+          operator_name: f.operator_name,
+        }));
+        return;
+      }
+
+      appendDebug(
+        res.error.kind === "timeout"
+          ? "API通信タイムアウト"
+          : `移動失敗: ${res.error.message}`
+      );
+      setError(res.error);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      appendDebug(`送信処理エラー: ${message}`);
+      setError({ kind: "unknown", message });
+    } finally {
+      setSubmitting(false);
     }
-
-    setError(res.error);
   }
 
   function handleSubmit(e: FormEvent) {
@@ -350,11 +408,22 @@ export function InventoryMoveApp() {
         </div>
       </form>
 
+      {debugMessage ? (
+        <section className="scanner-panel debug-panel" aria-label="通信デバッグ">
+          <h2 className="panel-title">通信デバッグ</h2>
+          <pre className="json-dump">{debugMessage}</pre>
+        </section>
+      ) : null}
+
       {result ? (
         <section className="scanner-panel result-panel" aria-label="棚移動結果">
           <div className="result-banner tone-ok">
             <div className="result-banner-title">移動完了</div>
-            <div className="result-banner-sub">OUT / IN が作成されました</div>
+            <div className="result-banner-sub">
+              {moveSummary
+                ? `${moveSummary.fromLocation} → ${moveSummary.toLocation} / 数量: ${moveSummary.quantity}`
+                : "OUT / IN が作成されました"}
+            </div>
           </div>
           <details className="result-details">
             <summary>詳細 JSON</summary>
@@ -365,7 +434,7 @@ export function InventoryMoveApp() {
 
       {error ? (
         <section className="scanner-panel error-panel" role="alert">
-          <h2 className="panel-title">移動失敗</h2>
+          <h2 className="panel-title">{moveErrorTitle(error)}</h2>
           <p className="error-message">{error.message}</p>
           {error.status != null ? (
             <p className="muted small">HTTP {error.status}</p>
