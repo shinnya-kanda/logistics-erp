@@ -4,6 +4,7 @@ import { useState } from "react";
 import { BillingCheckSection } from "./BillingCheckSection";
 import { CustomerExportSection } from "./CustomerExportSection";
 import { EmptyPalletSearchSection } from "./EmptyPalletSearchSection";
+import { InboundLabelPrintSection } from "./InboundLabelPrintSection";
 import { InventoryLedgerSection } from "./InventoryLedgerSection";
 import { PalletSearchSection } from "./PalletSearchSection";
 import { ProjectNoCorrectionSection } from "./ProjectNoCorrectionSection";
@@ -16,7 +17,8 @@ type AdminTab =
   | "locations"
   | "billing-check"
   | "inventory-ledger"
-  | "customer-export";
+  | "customer-export"
+  | "inbound-label-print";
 
 const tabs: Array<{ id: AdminTab; label: string }> = [
   { id: "pallet-search", label: "パレット検索" },
@@ -26,6 +28,7 @@ const tabs: Array<{ id: AdminTab; label: string }> = [
   { id: "billing-check", label: "請求確認" },
   { id: "inventory-ledger", label: "在庫台帳" },
   { id: "customer-export", label: "客先提出" },
+  { id: "inbound-label-print", label: "入庫ラベル発行" },
 ];
 
 const styles = {
@@ -85,6 +88,7 @@ export function AdminDashboardTabs() {
       {activeTab === "billing-check" ? <BillingCheckSection /> : null}
       {activeTab === "inventory-ledger" ? <InventoryLedgerSection /> : null}
       {activeTab === "customer-export" ? <CustomerExportSection /> : null}
+      {activeTab === "inbound-label-print" ? <InboundLabelPrintSection /> : null}
     </>
   );
 }
