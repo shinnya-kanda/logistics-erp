@@ -1,6 +1,8 @@
 import { useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import {
+  getStoredWarehouseCode,
   postInventoryMove,
+  setStoredWarehouseCode,
   type InventoryMoveSuccessBody,
   type ScanApiError,
 } from "./scanApiClient.js";
@@ -8,7 +10,6 @@ import {
 type MoveFormFields = {
   part_no: string;
   quantity: string;
-  warehouse_code: string;
   from_location_code: string;
   to_location_code: string;
   operator_name: string;
@@ -25,7 +26,6 @@ type ParsedCode39 = {
 const emptyMoveForm: MoveFormFields = {
   part_no: "",
   quantity: "",
-  warehouse_code: "",
   from_location_code: "",
   to_location_code: "",
   operator_name: "",
@@ -140,6 +140,7 @@ function vibrateOnError() {
 export function InventoryMoveApp() {
   const readerInputRef = useRef<HTMLInputElement>(null);
   const [fields, setFields] = useState<MoveFormFields>(emptyMoveForm);
+  const [warehouseCodeDraft, setWarehouseCodeDraft] = useState(getStoredWarehouseCode);
   const [readerTarget, setReaderTarget] = useState<ReaderTarget>("part_no");
   const [readerValue, setReaderValue] = useState("");
   const [readerMessage, setReaderMessage] = useState<string | null>(null);
@@ -200,7 +201,7 @@ export function InventoryMoveApp() {
     if (submitting) return;
 
     const partNo = fields.part_no.trim();
-    const warehouseCode = fields.warehouse_code.trim();
+    const warehouseCode = setStoredWarehouseCode(warehouseCodeDraft);
     const fromLocation = fields.from_location_code.trim();
     const toLocation = fields.to_location_code.trim();
     const quantity = Number(fields.quantity);
@@ -271,7 +272,6 @@ export function InventoryMoveApp() {
         setReaderTarget("part_no");
         setFields((f) => ({
           ...emptyMoveForm,
-          warehouse_code: f.warehouse_code,
           operator_name: f.operator_name,
           remarks: f.remarks,
         }));
@@ -376,13 +376,12 @@ export function InventoryMoveApp() {
         </label>
 
         <label className="field">
-          <span className="label">warehouse_code *</span>
+          <span className="label">倉庫コード設定（固定）</span>
           <input
             className="input"
-            value={fields.warehouse_code}
-            onChange={(e) =>
-              setFields((f) => ({ ...f, warehouse_code: e.target.value }))
-            }
+            value={warehouseCodeDraft}
+            onChange={(e) => setWarehouseCodeDraft(e.target.value)}
+            onBlur={(e) => setWarehouseCodeDraft(setStoredWarehouseCode(e.target.value))}
             disabled={submitting}
             autoComplete="off"
           />

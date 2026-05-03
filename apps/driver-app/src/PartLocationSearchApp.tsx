@@ -1,12 +1,14 @@
 import { useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import {
+  getStoredWarehouseCode,
   searchActivePalletsByPartNo,
+  setStoredWarehouseCode,
   type PalletSearchRow,
   type ScanApiError,
 } from "./scanApiClient.js";
 
 type SearchFields = {
-  warehouse_code: string;
+  project_no: string;
   part_no: string;
 };
 
@@ -15,7 +17,7 @@ type ParsedPartCode39 = {
 };
 
 const initialFields: SearchFields = {
-  warehouse_code: "KOMATSU",
+  project_no: "",
   part_no: "",
 };
 
@@ -84,6 +86,7 @@ function displayValue(value: string | number | null | undefined, empty = "-"): s
 export function PartLocationSearchApp() {
   const partInputRef = useRef<HTMLInputElement>(null);
   const [fields, setFields] = useState<SearchFields>(initialFields);
+  const [warehouseCodeDraft, setWarehouseCodeDraft] = useState(getStoredWarehouseCode);
   const [submitting, setSubmitting] = useState(false);
   const [rows, setRows] = useState<PalletSearchRow[] | null>(null);
   const [searchedPartNo, setSearchedPartNo] = useState("");
@@ -105,7 +108,8 @@ export function PartLocationSearchApp() {
   async function sendSearch(partNoOverride?: string) {
     if (submitting) return;
 
-    const warehouseCode = fields.warehouse_code.trim() || "KOMATSU";
+    const warehouseCode = setStoredWarehouseCode(warehouseCodeDraft);
+    const projectNo = fields.project_no.trim() || warehouseCode;
     const partNo = (partNoOverride ?? fields.part_no).trim().toUpperCase();
     setError(null);
     setReaderMessage(null);
@@ -128,11 +132,11 @@ export function PartLocationSearchApp() {
       return;
     }
 
-    setFields({ warehouse_code: warehouseCode, part_no: partNo });
+    setFields({ project_no: fields.project_no, part_no: partNo });
     setSubmitting(true);
     try {
       const res = await searchActivePalletsByPartNo(
-        { warehouseCode, partNo },
+        { warehouseCode, projectNo, partNo },
         { timeoutMs: 10_000 }
       );
       if (res.ok) {
@@ -180,13 +184,23 @@ export function PartLocationSearchApp() {
       <form className="scanner-form" onSubmit={handleSubmit}>
         <section className="scanner-panel">
           <label className="field">
-            <span className="label">warehouse_code</span>
+            <span className="label">倉庫コード設定（固定）</span>
             <input
               className="input"
-              value={fields.warehouse_code}
-              onChange={(e) =>
-                setFields((f) => ({ ...f, warehouse_code: e.target.value }))
-              }
+              value={warehouseCodeDraft}
+              onChange={(e) => setWarehouseCodeDraft(e.target.value)}
+              onBlur={(e) => setWarehouseCodeDraft(setStoredWarehouseCode(e.target.value))}
+              disabled={submitting}
+              autoComplete="off"
+            />
+          </label>
+
+          <label className="field">
+            <span className="label">project_no</span>
+            <input
+              className="input"
+              value={fields.project_no}
+              onChange={(e) => setFields((f) => ({ ...f, project_no: e.target.value }))}
               disabled={submitting}
               autoComplete="off"
             />

@@ -1,11 +1,11 @@
 import { useState, type FormEvent } from "react";
 import {
   getEmptyPallets,
+  getStoredWarehouseCode,
+  setStoredWarehouseCode,
   type EmptyPalletRow,
   type ScanApiError,
 } from "./scanApiClient.js";
-
-const DEFAULT_WAREHOUSE_CODE = "KOMATSU";
 
 function playSuccessBeep() {
   try {
@@ -49,7 +49,8 @@ function displayLocation(row: EmptyPalletRow): string {
 }
 
 export function EmptyPalletSearchApp() {
-  const [warehouseCode, setWarehouseCode] = useState(DEFAULT_WAREHOUSE_CODE);
+  const [warehouseCodeDraft, setWarehouseCodeDraft] = useState(getStoredWarehouseCode);
+  const [projectNo, setProjectNo] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [rows, setRows] = useState<EmptyPalletRow[] | null>(null);
   const [searchedWarehouseCode, setSearchedWarehouseCode] = useState("");
@@ -58,17 +59,17 @@ export function EmptyPalletSearchApp() {
   async function sendSearch() {
     if (submitting) return;
 
-    const code = warehouseCode.trim() || DEFAULT_WAREHOUSE_CODE;
+    const code = setStoredWarehouseCode(warehouseCodeDraft);
+    const searchProjectNo = projectNo.trim() || code;
     setError(null);
     setSubmitting(true);
-    setWarehouseCode(code);
 
     try {
-      const res = await getEmptyPallets(code, { timeoutMs: 10_000 });
+      const res = await getEmptyPallets(code, searchProjectNo, { timeoutMs: 10_000 });
       if (res.ok) {
         playSuccessBeep();
         setRows(res.data.pallets);
-        setSearchedWarehouseCode(code);
+        setSearchedWarehouseCode(searchProjectNo);
         return;
       }
 
@@ -100,11 +101,23 @@ export function EmptyPalletSearchApp() {
       <form className="scanner-form" onSubmit={handleSubmit}>
         <section className="scanner-panel">
           <label className="field">
-            <span className="label">warehouse_code</span>
+            <span className="label">倉庫コード設定（固定）</span>
             <input
               className="input"
-              value={warehouseCode}
-              onChange={(e) => setWarehouseCode(e.target.value)}
+              value={warehouseCodeDraft}
+              onChange={(e) => setWarehouseCodeDraft(e.target.value)}
+              onBlur={(e) => setWarehouseCodeDraft(setStoredWarehouseCode(e.target.value))}
+              disabled={submitting}
+              autoComplete="off"
+            />
+          </label>
+
+          <label className="field">
+            <span className="label">project_no</span>
+            <input
+              className="input"
+              value={projectNo}
+              onChange={(e) => setProjectNo(e.target.value)}
               disabled={submitting}
               autoComplete="off"
             />

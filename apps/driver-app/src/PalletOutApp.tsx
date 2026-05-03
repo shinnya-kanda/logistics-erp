@@ -1,20 +1,22 @@
 import { useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import {
+  getStoredWarehouseCode,
   postPalletOut,
+  setStoredWarehouseCode,
   type PalletOutSuccessBody,
   type ScanApiError,
 } from "./scanApiClient.js";
 
 type PalletOutFields = {
   pallet_code: string;
-  warehouse_code: string;
+  project_no: string;
   operator_name: string;
   remarks: string;
 };
 
 const initialFields: PalletOutFields = {
   pallet_code: "",
-  warehouse_code: "KOMATSU",
+  project_no: "",
   operator_name: "",
   remarks: "",
 };
@@ -96,6 +98,7 @@ function transactionText(transaction: Record<string, unknown>, key: string): str
 export function PalletOutApp() {
   const palletCodeInputRef = useRef<HTMLInputElement>(null);
   const [fields, setFields] = useState<PalletOutFields>(initialFields);
+  const [warehouseCodeDraft, setWarehouseCodeDraft] = useState(getStoredWarehouseCode);
   const [readerValue, setReaderValue] = useState("");
   const [readerMessage, setReaderMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -130,7 +133,8 @@ export function PalletOutApp() {
     if (submitting) return;
 
     const palletCode = normalizeCode39(fields.pallet_code);
-    const warehouseCode = fields.warehouse_code.trim() || "KOMATSU";
+    const warehouseCode = setStoredWarehouseCode(warehouseCodeDraft);
+    const projectNo = fields.project_no.trim() || warehouseCode;
 
     setResult(null);
     setError(null);
@@ -147,7 +151,7 @@ export function PalletOutApp() {
     setFields((f) => ({
       ...f,
       pallet_code: palletCode,
-      warehouse_code: warehouseCode,
+      project_no: projectNo,
     }));
     setSubmitting(true);
 
@@ -156,6 +160,7 @@ export function PalletOutApp() {
         {
           pallet_code: palletCode,
           warehouse_code: warehouseCode,
+          project_no: projectNo,
           operator_name: trimOrUndefined(fields.operator_name),
           remarks: trimOrUndefined(fields.remarks),
           idempotency_key: createClientIdempotencyKey("pallet-out"),
@@ -168,7 +173,7 @@ export function PalletOutApp() {
         setResult(res.data);
         setFields((f) => ({
           ...initialFields,
-          warehouse_code: f.warehouse_code,
+          project_no: f.project_no,
           operator_name: f.operator_name,
         }));
         setReaderValue("");
@@ -245,13 +250,23 @@ export function PalletOutApp() {
           </label>
 
           <label className="field">
-            <span className="label">warehouse_code</span>
+            <span className="label">倉庫コード設定（固定）</span>
             <input
               className="input"
-              value={fields.warehouse_code}
-              onChange={(e) =>
-                setFields((f) => ({ ...f, warehouse_code: e.target.value }))
-              }
+              value={warehouseCodeDraft}
+              onChange={(e) => setWarehouseCodeDraft(e.target.value)}
+              onBlur={(e) => setWarehouseCodeDraft(setStoredWarehouseCode(e.target.value))}
+              disabled={submitting}
+              autoComplete="off"
+            />
+          </label>
+
+          <label className="field">
+            <span className="label">project_no</span>
+            <input
+              className="input"
+              value={fields.project_no}
+              onChange={(e) => setFields((f) => ({ ...f, project_no: e.target.value }))}
               disabled={submitting}
               autoComplete="off"
             />

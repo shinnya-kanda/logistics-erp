@@ -1,6 +1,8 @@
 import { useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import {
+  getStoredWarehouseCode,
   postPalletItemAdd,
+  setStoredWarehouseCode,
   type PalletItemAddSuccessBody,
   type ScanApiError,
 } from "./scanApiClient.js";
@@ -11,7 +13,7 @@ type PalletItemAddFields = {
   pallet_code: string;
   part_no: string;
   quantity: string;
-  warehouse_code: string;
+  project_no: string;
   quantity_unit: string;
   created_by: string;
   remarks: string;
@@ -26,7 +28,7 @@ const initialFields: PalletItemAddFields = {
   pallet_code: "",
   part_no: "",
   quantity: "1",
-  warehouse_code: "KOMATSU",
+  project_no: "",
   quantity_unit: "pcs",
   created_by: "",
   remarks: "",
@@ -123,6 +125,7 @@ function palletItemErrorTitle(error: ScanApiError): string {
 export function PalletItemAddApp() {
   const readerInputRef = useRef<HTMLInputElement>(null);
   const [fields, setFields] = useState<PalletItemAddFields>(initialFields);
+  const [warehouseCodeDraft, setWarehouseCodeDraft] = useState(getStoredWarehouseCode);
   const [readerTarget, setReaderTarget] = useState<ReaderTarget>("pallet_code");
   const [readerValue, setReaderValue] = useState("");
   const [readerMessage, setReaderMessage] = useState<string | null>(null);
@@ -179,7 +182,8 @@ export function PalletItemAddApp() {
     const palletCode = normalizePalletCode(fields.pallet_code);
     const partNo = fields.part_no.trim().toUpperCase();
     const quantity = Number(fields.quantity);
-    const warehouseCode = fields.warehouse_code.trim();
+    const warehouseCode = setStoredWarehouseCode(warehouseCodeDraft);
+    const projectNo = fields.project_no.trim() || warehouseCode;
     const quantityUnit = fields.quantity_unit.trim() || "pcs";
 
     setResult(null);
@@ -222,6 +226,7 @@ export function PalletItemAddApp() {
           part_no: partNo,
           quantity,
           warehouse_code: warehouseCode,
+          project_no: projectNo,
           quantity_unit: quantityUnit,
           created_by: trimOrUndefined(fields.created_by),
           remarks: trimOrUndefined(fields.remarks),
@@ -237,7 +242,7 @@ export function PalletItemAddApp() {
           pallet_code: palletCode,
           part_no: "",
           quantity: "1",
-          warehouse_code: warehouseCode,
+          project_no: f.project_no,
           quantity_unit: quantityUnit,
           remarks: "",
         }));
@@ -353,13 +358,23 @@ export function PalletItemAddApp() {
           </label>
 
           <label className="field">
-            <span className="label">warehouse_code *</span>
+            <span className="label">倉庫コード設定（固定）</span>
             <input
               className="input"
-              value={fields.warehouse_code}
-              onChange={(e) =>
-                setFields((f) => ({ ...f, warehouse_code: e.target.value }))
-              }
+              value={warehouseCodeDraft}
+              onChange={(e) => setWarehouseCodeDraft(e.target.value)}
+              onBlur={(e) => setWarehouseCodeDraft(setStoredWarehouseCode(e.target.value))}
+              disabled={submitting}
+              autoComplete="off"
+            />
+          </label>
+
+          <label className="field">
+            <span className="label">project_no</span>
+            <input
+              className="input"
+              value={fields.project_no}
+              onChange={(e) => setFields((f) => ({ ...f, project_no: e.target.value }))}
               disabled={submitting}
               autoComplete="off"
             />

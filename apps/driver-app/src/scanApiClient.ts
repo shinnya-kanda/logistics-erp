@@ -3,6 +3,31 @@ import type { ScanInputPayload } from "@logistics-erp/schema";
 import { getScanApiBaseUrl } from "./config.js";
 
 const DEFAULT_TIMEOUT_MS = 15_000;
+export const WAREHOUSE_CODE_STORAGE_KEY = "logistics_erp_warehouse_code";
+export const DEFAULT_WAREHOUSE_CODE = "KOMATSU";
+
+function normalizeWarehouseCode(raw: string | null | undefined): string {
+  return (raw ?? "").trim().toUpperCase();
+}
+
+export function getStoredWarehouseCode(): string {
+  if (typeof window === "undefined") return DEFAULT_WAREHOUSE_CODE;
+  try {
+    return normalizeWarehouseCode(window.localStorage.getItem(WAREHOUSE_CODE_STORAGE_KEY)) || DEFAULT_WAREHOUSE_CODE;
+  } catch {
+    return DEFAULT_WAREHOUSE_CODE;
+  }
+}
+
+export function setStoredWarehouseCode(raw: string): string {
+  const warehouseCode = normalizeWarehouseCode(raw) || DEFAULT_WAREHOUSE_CODE;
+  try {
+    window.localStorage.setItem(WAREHOUSE_CODE_STORAGE_KEY, warehouseCode);
+  } catch {
+    // localStorage が使えない環境でも固定初期値で業務処理は続ける。
+  }
+  return warehouseCode;
+}
 
 function linkAbort(parent: AbortSignal, child: AbortController): void {
   if (parent.aborted) {
@@ -48,6 +73,7 @@ export type InventoryMoveSuccessBody = {
 export type PalletCreatePayload = {
   pallet_code: string;
   warehouse_code: string;
+  project_no?: string;
   created_by?: string;
   remarks?: string;
 };
@@ -64,6 +90,7 @@ export type PalletItemAddPayload = {
   part_no: string;
   quantity: number;
   warehouse_code: string;
+  project_no?: string;
   quantity_unit?: string;
   created_by?: string;
   remarks?: string;
@@ -81,6 +108,7 @@ export type PalletItemOutPayload = {
   part_no: string;
   quantity: number;
   warehouse_code: string;
+  project_no?: string;
   operator_id?: string;
   operator_name?: string;
   remarks?: string;
@@ -100,6 +128,7 @@ export type PalletMovePayload = {
   pallet_code: string;
   to_location_code: string;
   warehouse_code: string;
+  project_no?: string;
   operator_id?: string;
   operator_name?: string;
   remarks?: string;
@@ -114,6 +143,7 @@ export type PalletMoveSuccessBody = {
 export type PalletOutPayload = {
   pallet_code: string;
   warehouse_code: string;
+  project_no?: string;
   operator_id?: string;
   operator_name?: string;
   remarks?: string;
@@ -975,6 +1005,7 @@ function isPalletOutSuccessBody(v: unknown): v is PalletOutSuccessBody {
 export async function searchActivePalletsByPartNo(
   params: {
     warehouseCode: string;
+    projectNo?: string;
     partNo: string;
   },
   options?: { signal?: AbortSignal; timeoutMs?: number }
@@ -995,6 +1026,9 @@ export async function searchActivePalletsByPartNo(
     status: "ACTIVE",
     part_no: params.partNo,
   });
+  if (params.projectNo?.trim()) {
+    query.set("project_no", params.projectNo.trim());
+  }
 
   let res: Response;
   try {
@@ -1090,6 +1124,7 @@ function isPalletSearchRow(v: unknown): v is PalletSearchRow {
 
 export async function getEmptyPallets(
   warehouseCode: string,
+  projectNo?: string,
   options?: { signal?: AbortSignal; timeoutMs?: number }
 ): Promise<
   | { ok: true; status: 200; data: EmptyPalletsSuccessBody }
@@ -1106,6 +1141,9 @@ export async function getEmptyPallets(
   const query = new URLSearchParams({
     warehouse_code: warehouseCode,
   });
+  if (projectNo?.trim()) {
+    query.set("project_no", projectNo.trim());
+  }
 
   let res: Response;
   try {

@@ -1,20 +1,22 @@
 import { useRef, useState, type FormEvent } from "react";
 import {
+  getStoredWarehouseCode,
   postPalletCreate,
+  setStoredWarehouseCode,
   type PalletCreateSuccessBody,
   type ScanApiError,
 } from "./scanApiClient.js";
 
 type PalletCreateFields = {
   pallet_code: string;
-  warehouse_code: string;
+  project_no: string;
   created_by: string;
   remarks: string;
 };
 
 const emptyFields: PalletCreateFields = {
   pallet_code: "",
-  warehouse_code: "",
+  project_no: "",
   created_by: "",
   remarks: "",
 };
@@ -87,6 +89,7 @@ function palletCreateErrorMessage(error: ScanApiError): string {
 export function PalletCreateApp() {
   const palletCodeInputRef = useRef<HTMLInputElement>(null);
   const [fields, setFields] = useState<PalletCreateFields>(emptyFields);
+  const [warehouseCodeDraft, setWarehouseCodeDraft] = useState(getStoredWarehouseCode);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<PalletCreateSuccessBody | null>(null);
   const [error, setError] = useState<ScanApiError | null>(null);
@@ -95,7 +98,8 @@ export function PalletCreateApp() {
     if (submitting) return;
 
     const palletCode = normalizePalletCode(fields.pallet_code);
-    const warehouseCode = fields.warehouse_code.trim();
+    const warehouseCode = setStoredWarehouseCode(warehouseCodeDraft);
+    const projectNo = fields.project_no.trim() || warehouseCode;
 
     setResult(null);
     setError(null);
@@ -123,6 +127,7 @@ export function PalletCreateApp() {
         {
           pallet_code: palletCode,
           warehouse_code: warehouseCode,
+          project_no: projectNo,
           created_by: trimOrUndefined(fields.created_by),
           remarks: trimOrUndefined(fields.remarks),
         },
@@ -135,7 +140,6 @@ export function PalletCreateApp() {
         setFields((f) => ({
           ...f,
           pallet_code: "",
-          warehouse_code: warehouseCode,
           remarks: "",
         }));
         requestAnimationFrame(() => palletCodeInputRef.current?.focus());
@@ -185,12 +189,24 @@ export function PalletCreateApp() {
           </label>
 
           <label className="field">
-            <span className="label">warehouse_code *</span>
+            <span className="label">倉庫コード設定（固定）</span>
             <input
               className="input"
-              value={fields.warehouse_code}
+              value={warehouseCodeDraft}
+              onChange={(e) => setWarehouseCodeDraft(e.target.value)}
+              onBlur={(e) => setWarehouseCodeDraft(setStoredWarehouseCode(e.target.value))}
+              disabled={submitting}
+              autoComplete="off"
+            />
+          </label>
+
+          <label className="field">
+            <span className="label">project_no</span>
+            <input
+              className="input"
+              value={fields.project_no}
               onChange={(e) =>
-                setFields((f) => ({ ...f, warehouse_code: e.target.value }))
+                setFields((f) => ({ ...f, project_no: e.target.value }))
               }
               disabled={submitting}
               autoComplete="off"

@@ -1,6 +1,8 @@
 import { useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import {
+  getStoredWarehouseCode,
   postPalletItemOut,
+  setStoredWarehouseCode,
   type PalletItemOutSuccessBody,
   type ScanApiError,
 } from "./scanApiClient.js";
@@ -11,7 +13,7 @@ type PalletItemOutFields = {
   pallet_code: string;
   part_no: string;
   quantity: string;
-  warehouse_code: string;
+  project_no: string;
   operator_name: string;
   remarks: string;
 };
@@ -25,7 +27,7 @@ const initialFields: PalletItemOutFields = {
   pallet_code: "",
   part_no: "",
   quantity: "1",
-  warehouse_code: "KOMATSU",
+  project_no: "",
   operator_name: "",
   remarks: "",
 };
@@ -140,6 +142,7 @@ export function PalletItemOutApp() {
   const readerInputRef = useRef<HTMLInputElement>(null);
   const palletCodeInputRef = useRef<HTMLInputElement>(null);
   const [fields, setFields] = useState<PalletItemOutFields>(initialFields);
+  const [warehouseCodeDraft, setWarehouseCodeDraft] = useState(getStoredWarehouseCode);
   const [readerTarget, setReaderTarget] = useState<ReaderTarget>("pallet_code");
   const [readerValue, setReaderValue] = useState("");
   const [readerMessage, setReaderMessage] = useState<string | null>(null);
@@ -196,7 +199,8 @@ export function PalletItemOutApp() {
     const palletCode = normalizePalletCode(fields.pallet_code);
     const partNo = fields.part_no.trim().toUpperCase();
     const quantity = Number(fields.quantity);
-    const warehouseCode = fields.warehouse_code.trim() || "KOMATSU";
+    const warehouseCode = setStoredWarehouseCode(warehouseCodeDraft);
+    const projectNo = fields.project_no.trim() || warehouseCode;
 
     setResult(null);
     setError(null);
@@ -226,7 +230,7 @@ export function PalletItemOutApp() {
       ...f,
       pallet_code: palletCode,
       part_no: partNo,
-      warehouse_code: warehouseCode,
+      project_no: projectNo,
     }));
     setSubmitting(true);
 
@@ -237,6 +241,7 @@ export function PalletItemOutApp() {
           part_no: partNo,
           quantity,
           warehouse_code: warehouseCode,
+          project_no: projectNo,
           operator_name: trimOrUndefined(fields.operator_name),
           remarks: trimOrUndefined(fields.remarks),
           idempotency_key: createClientIdempotencyKey("pallet-item-out"),
@@ -249,7 +254,7 @@ export function PalletItemOutApp() {
         setResult(res.data);
         setFields((f) => ({
           ...initialFields,
-          warehouse_code: f.warehouse_code,
+          project_no: f.project_no,
           operator_name: f.operator_name,
         }));
         setReaderValue("");
@@ -331,13 +336,23 @@ export function PalletItemOutApp() {
       <form className="scanner-form" onSubmit={handleSubmit}>
         <section className="scanner-panel">
           <label className="field">
-            <span className="label">warehouse_code</span>
+            <span className="label">倉庫コード設定（固定）</span>
             <input
               className="input"
-              value={fields.warehouse_code}
-              onChange={(e) =>
-                setFields((f) => ({ ...f, warehouse_code: e.target.value }))
-              }
+              value={warehouseCodeDraft}
+              onChange={(e) => setWarehouseCodeDraft(e.target.value)}
+              onBlur={(e) => setWarehouseCodeDraft(setStoredWarehouseCode(e.target.value))}
+              disabled={submitting}
+              autoComplete="off"
+            />
+          </label>
+
+          <label className="field">
+            <span className="label">project_no</span>
+            <input
+              className="input"
+              value={fields.project_no}
+              onChange={(e) => setFields((f) => ({ ...f, project_no: e.target.value }))}
               disabled={submitting}
               autoComplete="off"
             />

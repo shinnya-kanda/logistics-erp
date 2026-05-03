@@ -1,6 +1,8 @@
 import { useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import {
+  getStoredWarehouseCode,
   postPalletMove,
+  setStoredWarehouseCode,
   type PalletMoveSuccessBody,
   type ScanApiError,
 } from "./scanApiClient.js";
@@ -10,7 +12,7 @@ type ReaderTarget = "pallet_code" | "to_location_code";
 type PalletMoveFields = {
   pallet_code: string;
   to_location_code: string;
-  warehouse_code: string;
+  project_no: string;
   operator_name: string;
   remarks: string;
 };
@@ -18,7 +20,7 @@ type PalletMoveFields = {
 const initialFields: PalletMoveFields = {
   pallet_code: "",
   to_location_code: "",
-  warehouse_code: "KOMATSU",
+  project_no: "",
   operator_name: "",
   remarks: "",
 };
@@ -111,6 +113,7 @@ function transactionText(transaction: Record<string, unknown>, key: string): str
 export function PalletMoveApp() {
   const readerInputRef = useRef<HTMLInputElement>(null);
   const [fields, setFields] = useState<PalletMoveFields>(initialFields);
+  const [warehouseCodeDraft, setWarehouseCodeDraft] = useState(getStoredWarehouseCode);
   const [readerTarget, setReaderTarget] = useState<ReaderTarget>("pallet_code");
   const [readerValue, setReaderValue] = useState("");
   const [readerMessage, setReaderMessage] = useState<string | null>(null);
@@ -150,7 +153,8 @@ export function PalletMoveApp() {
 
     const palletCode = normalizeCode39(fields.pallet_code);
     const toLocationCode = normalizeCode39(fields.to_location_code);
-    const warehouseCode = fields.warehouse_code.trim() || "KOMATSU";
+    const warehouseCode = setStoredWarehouseCode(warehouseCodeDraft);
+    const projectNo = fields.project_no.trim() || warehouseCode;
 
     setResult(null);
     setError(null);
@@ -176,7 +180,7 @@ export function PalletMoveApp() {
       ...f,
       pallet_code: palletCode,
       to_location_code: toLocationCode,
-      warehouse_code: warehouseCode,
+      project_no: projectNo,
     }));
     setSubmitting(true);
 
@@ -186,6 +190,7 @@ export function PalletMoveApp() {
           pallet_code: palletCode,
           to_location_code: toLocationCode,
           warehouse_code: warehouseCode,
+          project_no: projectNo,
           operator_name: trimOrUndefined(fields.operator_name),
           remarks: trimOrUndefined(fields.remarks),
           idempotency_key: createClientIdempotencyKey("pallet-move"),
@@ -198,7 +203,7 @@ export function PalletMoveApp() {
         setResult(res.data);
         setFields((f) => ({
           ...initialFields,
-          warehouse_code: f.warehouse_code,
+          project_no: f.project_no,
           operator_name: f.operator_name,
         }));
         setReaderValue("");
@@ -306,13 +311,23 @@ export function PalletMoveApp() {
           </label>
 
           <label className="field">
-            <span className="label">warehouse_code</span>
+            <span className="label">倉庫コード設定（固定）</span>
             <input
               className="input"
-              value={fields.warehouse_code}
-              onChange={(e) =>
-                setFields((f) => ({ ...f, warehouse_code: e.target.value }))
-              }
+              value={warehouseCodeDraft}
+              onChange={(e) => setWarehouseCodeDraft(e.target.value)}
+              onBlur={(e) => setWarehouseCodeDraft(setStoredWarehouseCode(e.target.value))}
+              disabled={submitting}
+              autoComplete="off"
+            />
+          </label>
+
+          <label className="field">
+            <span className="label">project_no</span>
+            <input
+              className="input"
+              value={fields.project_no}
+              onChange={(e) => setFields((f) => ({ ...f, project_no: e.target.value }))}
               disabled={submitting}
               autoComplete="off"
             />
