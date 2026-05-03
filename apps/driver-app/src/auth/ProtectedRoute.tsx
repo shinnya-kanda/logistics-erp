@@ -1,15 +1,20 @@
-import { Link, Navigate, Outlet, useLocation, useMatches } from "react-router-dom";
+import type { ReactNode } from "react";
+import { Link, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "./AuthProvider.js";
 
-export type ProfileRole = "admin" | "chief" | "office" | "worker";
+export type Role = "admin" | "chief" | "office" | "worker";
 
-const PROFILE_ROLES = ["admin", "chief", "office", "worker"] as const satisfies readonly ProfileRole[];
+/** @deprecated MenuPage 等との互換用。`Role` と同じ */
+export type ProfileRole = Role;
 
-export type ProtectedRouteHandle = {
-  allowedRoles: readonly ProfileRole[];
+const PROFILE_ROLES = ["admin", "chief", "office", "worker"] as const satisfies readonly Role[];
+
+export type ProtectedRouteProps = {
+  children: ReactNode;
+  allowedRoles?: Role[];
 };
 
-function isProfileRole(role: string): role is ProfileRole {
+function isProfileRole(role: string): role is Role {
   return (PROFILE_ROLES as readonly string[]).includes(role);
 }
 
@@ -65,21 +70,9 @@ function ProfileErrorScreen({ message }: { message: string }) {
   );
 }
 
-function readAllowedRoles(matches: ReturnType<typeof useMatches>): readonly ProfileRole[] | null {
-  for (let i = matches.length - 1; i >= 0; i--) {
-    const h = matches[i]?.handle as ProtectedRouteHandle | undefined;
-    if (h?.allowedRoles != null && h.allowedRoles.length > 0) {
-      return h.allowedRoles;
-    }
-  }
-  return null;
-}
-
-export function ProtectedRoute() {
+export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   const { session, loading: authLoading, profile, profileLoading, profileError } = useAuth();
   const location = useLocation();
-  const matches = useMatches();
-  const allowedRoles = readAllowedRoles(matches);
 
   if (authLoading) {
     return SessionLoadingScreen("セッション確認中…");
@@ -101,13 +94,11 @@ export function ProtectedRoute() {
     return <AccessDenied />;
   }
 
-  if (allowedRoles == null) {
-    return <AccessDenied />;
+  if (allowedRoles != null) {
+    if (allowedRoles.length === 0 || !allowedRoles.includes(profile.role)) {
+      return <AccessDenied />;
+    }
   }
 
-  if (!allowedRoles.includes(profile.role)) {
-    return <AccessDenied />;
-  }
-
-  return <Outlet />;
+  return children;
 }

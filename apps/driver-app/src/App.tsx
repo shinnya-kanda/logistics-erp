@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider, useAuth } from "./auth/AuthProvider.js";
-import { ProtectedRoute, type ProfileRole } from "./auth/ProtectedRoute.js";
+import { ProtectedRoute, type Role } from "./auth/ProtectedRoute.js";
 import { getSupabaseBrowserClient } from "./lib/supabaseClient.js";
 import { InventoryInPage } from "./pages/InventoryInPage.js";
 import { InventoryMovePage } from "./pages/InventoryMovePage.js";
@@ -38,54 +38,87 @@ function RootIndex() {
   return <Navigate to="/menu" replace />;
 }
 
-const rolesMenu = ["admin", "chief", "office", "worker"] as const satisfies readonly ProfileRole[];
-const rolesField = ["admin", "chief", "worker"] as const satisfies readonly ProfileRole[];
-const rolesScanner = ["admin", "chief", "office", "worker"] as const satisfies readonly ProfileRole[];
+const rolesMenu: Role[] = ["admin", "chief", "office", "worker"];
+const rolesField: Role[] = ["admin", "chief", "worker"];
+const rolesScanner: Role[] = ["admin", "chief", "office", "worker"];
 
 function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/" element={<RootIndex />} />
-      <Route element={<ProtectedRoute />}>
-        <Route path="/menu" handle={{ allowedRoles: rolesMenu }} element={<MenuPage />} />
-        <Route
-          path="/inventory/in"
-          handle={{ allowedRoles: rolesField }}
-          element={<InventoryInPage />}
-        />
-        <Route
-          path="/inventory/move"
-          handle={{ allowedRoles: rolesField }}
-          element={<Navigate replace to="/inventory/move-part" />}
-        />
-        <Route
-          path="/inventory/move-part"
-          handle={{ allowedRoles: rolesField }}
-          element={<InventoryMovePage />}
-        />
-        <Route
-          path="/inventory/out"
-          handle={{ allowedRoles: rolesField }}
-          element={<InventoryOutPage />}
-        />
-        <Route
-          path="/pallet/create"
-          handle={{ allowedRoles: rolesField }}
-          element={<Navigate replace to="/inventory/in" />}
-        />
-        <Route
-          path="/pallet/items/add"
-          handle={{ allowedRoles: rolesField }}
-          element={<PalletItemAddPage />}
-        />
-        <Route
-          path="/pallet/move"
-          handle={{ allowedRoles: rolesField }}
-          element={<PalletMovePage />}
-        />
-        <Route path="/scanner" handle={{ allowedRoles: rolesScanner }} element={<ScannerPage />} />
-      </Route>
+      <Route
+        path="/menu"
+        element={
+          <ProtectedRoute allowedRoles={rolesMenu}>
+            <MenuPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/inventory/in"
+        element={
+          <ProtectedRoute allowedRoles={rolesField}>
+            <InventoryInPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/inventory/move"
+        element={
+          <ProtectedRoute allowedRoles={rolesField}>
+            <Navigate replace to="/inventory/move-part" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/inventory/move-part"
+        element={
+          <ProtectedRoute allowedRoles={rolesField}>
+            <InventoryMovePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/inventory/out"
+        element={
+          <ProtectedRoute allowedRoles={rolesField}>
+            <InventoryOutPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pallet/create"
+        element={
+          <ProtectedRoute allowedRoles={rolesField}>
+            <Navigate replace to="/inventory/in" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pallet/items/add"
+        element={
+          <ProtectedRoute allowedRoles={rolesField}>
+            <PalletItemAddPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pallet/move"
+        element={
+          <ProtectedRoute allowedRoles={rolesField}>
+            <PalletMovePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/scanner"
+        element={
+          <ProtectedRoute allowedRoles={rolesScanner}>
+            <ScannerPage />
+          </ProtectedRoute>
+        }
+      />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
