@@ -434,6 +434,8 @@ export async function handleScanHttp(
       const palletCode = stringOrNull(body.pallet_code);
       const warehouseCode = stringOrNull(body.warehouse_code);
       const projectNo = stringOrNull(body.project_no) ?? warehouseCode;
+      const currentLocationCode =
+        stringOrNull(body.current_location_code) ?? stringOrNull(body.location_code);
 
       if (!palletCode || !warehouseCode) {
         res.writeHead(400, { "Content-Type": "application/json" });
@@ -453,7 +455,8 @@ export async function handleScanHttp(
             p_created_by => ${stringOrNull(body.created_by)},
             p_remarks => ${stringOrNull(body.remarks)},
             p_inventory_type => ${stringOrNull(body.inventory_type) ?? "project"},
-            p_project_no => ${projectNo}
+            p_project_no => ${projectNo},
+            p_current_location_code => ${currentLocationCode}
           ) AS result
         `;
         const result = rows[0]?.result ?? { ok: false, error: "empty create_pallet result" };
@@ -464,6 +467,17 @@ export async function handleScanHttp(
               ok: false,
               error: "pallet_code_already_exists",
               message: "このPLコードはすでに登録されています",
+            })
+          );
+          return;
+        }
+        if (errorCodeOf(result) === "location_already_occupied") {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(
+            JSON.stringify({
+              ok: false,
+              error: "location_already_occupied",
+              message: "この棚はすでに別のパレットで使用中です",
             })
           );
           return;

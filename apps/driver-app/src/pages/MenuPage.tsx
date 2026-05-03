@@ -5,7 +5,6 @@ const menuItems = [
   { label: "部品移動", to: "/inventory/move-part" },
   { label: "パレット移動", to: "/pallet/move" },
   { label: "出庫", to: "/inventory/out" },
-  { label: "パレット作成", to: "/pallet/create" },
   { label: "パレット積付", to: "/pallet/items/add" },
   { label: "スキャン画面", to: "/scanner" },
 ];

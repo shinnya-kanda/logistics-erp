@@ -74,6 +74,7 @@ export type PalletCreatePayload = {
   pallet_code: string;
   warehouse_code: string;
   project_no?: string;
+  current_location_code?: string;
   created_by?: string;
   remarks?: string;
 };

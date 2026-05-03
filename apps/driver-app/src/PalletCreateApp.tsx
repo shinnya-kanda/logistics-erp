@@ -1,4 +1,10 @@
-import { useRef, useState, type FormEvent } from "react";
+import {
+  useRef,
+  useState,
+  type FormEvent,
+  type KeyboardEvent,
+  type RefObject,
+} from "react";
 import {
   getStoredWarehouseCode,
   postPalletCreate,
@@ -10,6 +16,7 @@ import {
 type PalletCreateFields = {
   pallet_code: string;
   project_no: string;
+  location_code: string;
   created_by: string;
   remarks: string;
 };
@@ -17,6 +24,7 @@ type PalletCreateFields = {
 const emptyFields: PalletCreateFields = {
   pallet_code: "",
   project_no: "",
+  location_code: "",
   created_by: "",
   remarks: "",
 };
@@ -40,6 +48,10 @@ function normalizePalletCode(raw: string): string {
 
 function isValidPalletCode(code: string): boolean {
   return /^[A-Z0-9-]+$/.test(code);
+}
+
+function isValidPlNo(code: string): boolean {
+  return /^PL[A-Z0-9]{8}$/.test(code);
 }
 
 function playSuccessBeep() {
@@ -83,11 +95,16 @@ function palletCreateErrorMessage(error: ScanApiError): string {
   if (error.message === "pallet_code_already_exists") {
     return "このPLコードはすでに登録されています";
   }
+  if (error.message === "location_already_occupied") {
+    return "この棚はすでに別のパレットで使用中です";
+  }
   return error.message;
 }
 
 export function PalletCreateApp() {
   const palletCodeInputRef = useRef<HTMLInputElement>(null);
+  const projectNoInputRef = useRef<HTMLInputElement>(null);
+  const locationCodeInputRef = useRef<HTMLInputElement>(null);
   const [fields, setFields] = useState<PalletCreateFields>(emptyFields);
   const [warehouseCodeDraft, setWarehouseCodeDraft] = useState(getStoredWarehouseCode);
   const [submitting, setSubmitting] = useState(false);
@@ -99,19 +116,49 @@ export function PalletCreateApp() {
 
     const palletCode = normalizePalletCode(fields.pallet_code);
     const warehouseCode = setStoredWarehouseCode(warehouseCodeDraft);
-    const projectNo = trimOrUndefined(fields.project_no);
+    const projectNo = normalizePalletCode(fields.project_no);
+    const locationCode = normalizePalletCode(fields.location_code);
 
     setResult(null);
     setError(null);
 
     if (!palletCode) {
-      setError({ kind: "validation", message: "pallet_code を入力してください。" });
+      setError({ kind: "validation", message: "PL NO を入力してください。" });
+      return;
+    }
+    if (!isValidPlNo(palletCode)) {
+      setError({
+        kind: "validation",
+        message: "PL NO は PL + 英数字8桁で入力してください。例: PL12345678",
+      });
       return;
     }
     if (!isValidPalletCode(palletCode)) {
       setError({
         kind: "validation",
-        message: "pallet_code は英数字とハイフンのみ使用できます。",
+        message: "PL NO は英数字のみ使用できます。",
+      });
+      return;
+    }
+    if (!projectNo) {
+      setError({ kind: "validation", message: "PJ NO を入力してください。" });
+      return;
+    }
+    if (!isValidPalletCode(projectNo)) {
+      setError({
+        kind: "validation",
+        message: "PJ NO は英数字とハイフンのみ使用できます。",
+      });
+      return;
+    }
+    if (!locationCode) {
+      setError({ kind: "validation", message: "棚番を入力してください。" });
+      return;
+    }
+    if (!isValidPalletCode(locationCode)) {
+      setError({
+        kind: "validation",
+        message: "棚番は英数字とハイフンのみ使用できます。",
       });
       return;
     }
@@ -120,7 +167,12 @@ export function PalletCreateApp() {
       return;
     }
 
-    setFields((f) => ({ ...f, pallet_code: palletCode }));
+    setFields((f) => ({
+      ...f,
+      pallet_code: palletCode,
+      project_no: projectNo,
+      location_code: locationCode,
+    }));
     setSubmitting(true);
     try {
       const res = await postPalletCreate(
@@ -128,6 +180,7 @@ export function PalletCreateApp() {
           pallet_code: palletCode,
           warehouse_code: warehouseCode,
           project_no: projectNo,
+          current_location_code: locationCode,
           created_by: trimOrUndefined(fields.created_by),
           remarks: trimOrUndefined(fields.remarks),
         },
@@ -137,11 +190,7 @@ export function PalletCreateApp() {
       if (res.ok) {
         playSuccessBeep();
         setResult(res.data);
-        setFields((f) => ({
-          ...f,
-          pallet_code: "",
-          remarks: "",
-        }));
+        setFields(emptyFields);
         requestAnimationFrame(() => palletCodeInputRef.current?.focus());
         return;
       }
@@ -162,17 +211,28 @@ export function PalletCreateApp() {
     void sendPalletCreate();
   }
 
+  function focusNextOnEnter(
+    e: KeyboardEvent<HTMLInputElement>,
+    nextRef: RefObject<HTMLInputElement | null>
+  ) {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    nextRef.current?.focus();
+  }
+
   return (
-    <section className="scanner-shell pallet-create-shell" aria-label="パレット作成">
+    <section className="scanner-shell pallet-create-shell" aria-label="入庫">
       <header className="scanner-header">
-        <h1 className="scanner-title">パレット作成</h1>
-        <p className="scanner-sub">Code39 または手入力でパレットを登録します</p>
+        <h1 className="scanner-title">入庫</h1>
+        <p className="scanner-sub">
+          管理画面で発行したPL NO / PJ NO と棚番バーコードを読み取って入庫登録します
+        </p>
       </header>
 
       <form className="scanner-form" onSubmit={handleSubmit}>
         <section className="scanner-panel">
           <label className="field">
-            <span className="label">pallet_code *</span>
+            <span className="label">PL NO *</span>
             <input
               ref={palletCodeInputRef}
               className="input large"
@@ -184,7 +244,8 @@ export function PalletCreateApp() {
               autoComplete="off"
               autoCapitalize="characters"
               inputMode="text"
-              placeholder="例: *PL-KM-260502-0001*"
+              placeholder="例: PL12345678"
+              onKeyDown={(e) => focusNextOnEnter(e, projectNoInputRef)}
             />
           </label>
 
@@ -201,8 +262,9 @@ export function PalletCreateApp() {
           </label>
 
           <label className="field">
-            <span className="label">project_no</span>
+            <span className="label">PJ NO *</span>
             <input
+              ref={projectNoInputRef}
               className="input"
               value={fields.project_no}
               onChange={(e) =>
@@ -210,6 +272,25 @@ export function PalletCreateApp() {
               }
               disabled={submitting}
               autoComplete="off"
+              autoCapitalize="characters"
+              inputMode="text"
+              onKeyDown={(e) => focusNextOnEnter(e, locationCodeInputRef)}
+            />
+          </label>
+
+          <label className="field">
+            <span className="label">棚番 location_code *</span>
+            <input
+              ref={locationCodeInputRef}
+              className="input"
+              value={fields.location_code}
+              onChange={(e) =>
+                setFields((f) => ({ ...f, location_code: e.target.value }))
+              }
+              disabled={submitting}
+              autoComplete="off"
+              autoCapitalize="characters"
+              inputMode="text"
             />
           </label>
 
@@ -242,16 +323,16 @@ export function PalletCreateApp() {
 
           <div className="actions">
             <button type="submit" className="btn primary" disabled={submitting}>
-              {submitting ? "パレット作成中…" : "パレットを作成"}
+              {submitting ? "入庫登録中…" : "入庫登録"}
             </button>
           </div>
         </section>
       </form>
 
       {result ? (
-        <section className="scanner-panel result-panel" aria-label="パレット作成結果">
+        <section className="scanner-panel result-panel" aria-label="入庫登録結果">
           <div className="result-banner tone-ok">
-            <div className="result-banner-title">パレット作成完了</div>
+            <div className="result-banner-title">入庫登録完了</div>
             <div className="move-success-summary">
               <div className="mono">{result.pallet_code}</div>
               <div>{result.created ? "created=true" : "created=false"}</div>
