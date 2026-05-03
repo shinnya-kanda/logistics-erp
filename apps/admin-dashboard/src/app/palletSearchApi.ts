@@ -1,3 +1,5 @@
+import { getSupabaseBrowserClient } from "@/lib/supabaseClient";
+
 export type PalletSearchRow = {
   pallet_id: string;
   pallet_code: string;
@@ -108,7 +110,7 @@ type PalletSearchParams = {
   palletCode?: string;
 };
 
-const API_BASE = "http://localhost:3040";
+const API_BASE = "/api/scan";
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return v !== null && typeof v === "object" && !Array.isArray(v);
@@ -170,8 +172,25 @@ function parseError(json: unknown): string {
   return "パレット検索に失敗しました。";
 }
 
+async function adminApiHeaders(json = false): Promise<Record<string, string>> {
+  const headers: Record<string, string> = json
+    ? { "Content-Type": "application/json" }
+    : {};
+  const client = getSupabaseBrowserClient();
+  if (!client) return headers;
+
+  const { data } = await client.auth.getSession();
+  const token = data.session?.access_token;
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  return headers;
+}
+
 export async function getUnregisteredWarehouseLocations(): Promise<UnregisteredWarehouseLocationResponse> {
-  const res = await fetch(`${API_BASE}/warehouse-locations/unregistered`);
+  const res = await fetch(`${API_BASE}/warehouse-locations/unregistered`, {
+    headers: await adminApiHeaders(),
+  });
   let json: unknown;
   try {
     json = await res.json();
@@ -214,7 +233,9 @@ export async function searchWarehouseLocations(params: {
     searchParams.set("is_active", "false");
   }
 
-  const res = await fetch(`${API_BASE}/warehouse-locations/search?${searchParams.toString()}`);
+  const res = await fetch(`${API_BASE}/warehouse-locations/search?${searchParams.toString()}`, {
+    headers: await adminApiHeaders(),
+  });
   let json: unknown;
   try {
     json = await res.json();
@@ -240,7 +261,7 @@ export async function createWarehouseLocation(params: {
 }): Promise<WarehouseLocationMutationResponse> {
   const res = await fetch(`${API_BASE}/warehouse-locations/create`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: await adminApiHeaders(true),
     body: JSON.stringify({
       warehouse_code: params.warehouseCode,
       location_code: params.locationCode,
@@ -272,7 +293,7 @@ export async function updateWarehouseLocationActive(params: {
 }): Promise<WarehouseLocationMutationResponse> {
   const res = await fetch(`${API_BASE}/warehouse-locations/active/update`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: await adminApiHeaders(true),
     body: JSON.stringify({
       id: params.id,
       is_active: params.isActive,
@@ -311,7 +332,9 @@ export async function getEmptyPallets(params: {
   }
 
   const query = searchParams.toString();
-  const res = await fetch(`${API_BASE}/pallets/empty${query ? `?${query}` : ""}`);
+  const res = await fetch(`${API_BASE}/pallets/empty${query ? `?${query}` : ""}`, {
+    headers: await adminApiHeaders(),
+  });
   let json: unknown;
   try {
     json = await res.json();
@@ -358,7 +381,9 @@ export async function searchPallets({
     params.push(`pallet_code=${encodeURIComponent(trimmedPalletCode)}`);
   }
 
-  const res = await fetch(`${API_BASE}/pallets/search?${params.join("&")}`);
+  const res = await fetch(`${API_BASE}/pallets/search?${params.join("&")}`, {
+    headers: await adminApiHeaders(),
+  });
   let json: unknown;
   try {
     json = await res.json();
@@ -382,7 +407,8 @@ export async function getPalletDetail(
   palletCode: string
 ): Promise<PalletDetailResponse> {
   const res = await fetch(
-    `${API_BASE}/pallets/detail?pallet_code=${encodeURIComponent(palletCode)}`
+    `${API_BASE}/pallets/detail?pallet_code=${encodeURIComponent(palletCode)}`,
+    { headers: await adminApiHeaders() }
   );
   let json: unknown;
   try {
@@ -413,7 +439,7 @@ export async function updatePalletProjectNo(params: {
 }): Promise<PalletProjectNoUpdateResponse> {
   const res = await fetch(`${API_BASE}/pallets/project-no/update`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: await adminApiHeaders(true),
     body: JSON.stringify({
       pallet_code: params.palletCode,
       project_no: params.projectNo,
