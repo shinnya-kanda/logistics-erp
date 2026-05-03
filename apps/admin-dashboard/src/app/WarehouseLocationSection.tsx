@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import {
   createWarehouseLocation,
+  getUnregisteredWarehouseLocations,
   searchWarehouseLocations,
   updateWarehouseLocationActive,
+  type UnregisteredWarehouseLocationRow,
   type WarehouseLocationRow,
 } from "./palletSearchApi";
 
@@ -113,9 +115,34 @@ export function WarehouseLocationSection() {
   const [newLocationCode, setNewLocationCode] = useState("");
   const [newRemarks, setNewRemarks] = useState("");
   const [rows, setRows] = useState<WarehouseLocationRow[]>([]);
+  const [unregisteredRows, setUnregisteredRows] = useState<UnregisteredWarehouseLocationRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const [unregisteredLoading, setUnregisteredLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  async function loadUnregisteredLocations() {
+    setUnregisteredLoading(true);
+    setError(null);
+    try {
+      const result = await getUnregisteredWarehouseLocations();
+      if (!result.ok) {
+        setUnregisteredRows([]);
+        setError(result.error);
+        return;
+      }
+      setUnregisteredRows(result.locations);
+    } catch (err) {
+      setUnregisteredRows([]);
+      setError(err instanceof Error ? err.message : "未登録棚番の取得中にエラーが発生しました。");
+    } finally {
+      setUnregisteredLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadUnregisteredLocations();
+  }, []);
 
   async function loadLocations() {
     setLoading(true);
@@ -176,6 +203,7 @@ export function WarehouseLocationSection() {
       setNewLocationCode("");
       setNewRemarks("");
       await loadLocations();
+      await loadUnregisteredLocations();
     } catch (err) {
       setError(err instanceof Error ? err.message : "棚番登録中にエラーが発生しました。");
     } finally {
@@ -323,6 +351,53 @@ export function WarehouseLocationSection() {
               <tr>
                 <td style={styles.td} colSpan={6}>
                   検索結果はありません。
+                </td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
+      </div>
+
+      <h3>未登録棚番一覧</h3>
+      <p>
+        パレットで使われている現在棚番のうち、warehouse_locations に未登録の棚番を表示します。
+      </p>
+      <button
+        type="button"
+        style={styles.secondaryButton}
+        onClick={() => void loadUnregisteredLocations()}
+        disabled={unregisteredLoading}
+      >
+        {unregisteredLoading ? "取得中..." : "未登録棚番を再読み込み"}
+      </button>
+      <p>未登録棚番：{unregisteredRows.length}件</p>
+      <div style={styles.tableWrap}>
+        <table style={styles.table}>
+          <thead>
+            <tr>
+              <th style={styles.th}>warehouse_code</th>
+              <th style={styles.th}>location_code</th>
+              <th style={styles.th}>usage_count</th>
+              <th style={styles.th}>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {unregisteredRows.map((row) => (
+              <tr key={`${row.warehouse_code}:${row.location_code}`}>
+                <td style={styles.td}>{row.warehouse_code}</td>
+                <td style={styles.td}>{row.location_code}</td>
+                <td style={styles.td}>{row.usage_count}</td>
+                <td style={styles.td}>
+                  <button type="button" style={styles.secondaryButton} disabled>
+                    登録（今後）
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {unregisteredRows.length === 0 ? (
+              <tr>
+                <td style={styles.td} colSpan={4}>
+                  未登録棚番はありません。
                 </td>
               </tr>
             ) : null}

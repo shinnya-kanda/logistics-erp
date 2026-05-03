@@ -14,6 +14,7 @@ import {
   getPalletDetail,
   getPalletSearch,
   getWarehouseLocationsSearch,
+  getWarehouseLocationsUnregistered,
   getHealth,
   optionsScans,
   postInventoryIn,
@@ -559,6 +560,13 @@ describe("scan minimal HTTP contract", () => {
         warehouseCode: "KOMATSU",
         isActive: "true",
       });
+
+      expect(status).toBe(500);
+      expect(errMessage(json)).toBeTruthy();
+    });
+
+    it("500 reaches DB layer when unregistered locations are requested", async () => {
+      const { status, json } = await getWarehouseLocationsUnregistered(server.baseUrl);
 
       expect(status).toBe(500);
       expect(errMessage(json)).toBeTruthy();

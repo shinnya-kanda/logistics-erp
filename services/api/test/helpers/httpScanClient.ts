@@ -337,6 +337,22 @@ export async function getWarehouseLocationsSearch(
   return { status: res.status, json, rawText };
 }
 
+export async function getWarehouseLocationsUnregistered(
+  baseUrl: string
+): Promise<ScanPostResult> {
+  const res = await fetch(`${baseUrl.replace(/\/$/, "")}/warehouse-locations/unregistered`);
+  const rawText = await res.text();
+  let json: unknown = null;
+  if (rawText.trim()) {
+    try {
+      json = JSON.parse(rawText) as unknown;
+    } catch {
+      json = { _parseError: true, rawText };
+    }
+  }
+  return { status: res.status, json, rawText };
+}
+
 export async function postWarehouseLocationCreate(
   baseUrl: string,
   body: Record<string, unknown>

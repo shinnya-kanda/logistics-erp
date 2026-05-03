@@ -1083,6 +1083,35 @@ export async function handleScanHttp(
     return;
   }
 
+  if (req.method === "GET" && pathname === "/warehouse-locations/unregistered") {
+    const sql = postgres(requireDatabaseUrl(), { max: 1 });
+    try {
+      const rows = await sql`
+        SELECT
+          pu.warehouse_code,
+          pu.current_location_code AS location_code,
+          COUNT(*)::int AS usage_count
+        FROM public.pallet_units pu
+        LEFT JOIN public.warehouse_locations wl
+          ON pu.warehouse_code = wl.warehouse_code
+         AND pu.current_location_code = wl.location_code
+        WHERE pu.current_location_code IS NOT NULL
+          AND wl.location_code IS NULL
+        GROUP BY pu.warehouse_code, pu.current_location_code
+        ORDER BY usage_count DESC, pu.warehouse_code ASC, pu.current_location_code ASC
+      `;
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, locations: rows }));
+    } catch (e) {
+      const err = e as { message?: string };
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: false, error: err.message ?? "failed to get unregistered warehouse locations" }));
+    } finally {
+      await sql.end({ timeout: 5 });
+    }
+    return;
+  }
+
   if (req.method === "POST" && pathname === "/warehouse-locations/create") {
     try {
       let body: unknown;

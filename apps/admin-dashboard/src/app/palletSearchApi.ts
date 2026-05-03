@@ -46,6 +46,16 @@ type WarehouseLocationMutationResponse =
   | { ok: true; location: WarehouseLocationRow; created?: boolean }
   | { ok: false; error: string };
 
+export type UnregisteredWarehouseLocationRow = {
+  warehouse_code: string;
+  location_code: string;
+  usage_count: number;
+};
+
+type UnregisteredWarehouseLocationResponse =
+  | { ok: true; locations: UnregisteredWarehouseLocationRow[] }
+  | { ok: false; error: string };
+
 export type PalletDetail = {
   pallet: {
     pallet_id: string;
@@ -144,9 +154,43 @@ function isWarehouseLocationRow(v: unknown): v is WarehouseLocationRow {
   );
 }
 
+function isUnregisteredWarehouseLocationRow(
+  v: unknown
+): v is UnregisteredWarehouseLocationRow {
+  if (!isRecord(v)) return false;
+  return (
+    typeof v.warehouse_code === "string" &&
+    typeof v.location_code === "string" &&
+    typeof v.usage_count === "number"
+  );
+}
+
 function parseError(json: unknown): string {
   if (isRecord(json) && typeof json.error === "string") return json.error;
   return "パレット検索に失敗しました。";
+}
+
+export async function getUnregisteredWarehouseLocations(): Promise<UnregisteredWarehouseLocationResponse> {
+  const res = await fetch(`${API_BASE}/warehouse-locations/unregistered`);
+  let json: unknown;
+  try {
+    json = await res.json();
+  } catch {
+    return { ok: false, error: "APIからJSON以外の応答が返りました。" };
+  }
+
+  if (!res.ok) {
+    return { ok: false, error: parseError(json) };
+  }
+
+  if (!isRecord(json) || json.ok !== true || !Array.isArray(json.locations)) {
+    return { ok: false, error: "未登録棚番一覧の形式が不正です。" };
+  }
+
+  return {
+    ok: true,
+    locations: json.locations.filter(isUnregisteredWarehouseLocationRow),
+  };
 }
 
 export async function searchWarehouseLocations(params: {
