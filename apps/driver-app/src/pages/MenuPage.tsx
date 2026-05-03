@@ -11,11 +11,17 @@ const menuItems = [
 ];
 
 export function MenuPage() {
-  const { client, user } = useAuth();
+  const { user, profile, profileLoading, profileError, signOut } = useAuth();
   const navigate = useNavigate();
 
+  const displayNameLine =
+    profile?.display_name?.trim() ||
+    profile?.email ||
+    user?.email ||
+    "—";
+
   async function handleLogout() {
-    const { error } = await client.auth.signOut();
+    const { error } = await signOut();
     if (!error) {
       navigate("/login", { replace: true });
     }
@@ -26,9 +32,25 @@ export function MenuPage() {
       <header className="scanner-header">
         <h1 className="scanner-title">作業メニュー</h1>
         <p className="scanner-sub">作業内容を選択してください</p>
-        <p className="scanner-sub">
-          ログイン中：{user?.email ?? "—"}
-        </p>
+        <p className="scanner-sub">ログイン中：{user?.email ?? "—"}</p>
+        {profileLoading ? (
+          <p className="scanner-sub">ユーザー情報を取得中...</p>
+        ) : profileError ? (
+          <section
+            className="scanner-panel error-panel"
+            role="alert"
+            aria-label="プロフィールエラー"
+          >
+            <h2 className="panel-title">ユーザー情報エラー</h2>
+            <p className="error-message">{profileError}</p>
+          </section>
+        ) : profile ? (
+          <>
+            <p className="scanner-sub">名前：{displayNameLine}</p>
+            <p className="scanner-sub">権限：{profile.role}</p>
+            <p className="scanner-sub">倉庫：{profile.warehouse_code}</p>
+          </>
+        ) : null}
       </header>
 
       <div className="scanner-panel">
