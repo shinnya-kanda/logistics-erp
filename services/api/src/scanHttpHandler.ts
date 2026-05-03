@@ -916,6 +916,124 @@ export async function handleScanHttp(
     return;
   }
 
+  if (req.method === "POST" && pathname === "/pallets/project-no/update") {
+    try {
+      let body: unknown;
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "Invalid JSON body" }));
+        return;
+      }
+
+      if (!isRecord(body)) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "request body must be an object" }));
+        return;
+      }
+
+      const palletCode = stringOrNull(body.pallet_code);
+      const projectNo = stringOrNull(body.project_no);
+
+      if (!palletCode) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "pallet_code is required" }));
+        return;
+      }
+      if (!projectNo) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "project_no is required" }));
+        return;
+      }
+
+      const sql = postgres(requireDatabaseUrl(), { max: 1 });
+      try {
+        type ProjectNoPalletRow = {
+          pallet_id: string;
+          pallet_code: string;
+          warehouse_code: string;
+          project_no: string | null;
+          current_location_code: string | null;
+          current_status: string | null;
+        };
+
+        await sql`BEGIN`;
+        let result: { pallet: ProjectNoPalletRow; updated_item_link_count: number } | null = null;
+        try {
+          const palletRows = await sql<ProjectNoPalletRow[]>`
+              SELECT
+                id AS pallet_id,
+                pallet_code,
+                warehouse_code,
+                project_no,
+                current_location_code,
+                current_status
+              FROM public.pallet_units
+              WHERE pallet_code = ${palletCode}
+              FOR UPDATE
+              LIMIT 1
+            `;
+
+          const pallet = palletRows[0];
+          if (pallet) {
+            const updatedPalletRows = await sql<ProjectNoPalletRow[]>`
+              UPDATE public.pallet_units
+              SET project_no = ${projectNo}
+              WHERE id = ${pallet.pallet_id}
+              RETURNING
+                id AS pallet_id,
+                pallet_code,
+                warehouse_code,
+                project_no,
+                current_location_code,
+                current_status
+            `;
+
+            const updatedLinks = await sql<{ id: string }[]>`
+              UPDATE public.pallet_item_links
+              SET project_no = ${projectNo}
+              WHERE pallet_id = ${pallet.pallet_id}
+                AND unlinked_at IS NULL
+              RETURNING id
+            `;
+
+            result = {
+              pallet: updatedPalletRows[0],
+              updated_item_link_count: updatedLinks.length,
+            };
+          }
+
+          await sql`COMMIT`;
+        } catch (e) {
+          await sql`ROLLBACK`;
+          throw e;
+        }
+
+        if (!result) {
+          res.writeHead(404, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: "pallet_not_found" }));
+          return;
+        }
+
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true, ...result }));
+      } finally {
+        await sql.end({ timeout: 5 });
+      }
+    } catch (e) {
+      const err = e as { message?: string };
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          ok: false,
+          error: err.message ?? "failed to update pallet project_no",
+        })
+      );
+    }
+    return;
+  }
+
   if (req.method === "GET" && pathname === "/pallets/detail") {
     const palletCode = requestUrl.searchParams.get("pallet_code")?.trim();
     if (!palletCode) {

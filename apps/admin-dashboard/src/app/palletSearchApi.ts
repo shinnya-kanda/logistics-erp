@@ -16,6 +16,19 @@ type PalletSearchResponse =
   | { ok: true; pallets: PalletSearchRow[] }
   | { ok: false; error: string };
 
+export type EmptyPalletRow = {
+  pallet_id: string;
+  pallet_code: string;
+  warehouse_code: string;
+  current_location_code: string | null;
+  current_status: string | null;
+  updated_at: string | null;
+};
+
+type EmptyPalletsResponse =
+  | { ok: true; pallets: EmptyPalletRow[] }
+  | { ok: false; error: string };
+
 export type PalletDetail = {
   pallet: {
     pallet_id: string;
@@ -48,6 +61,14 @@ export type PalletDetail = {
 
 type PalletDetailResponse =
   | ({ ok: true } & PalletDetail)
+  | { ok: false; error: string };
+
+export type PalletProjectNoUpdateResponse =
+  | {
+      ok: true;
+      pallet: PalletDetail["pallet"];
+      updated_item_link_count: number;
+    }
   | { ok: false; error: string };
 
 export type PalletSearchStatus = "ALL" | "ACTIVE" | "OUT";
@@ -87,9 +108,52 @@ function isPalletDetail(v: unknown): v is { ok: true } & PalletDetail {
   );
 }
 
+function isEmptyPalletRow(v: unknown): v is EmptyPalletRow {
+  if (!isRecord(v)) return false;
+  return (
+    typeof v.pallet_id === "string" &&
+    typeof v.pallet_code === "string" &&
+    typeof v.warehouse_code === "string"
+  );
+}
+
 function parseError(json: unknown): string {
   if (isRecord(json) && typeof json.error === "string") return json.error;
   return "パレット検索に失敗しました。";
+}
+
+export async function getEmptyPallets(params: {
+  warehouseCode?: string;
+  projectNo?: string;
+}): Promise<EmptyPalletsResponse> {
+  const searchParams = new URLSearchParams();
+  const warehouseCode = params.warehouseCode?.trim();
+  const projectNo = params.projectNo?.trim();
+  if (warehouseCode) {
+    searchParams.set("warehouse_code", warehouseCode);
+  }
+  if (projectNo) {
+    searchParams.set("project_no", projectNo);
+  }
+
+  const query = searchParams.toString();
+  const res = await fetch(`${API_BASE}/pallets/empty${query ? `?${query}` : ""}`);
+  let json: unknown;
+  try {
+    json = await res.json();
+  } catch {
+    return { ok: false, error: "APIからJSON以外の応答が返りました。" };
+  }
+
+  if (!res.ok) {
+    return { ok: false, error: parseError(json) };
+  }
+
+  if (!isRecord(json) || json.ok !== true || !Array.isArray(json.pallets)) {
+    return { ok: false, error: "空パレット検索結果の形式が不正です。" };
+  }
+
+  return { ok: true, pallets: json.pallets.filter(isEmptyPalletRow) };
 }
 
 export async function searchPallets({
@@ -166,5 +230,44 @@ export async function getPalletDetail(
     pallet: json.pallet,
     items: json.items,
     transactions: json.transactions,
+  };
+}
+
+export async function updatePalletProjectNo(params: {
+  palletCode: string;
+  projectNo: string;
+}): Promise<PalletProjectNoUpdateResponse> {
+  const res = await fetch(`${API_BASE}/pallets/project-no/update`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      pallet_code: params.palletCode,
+      project_no: params.projectNo,
+    }),
+  });
+  let json: unknown;
+  try {
+    json = await res.json();
+  } catch {
+    return { ok: false, error: "APIからJSON以外の応答が返りました。" };
+  }
+
+  if (!res.ok) {
+    return { ok: false, error: parseError(json) };
+  }
+
+  if (
+    !isRecord(json) ||
+    json.ok !== true ||
+    !isRecord(json.pallet) ||
+    typeof json.updated_item_link_count !== "number"
+  ) {
+    return { ok: false, error: "project_no補正結果の形式が不正です。" };
+  }
+
+  return {
+    ok: true,
+    pallet: json.pallet as PalletDetail["pallet"],
+    updated_item_link_count: json.updated_item_link_count,
   };
 }

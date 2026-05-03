@@ -23,6 +23,7 @@ import {
   postPalletItemOut,
   postPalletMove,
   postPalletOut,
+  postPalletProjectNoUpdate,
   postScans,
 } from "./helpers/httpScanClient.js";
 import {
@@ -504,6 +505,36 @@ describe("scan minimal HTTP contract", () => {
 
     it("500 reaches DB layer when warehouse_code is provided", async () => {
       const { status, json } = await getEmptyPallets(server.baseUrl, "KOMATSU");
+
+      expect(status).toBe(500);
+      expect(errMessage(json)).toBeTruthy();
+    });
+  });
+
+  describe("POST /pallets/project-no/update validation (no DB connection)", () => {
+    it("400 when pallet_code is missing", async () => {
+      const { status, json } = await postPalletProjectNoUpdate(server.baseUrl, {
+        project_no: "PRJ-001",
+      });
+
+      expect(status).toBe(400);
+      expect(json).toEqual({ ok: false, error: "pallet_code is required" });
+    });
+
+    it("400 when project_no is missing", async () => {
+      const { status, json } = await postPalletProjectNoUpdate(server.baseUrl, {
+        pallet_code: "PL-001",
+      });
+
+      expect(status).toBe(400);
+      expect(json).toEqual({ ok: false, error: "project_no is required" });
+    });
+
+    it("500 reaches DB layer when required fields are valid", async () => {
+      const { status, json } = await postPalletProjectNoUpdate(server.baseUrl, {
+        pallet_code: "PL-001",
+        project_no: "PRJ-001",
+      });
 
       expect(status).toBe(500);
       expect(errMessage(json)).toBeTruthy();
