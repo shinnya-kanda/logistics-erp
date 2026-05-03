@@ -9,8 +9,9 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@logistics-erp/ui": "workspace:*",
     "@logistics-erp/types": "workspace:*",
+    "@logistics-erp/ui": "workspace:*",
+    "jsbarcode": "^3.12.3",
     "next": "^15.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import JsBarcode from "jsbarcode";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { createPortal } from "react-dom";
 
 type InboundLabelRow = {
@@ -27,10 +28,6 @@ function normalizeCode39Text(value: string): string {
     .replace(/[^A-Z0-9-]/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "");
-}
-
-function barcodeText(value: string): string {
-  return `*${value}*`;
 }
 
 function buildPlNo(prefix: string, pjNo: string, serial: number): string {
@@ -117,6 +114,7 @@ const styles = {
 };
 
 export function InboundLabelPrintSection() {
+  const barcodeSvgRefs = useRef<Map<string, SVGSVGElement>>(new Map());
   const [mounted, setMounted] = useState(false);
   const [pjNo, setPjNo] = useState("");
   const [palletCount, setPalletCount] = useState("5");
@@ -129,6 +127,44 @@ export function InboundLabelPrintSection() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+
+    rows.forEach((row) => {
+      const plSvg = barcodeSvgRefs.current.get(`pl-${row.pl_no}`);
+      if (plSvg) {
+        JsBarcode(plSvg, row.pl_no, {
+          format: "CODE39",
+          displayValue: false,
+          margin: 0,
+          width: 2,
+          height: 55,
+        });
+      }
+
+      const pjSvg = barcodeSvgRefs.current.get(`pj-${row.no}-${row.pj_no}`);
+      if (pjSvg) {
+        JsBarcode(pjSvg, row.pj_no, {
+          format: "CODE39",
+          displayValue: false,
+          margin: 0,
+          width: 2,
+          height: 55,
+        });
+      }
+    });
+  }, [mounted, rows]);
+
+  function setBarcodeSvgRef(key: string) {
+    return (element: SVGSVGElement | null) => {
+      if (element) {
+        barcodeSvgRefs.current.set(key, element);
+      } else {
+        barcodeSvgRefs.current.delete(key);
+      }
+    };
+  }
 
   function handleGenerate(e: FormEvent) {
     e.preventDefault();
@@ -185,7 +221,13 @@ export function InboundLabelPrintSection() {
         {rows.map((row) => (
           <article className="inbound-label-card" key={`pl-${row.pl_no}`}>
             <div className="inbound-label-main">{row.pl_no}</div>
-            <div className="inbound-label-barcode">{barcodeText(row.pl_no)}</div>
+            <div className="inbound-label-barcode-frame">
+              <svg
+                ref={setBarcodeSvgRef(`pl-${row.pl_no}`)}
+                className="inbound-label-barcode"
+                aria-label={`${row.pl_no} Code39 barcode`}
+              />
+            </div>
             <div className="inbound-label-date">{row.output_date}</div>
           </article>
         ))}
@@ -195,7 +237,13 @@ export function InboundLabelPrintSection() {
         {rows.map((row) => (
           <article className="inbound-label-card" key={`pj-${row.no}-${row.pj_no}`}>
             <div className="inbound-label-main">{row.pj_no}</div>
-            <div className="inbound-label-barcode">{barcodeText(row.pj_no)}</div>
+            <div className="inbound-label-barcode-frame">
+              <svg
+                ref={setBarcodeSvgRef(`pj-${row.no}-${row.pj_no}`)}
+                className="inbound-label-barcode"
+                aria-label={`${row.pj_no} Code39 barcode`}
+              />
+            </div>
             <div className="inbound-label-date">{row.output_date}</div>
           </article>
         ))}
@@ -285,16 +333,17 @@ export function InboundLabelPrintSection() {
             word-break: break-all;
           }
 
-          .inbound-label-barcode {
+          .inbound-label-barcode-frame {
             width: 88%;
             padding: 3mm 4mm;
             border: 1px solid #333;
-            font-family: monospace;
-            font-size: 22pt;
-            line-height: 1.1;
-            letter-spacing: 0.12em;
-            text-align: center;
-            word-break: break-all;
+            background: #fff;
+          }
+
+          .inbound-label-barcode {
+            display: block !important;
+            width: 100%;
+            height: 22mm;
           }
 
           .inbound-label-date {
