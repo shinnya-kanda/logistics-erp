@@ -31,6 +31,17 @@ function statusLabel(status: string | null): string {
   return displayValue(status);
 }
 
+function palletState(row: PalletSearchRow): "empty" | "loaded" | "out" {
+  if (row.current_status === "OUT") return "out";
+  return row.part_no ? "loaded" : "empty";
+}
+
+function palletStateLabel(state: "empty" | "loaded" | "out"): string {
+  if (state === "out") return "出庫済";
+  if (state === "loaded") return "満載";
+  return "空";
+}
+
 const styles = {
   panel: {
     marginTop: "2rem",
@@ -133,6 +144,18 @@ const styles = {
   statusUnknown: {
     background: "#eceff1",
     color: "#455a64",
+  },
+  palletStateEmpty: {
+    background: "#fff8e1",
+    color: "#8a5a00",
+  },
+  palletStateLoaded: {
+    background: "#e3f2fd",
+    color: "#0d47a1",
+  },
+  palletStateOut: {
+    background: "#eeeeee",
+    color: "#424242",
   },
   linkButton: {
     border: "none",
@@ -461,6 +484,7 @@ export function PalletSearchSection() {
               <th style={styles.th}>棚番</th>
               <th style={styles.th}>PL</th>
               <th style={styles.th}>状態</th>
+              <th style={styles.th}>積載状態</th>
               <th style={styles.th}>品番</th>
               <th style={styles.th}>品名</th>
               <th style={styles.th}>数量</th>
@@ -471,12 +495,19 @@ export function PalletSearchSection() {
           <tbody>
             {rows.map((row, index) => {
               const out = isOutRow(row);
+              const loadState = palletState(row);
               const statusStyle =
                 row.current_status === "ACTIVE"
                   ? styles.statusActive
                   : out
                     ? styles.statusOut
                     : styles.statusUnknown;
+              const palletStateStyle =
+                loadState === "empty"
+                  ? styles.palletStateEmpty
+                  : loadState === "loaded"
+                    ? styles.palletStateLoaded
+                    : styles.palletStateOut;
               return (
                 <tr
                   key={`${row.pallet_id}-${row.part_no ?? "empty"}-${index}`}
@@ -499,6 +530,11 @@ export function PalletSearchSection() {
                       {statusLabel(row.current_status)}
                     </span>
                   </td>
+                  <td style={styles.td}>
+                    <span style={{ ...styles.statusBadge, ...palletStateStyle }}>
+                      {palletStateLabel(loadState)}
+                    </span>
+                  </td>
                   <td style={styles.td}>{displayValue(row.part_no)}</td>
                   <td style={styles.td}>{displayValue(row.part_name)}</td>
                   <td style={styles.td}>{displayValue(row.quantity)}</td>
@@ -509,7 +545,7 @@ export function PalletSearchSection() {
             })}
             {rows.length === 0 ? (
               <tr>
-                <td style={styles.td} colSpan={10}>
+                <td style={styles.td} colSpan={11}>
                   検索結果はありません。
                 </td>
               </tr>
