@@ -423,7 +423,14 @@ export function PalletSearchSection() {
         @media print {
           @page {
             size: A4 landscape;
-            margin: 10mm;
+            margin: 8mm;
+          }
+
+          html,
+          body {
+            height: auto;
+            margin: 0;
+            padding: 0;
           }
 
           body * {
@@ -439,12 +446,14 @@ export function PalletSearchSection() {
             display: block;
             position: static;
             width: 100%;
+            max-width: 100%;
             height: auto;
             min-height: auto;
+            overflow: visible;
             margin: 0;
             padding: 0;
-            page-break-after: auto;
-            break-after: auto;
+            page-break-after: avoid;
+            break-after: avoid;
             color: #000;
             font-family: sans-serif;
           }
@@ -455,29 +464,40 @@ export function PalletSearchSection() {
             break-inside: avoid;
           }
 
+          .print-area > *:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+          }
+
           .field-print-title {
-            margin: 0 0 4mm;
-            font-size: 18pt;
+            margin: 0 0 2mm;
+            font-size: 16pt;
+            line-height: 1.15;
           }
 
           .field-print-meta {
             display: flex;
             justify-content: space-between;
             gap: 8mm;
-            margin-bottom: 4mm;
-            font-size: 9pt;
+            margin-bottom: 2mm;
+            font-size: 8.5pt;
+            line-height: 1.2;
           }
 
           .field-print-table {
             width: 100%;
+            margin: 0;
             border-collapse: collapse;
-            font-size: 9pt;
+            font-size: 12px;
+            line-height: 1.2;
           }
 
           .field-print-table th,
           .field-print-table td {
             border: 1px solid #333;
-            padding: 2mm;
+            padding: 4px 6px;
+            font-size: 12px;
+            line-height: 1.2;
             text-align: left;
             vertical-align: top;
           }
@@ -487,7 +507,8 @@ export function PalletSearchSection() {
           }
 
           .field-print-check {
-            font-size: 14pt;
+            font-size: 12pt;
+            line-height: 1;
             text-align: center;
           }
 
