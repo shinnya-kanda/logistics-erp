@@ -424,6 +424,7 @@ export async function handleScanHttp(
 
       const palletCode = stringOrNull(body.pallet_code);
       const warehouseCode = stringOrNull(body.warehouse_code);
+      const projectNo = stringOrNull(body.project_no) ?? warehouseCode;
 
       if (!palletCode || !warehouseCode) {
         res.writeHead(400, { "Content-Type": "application/json" });
@@ -442,7 +443,8 @@ export async function handleScanHttp(
             p_warehouse_code => ${warehouseCode},
             p_created_by => ${stringOrNull(body.created_by)},
             p_remarks => ${stringOrNull(body.remarks)},
-            p_inventory_type => ${stringOrNull(body.inventory_type) ?? "project"}
+            p_inventory_type => ${stringOrNull(body.inventory_type) ?? "project"},
+            p_project_no => ${projectNo}
           ) AS result
         `;
         const result = rows[0]?.result ?? { ok: false, error: "empty create_pallet result" };
@@ -496,6 +498,7 @@ export async function handleScanHttp(
       const partNo = stringOrNull(body.part_no);
       const quantity = parsePositiveQuantity(body.quantity);
       const warehouseCode = stringOrNull(body.warehouse_code);
+      const projectNo = stringOrNull(body.project_no) ?? warehouseCode;
 
       if (!palletCode) {
         res.writeHead(400, { "Content-Type": "application/json" });
@@ -528,7 +531,8 @@ export async function handleScanHttp(
             p_warehouse_code => ${warehouseCode},
             p_quantity_unit => ${stringOrNull(body.quantity_unit) ?? "pcs"},
             p_created_by => ${stringOrNull(body.created_by)},
-            p_remarks => ${stringOrNull(body.remarks)}
+            p_remarks => ${stringOrNull(body.remarks)},
+            p_project_no => ${projectNo}
           ) AS result
         `;
         res.writeHead(200, { "Content-Type": "application/json" });
@@ -570,6 +574,7 @@ export async function handleScanHttp(
       const partNo = stringOrNull(body.part_no);
       const quantity = parsePositiveQuantity(body.quantity);
       const warehouseCode = stringOrNull(body.warehouse_code) ?? "KOMATSU";
+      const projectNo = stringOrNull(body.project_no) ?? warehouseCode;
 
       if (!palletCode) {
         res.writeHead(400, { "Content-Type": "application/json" });
@@ -604,7 +609,8 @@ export async function handleScanHttp(
             p_operator_id => ${stringOrNull(body.operator_id)},
             p_operator_name => ${stringOrNull(body.operator_name)},
             p_remarks => ${stringOrNull(body.remarks)},
-            p_idempotency_key => ${idempotencyKey}
+            p_idempotency_key => ${idempotencyKey},
+            p_project_no => ${projectNo}
           ) AS result
         `;
         const result = rows[0]?.result ?? { ok: false, error: "empty out_pallet_item result" };
@@ -654,6 +660,7 @@ export async function handleScanHttp(
       const palletCode = stringOrNull(body.pallet_code);
       const toLocationCode = stringOrNull(body.to_location_code);
       const warehouseCode = stringOrNull(body.warehouse_code) ?? "KOMATSU";
+      const projectNo = stringOrNull(body.project_no) ?? warehouseCode;
 
       if (!palletCode) {
         res.writeHead(400, { "Content-Type": "application/json" });
@@ -682,7 +689,8 @@ export async function handleScanHttp(
             p_operator_id => ${stringOrNull(body.operator_id)},
             p_operator_name => ${stringOrNull(body.operator_name)},
             p_remarks => ${stringOrNull(body.remarks)},
-            p_idempotency_key => ${idempotencyKey}
+            p_idempotency_key => ${idempotencyKey},
+            p_project_no => ${projectNo}
           ) AS result
         `;
         const result = rows[0]?.result ?? { ok: false, error: "empty move_pallet result" };
@@ -734,6 +742,7 @@ export async function handleScanHttp(
 
       const palletCode = stringOrNull(body.pallet_code);
       const warehouseCode = stringOrNull(body.warehouse_code) ?? "KOMATSU";
+      const projectNo = stringOrNull(body.project_no) ?? warehouseCode;
 
       if (!palletCode) {
         res.writeHead(400, { "Content-Type": "application/json" });
@@ -756,7 +765,8 @@ export async function handleScanHttp(
             p_operator_id => ${stringOrNull(body.operator_id)},
             p_operator_name => ${stringOrNull(body.operator_name)},
             p_remarks => ${stringOrNull(body.remarks)},
-            p_idempotency_key => ${idempotencyKey}
+            p_idempotency_key => ${idempotencyKey},
+            p_project_no => ${projectNo}
           ) AS result
         `;
         res.writeHead(200, { "Content-Type": "application/json" });
@@ -779,11 +789,12 @@ export async function handleScanHttp(
 
   if (req.method === "GET" && pathname === "/pallets/search") {
     const warehouseCode = requestUrl.searchParams.get("warehouse_code")?.trim();
+    const projectNo = requestUrl.searchParams.get("project_no")?.trim();
     const rawStatus = requestUrl.searchParams.get("status")?.trim().toUpperCase();
     const statusFilter = rawStatus && rawStatus !== "ALL" ? rawStatus : null;
     const partNo = requestUrl.searchParams.get("part_no")?.trim();
     const palletCode = requestUrl.searchParams.get("pallet_code")?.trim();
-    if (!warehouseCode && !partNo && !palletCode) {
+    if (!warehouseCode && !projectNo && !partNo && !palletCode) {
       res.writeHead(400, { "Content-Type": "application/json" });
       res.end(
         JSON.stringify({
@@ -845,16 +856,19 @@ export async function handleScanHttp(
           LEFT JOIN public.pallet_item_links pil
             ON pil.pallet_id = pu.id
             ${unlinkedJoin}
-          WHERE ($1::text IS NULL OR pu.warehouse_code = $1)
-            AND ($2::text IS NULL OR pu.current_status = $2)
-            AND ($3::text IS NULL OR pil.part_no ILIKE ('%' || $3 || '%'))
-            AND ($4::text IS NULL OR pu.pallet_code ILIKE ('%' || $4 || '%'))
+          WHERE (
+              ($1::text IS NOT NULL AND coalesce(pu.project_no, pu.warehouse_code) = $1)
+              OR ($1::text IS NULL AND ($2::text IS NULL OR pu.warehouse_code = $2))
+            )
+            AND ($3::text IS NULL OR pu.current_status = $3)
+            AND ($4::text IS NULL OR pil.part_no ILIKE ('%' || $4 || '%'))
+            AND ($5::text IS NULL OR pu.pallet_code ILIKE ('%' || $5 || '%'))
           ORDER BY
             pu.current_location_code ASC NULLS LAST,
             pu.pallet_code ASC,
             pil.part_no ASC NULLS LAST
         `,
-        [warehouseCode || null, statusFilter, partNo || null, palletCode || null]
+        [projectNo || null, warehouseCode || null, statusFilter, partNo || null, palletCode || null]
       );
 
       res.writeHead(200, { "Content-Type": "application/json" });
@@ -876,11 +890,12 @@ export async function handleScanHttp(
 
   if (req.method === "GET" && pathname === "/pallets/empty") {
     const warehouseCode = requestUrl.searchParams.get("warehouse_code")?.trim() || "KOMATSU";
+    const projectNo = requestUrl.searchParams.get("project_no")?.trim() || null;
     const sql = postgres(requireDatabaseUrl(), { max: 1 });
     try {
       const rows = await sql`
         SELECT *
-        FROM public.get_empty_pallets(${warehouseCode})
+        FROM public.get_empty_pallets(${warehouseCode}, ${projectNo})
       `;
 
       res.writeHead(200, { "Content-Type": "application/json" });
