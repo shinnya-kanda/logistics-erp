@@ -73,6 +73,51 @@ function fieldCsvFileName(date = new Date()): string {
   return `pallet_field_${yyyy}${mm}${dd}_${hh}${min}.csv`;
 }
 
+type FieldPalletRow = {
+  pallet_code: string;
+  project_no: string;
+  location_code: string;
+  load_status: string;
+  item_count: number;
+  sort_load_status: number;
+};
+
+function buildFieldPalletRows(
+  rows: PalletSearchRow[],
+  palletItemCountById: Map<string, number>
+): FieldPalletRow[] {
+  const palletRows = Array.from(
+    rows
+      .reduce<Map<string, PalletSearchRow>>((map, row) => {
+        if (!map.has(row.pallet_id)) map.set(row.pallet_id, row);
+        return map;
+      }, new Map<string, PalletSearchRow>())
+      .values()
+  );
+
+  return palletRows
+    .map((row) => {
+      const itemCount = palletItemCountById.get(row.pallet_id);
+      const loadState = palletState(row, itemCount);
+      return {
+        pallet_code: row.pallet_code,
+        project_no: row.project_no ?? "",
+        location_code: row.current_location_code ?? "",
+        load_status: palletStateLabel(loadState),
+        item_count: itemCount ?? (row.part_no ? 1 : 0),
+        sort_load_status: palletStateSortOrder(loadState),
+      };
+    })
+    .sort((a, b) => {
+      const projectCompare = a.project_no.localeCompare(b.project_no, "ja");
+      if (projectCompare !== 0) return projectCompare;
+      if (a.sort_load_status !== b.sort_load_status) {
+        return a.sort_load_status - b.sort_load_status;
+      }
+      return a.location_code.localeCompare(b.location_code, "ja");
+    });
+}
+
 const styles = {
   panel: {
     marginTop: "2rem",
@@ -252,12 +297,14 @@ export function PalletSearchSection() {
   const [detail, setDetail] = useState<PalletDetail | null>(null);
   const [detailLoadingCode, setDetailLoadingCode] = useState<string | null>(null);
   const [detailError, setDetailError] = useState<string | null>(null);
+  const [printIssuedAt, setPrintIssuedAt] = useState<string | null>(null);
   const activeCount = rows.filter((row) => row.current_status === "ACTIVE").length;
   const outCount = rows.filter((row) => row.current_status === "OUT").length;
   const palletItemCountById = rows.reduce<Map<string, number>>((counts, row) => {
     counts.set(row.pallet_id, (counts.get(row.pallet_id) ?? 0) + (row.part_no ? 1 : 0));
     return counts;
   }, new Map<string, number>());
+  const fieldPalletRows = buildFieldPalletRows(rows, palletItemCountById);
   const searchConditionText = [
     searchedWarehouseCode ? `warehouse_code: ${searchedWarehouseCode}` : null,
     searchedProjectNo ? `project_no: ${searchedProjectNo}` : null,
@@ -338,40 +385,10 @@ export function PalletSearchSection() {
   }
 
   function handleDownloadFieldCsv() {
-    const palletRows = Array.from(
-      rows
-        .reduce<Map<string, PalletSearchRow>>((map, row) => {
-          if (!map.has(row.pallet_id)) map.set(row.pallet_id, row);
-          return map;
-        }, new Map<string, PalletSearchRow>())
-        .values()
-    );
-    const csvRows = palletRows
-      .map((row) => {
-        const itemCount = palletItemCountById.get(row.pallet_id);
-        const loadState = palletState(row, itemCount);
-        return {
-          pallet_code: row.pallet_code,
-          project_no: row.project_no ?? "",
-          location_code: row.current_location_code ?? "",
-          load_status: palletStateLabel(loadState),
-          item_count: itemCount ?? (row.part_no ? 1 : 0),
-          sort_load_status: palletStateSortOrder(loadState),
-        };
-      })
-      .sort((a, b) => {
-        const projectCompare = a.project_no.localeCompare(b.project_no, "ja");
-        if (projectCompare !== 0) return projectCompare;
-        if (a.sort_load_status !== b.sort_load_status) {
-          return a.sort_load_status - b.sort_load_status;
-        }
-        return a.location_code.localeCompare(b.location_code, "ja");
-      });
-
     const header = ["pallet_code", "project_no", "location_code", "load_status", "item_count"];
     const csv = [
       header,
-      ...csvRows.map((row) => [
+      ...fieldPalletRows.map((row) => [
         row.pallet_code,
         row.project_no,
         row.location_code,
@@ -391,8 +408,84 @@ export function PalletSearchSection() {
     URL.revokeObjectURL(url);
   }
 
+  function handlePrintFieldList() {
+    setPrintIssuedAt(formatUpdatedAt(new Date().toISOString()));
+    window.setTimeout(() => window.print(), 0);
+  }
+
   return (
     <section style={styles.panel}>
+      <style>{`
+        .field-print-area {
+          display: none;
+        }
+
+        @media print {
+          @page {
+            size: A4 landscape;
+            margin: 10mm;
+          }
+
+          body * {
+            visibility: hidden;
+          }
+
+          .field-print-area,
+          .field-print-area * {
+            visibility: visible;
+          }
+
+          .field-print-area {
+            display: block;
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            color: #000;
+            font-family: sans-serif;
+          }
+
+          .field-print-title {
+            margin: 0 0 4mm;
+            font-size: 18pt;
+          }
+
+          .field-print-meta {
+            display: flex;
+            justify-content: space-between;
+            gap: 8mm;
+            margin-bottom: 4mm;
+            font-size: 9pt;
+          }
+
+          .field-print-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9pt;
+          }
+
+          .field-print-table th,
+          .field-print-table td {
+            border: 1px solid #333;
+            padding: 2mm;
+            text-align: left;
+            vertical-align: top;
+          }
+
+          .field-print-table th {
+            background: #eee;
+          }
+
+          .field-print-check {
+            font-size: 14pt;
+            text-align: center;
+          }
+
+          .field-print-remarks {
+            min-width: 38mm;
+          }
+        }
+      `}</style>
       <h2>パレット検索</h2>
       <p>warehouse_code、project_no、part_no、pallet_code を組み合わせて検索できます。</p>
 
@@ -468,6 +561,14 @@ export function PalletSearchSection() {
           disabled={rows.length === 0}
         >
           現場CSV出力
+        </button>
+        <button
+          style={styles.secondaryButton}
+          type="button"
+          onClick={handlePrintFieldList}
+          disabled={rows.length === 0}
+        >
+          現場印刷
         </button>
       </div>
 
@@ -662,6 +763,42 @@ export function PalletSearchSection() {
           </tbody>
         </table>
       </div>
+
+      <section className="field-print-area" aria-label="現場パレット確認表">
+        <h1 className="field-print-title">現場パレット確認表</h1>
+        <div className="field-print-meta">
+          <div>出力日時: {printIssuedAt ?? formatUpdatedAt(new Date().toISOString())}</div>
+          <div>件数: {fieldPalletRows.length}件</div>
+        </div>
+        <table className="field-print-table">
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>パレット番号</th>
+              <th>製番</th>
+              <th>棚番</th>
+              <th>積載状態</th>
+              <th>積載数</th>
+              <th>確認欄</th>
+              <th>備考欄</th>
+            </tr>
+          </thead>
+          <tbody>
+            {fieldPalletRows.map((row, index) => (
+              <tr key={`${row.pallet_code}-${index}`}>
+                <td>{index + 1}</td>
+                <td>{row.pallet_code}</td>
+                <td>{row.project_no}</td>
+                <td>{row.location_code}</td>
+                <td>{row.load_status}</td>
+                <td>{row.item_count}</td>
+                <td className="field-print-check">□</td>
+                <td className="field-print-remarks"></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
     </section>
   );
 }
