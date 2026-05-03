@@ -1,5 +1,6 @@
 import { useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import {
+  checkWarehouseLocation,
   getStoredWarehouseCode,
   postInventoryMove,
   setStoredWarehouseCode,
@@ -21,6 +22,10 @@ type ReaderTarget = "part_no" | "from_location_code" | "to_location_code";
 type ParsedCode39 = {
   partNo: string | null;
   quantity: number | null;
+};
+
+type UnregisteredLocationWarning = {
+  locationCodes: string[];
 };
 
 const emptyMoveForm: MoveFormFields = {
@@ -154,12 +159,15 @@ export function InventoryMoveApp() {
     quantity: number;
   } | null>(null);
   const [error, setError] = useState<ScanApiError | null>(null);
+  const [unregisteredLocationWarning, setUnregisteredLocationWarning] =
+    useState<UnregisteredLocationWarning | null>(null);
 
   function applyReaderValue() {
     if (!readerValue.trim()) return;
 
     setResult(null);
     setError(null);
+    setUnregisteredLocationWarning(null);
 
     if (readerTarget === "part_no") {
       const parsed = parseCode39PartAndQuantity(readerValue);
@@ -197,7 +205,7 @@ export function InventoryMoveApp() {
     applyReaderValue();
   }
 
-  async function sendMove() {
+  async function sendMove(confirmedUnregisteredLocation = false) {
     if (submitting) return;
 
     const partNo = fields.part_no.trim();
@@ -239,7 +247,24 @@ export function InventoryMoveApp() {
       return;
     }
 
+    if (!confirmedUnregisteredLocation) {
+      setUnregisteredLocationWarning(null);
+      const checks = await Promise.all([
+        checkWarehouseLocation({ warehouseCode, locationCode: fromLocation }),
+        checkWarehouseLocation({ warehouseCode, locationCode: toLocation }),
+      ]);
+      const unregisteredLocationCodes = checks
+        .filter((check) => check.ok && check.data.is_unregistered_location)
+        .map((check) => (check.ok ? check.data.location_code : ""))
+        .filter(Boolean);
+      if (unregisteredLocationCodes.length > 0) {
+        setUnregisteredLocationWarning({ locationCodes: unregisteredLocationCodes });
+        return;
+      }
+    }
+
     setSubmitting(true);
+    setUnregisteredLocationWarning(null);
     setDebugMessage("送信開始");
     const appendDebug = (message: string) => {
       setDebugMessage((current) => (current ? `${current}\n${message}` : message));
@@ -275,6 +300,7 @@ export function InventoryMoveApp() {
           operator_name: f.operator_name,
           remarks: f.remarks,
         }));
+        setUnregisteredLocationWarning(null);
         requestAnimationFrame(() => readerInputRef.current?.focus());
         return;
       }
@@ -392,9 +418,10 @@ export function InventoryMoveApp() {
           <input
             className="input"
             value={fields.from_location_code}
-            onChange={(e) =>
-              setFields((f) => ({ ...f, from_location_code: e.target.value }))
-            }
+            onChange={(e) => {
+              setUnregisteredLocationWarning(null);
+              setFields((f) => ({ ...f, from_location_code: e.target.value }));
+            }}
             disabled={submitting}
             autoComplete="off"
           />
@@ -405,9 +432,10 @@ export function InventoryMoveApp() {
           <input
             className="input"
             value={fields.to_location_code}
-            onChange={(e) =>
-              setFields((f) => ({ ...f, to_location_code: e.target.value }))
-            }
+            onChange={(e) => {
+              setUnregisteredLocationWarning(null);
+              setFields((f) => ({ ...f, to_location_code: e.target.value }));
+            }}
             disabled={submitting}
             autoComplete="off"
           />
@@ -445,6 +473,35 @@ export function InventoryMoveApp() {
           </button>
         </div>
       </form>
+
+      {unregisteredLocationWarning ? (
+        <section className="scanner-panel" role="alert">
+          <div className="result-banner tone-check">
+            <div className="result-banner-title">⚠ この棚番はマスタ未登録です</div>
+            <div className="result-banner-sub">
+              {unregisteredLocationWarning.locationCodes.join(" / ")}
+            </div>
+          </div>
+          <div className="actions">
+            <button
+              type="button"
+              className="btn secondary"
+              disabled={submitting}
+              onClick={() => setUnregisteredLocationWarning(null)}
+            >
+              キャンセル
+            </button>
+            <button
+              type="button"
+              className="btn primary"
+              disabled={submitting}
+              onClick={() => void sendMove(true)}
+            >
+              そのまま登録
+            </button>
+          </div>
+        </section>
+      ) : null}
 
       {debugMessage ? (
         <section className="scanner-panel debug-panel" aria-label="通信デバッグ">

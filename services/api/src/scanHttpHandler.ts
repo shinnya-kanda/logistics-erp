@@ -1112,6 +1112,51 @@ export async function handleScanHttp(
     return;
   }
 
+  if (req.method === "GET" && pathname === "/warehouse-locations/check") {
+    const warehouseCode = requestUrl.searchParams.get("warehouse_code")?.trim();
+    const locationCode = requestUrl.searchParams.get("location_code")?.trim();
+
+    if (!warehouseCode) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: false, error: "warehouse_code is required" }));
+      return;
+    }
+    if (!locationCode) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: false, error: "location_code is required" }));
+      return;
+    }
+
+    const sql = postgres(requireDatabaseUrl(), { max: 1 });
+    try {
+      const rows = await sql<{ id: string }[]>`
+        SELECT id
+        FROM public.warehouse_locations
+        WHERE warehouse_code = ${warehouseCode}
+          AND location_code = ${locationCode}
+        LIMIT 1
+      `;
+      const isUnregisteredLocation = rows.length === 0;
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          ok: true,
+          warehouse_code: warehouseCode,
+          location_code: locationCode,
+          is_registered_location: !isUnregisteredLocation,
+          is_unregistered_location: isUnregisteredLocation,
+        })
+      );
+    } catch (e) {
+      const err = e as { message?: string };
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: false, error: err.message ?? "failed to check warehouse location" }));
+    } finally {
+      await sql.end({ timeout: 5 });
+    }
+    return;
+  }
+
   if (req.method === "POST" && pathname === "/warehouse-locations/create") {
     try {
       let body: unknown;

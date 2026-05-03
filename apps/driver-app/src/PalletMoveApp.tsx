@@ -1,5 +1,6 @@
 import { useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import {
+  checkWarehouseLocation,
   getStoredWarehouseCode,
   postPalletMove,
   setStoredWarehouseCode,
@@ -120,12 +121,16 @@ export function PalletMoveApp() {
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<PalletMoveSuccessBody | null>(null);
   const [error, setError] = useState<ScanApiError | null>(null);
+  const [unregisteredLocationWarning, setUnregisteredLocationWarning] = useState<string | null>(
+    null
+  );
 
   function applyReaderValue() {
     if (!readerValue.trim()) return;
 
     setResult(null);
     setError(null);
+    setUnregisteredLocationWarning(null);
 
     const normalized = normalizeCode39(readerValue);
     if (!normalized || !isValidCode39Value(normalized)) {
@@ -148,7 +153,7 @@ export function PalletMoveApp() {
     applyReaderValue();
   }
 
-  async function sendPalletMove() {
+  async function sendPalletMove(confirmedUnregisteredLocation = false) {
     if (submitting) return;
 
     const palletCode = normalizeCode39(fields.pallet_code);
@@ -176,12 +181,25 @@ export function PalletMoveApp() {
       return;
     }
 
+    if (!confirmedUnregisteredLocation) {
+      setUnregisteredLocationWarning(null);
+      const locationCheck = await checkWarehouseLocation({
+        warehouseCode,
+        locationCode: toLocationCode,
+      });
+      if (locationCheck.ok && locationCheck.data.is_unregistered_location) {
+        setUnregisteredLocationWarning(toLocationCode);
+        return;
+      }
+    }
+
     setFields((f) => ({
       ...f,
       pallet_code: palletCode,
       to_location_code: toLocationCode,
       project_no: fields.project_no,
     }));
+    setUnregisteredLocationWarning(null);
     setSubmitting(true);
 
     try {
@@ -301,9 +319,10 @@ export function PalletMoveApp() {
             <input
               className="input large"
               value={fields.to_location_code}
-              onChange={(e) =>
-                setFields((f) => ({ ...f, to_location_code: e.target.value }))
-              }
+              onChange={(e) => {
+                setUnregisteredLocationWarning(null);
+                setFields((f) => ({ ...f, to_location_code: e.target.value }));
+              }}
               disabled={submitting}
               autoComplete="off"
               autoCapitalize="characters"
@@ -367,6 +386,33 @@ export function PalletMoveApp() {
           </div>
         </section>
       </form>
+
+      {unregisteredLocationWarning ? (
+        <section className="scanner-panel" role="alert">
+          <div className="result-banner tone-check">
+            <div className="result-banner-title">⚠ この棚番はマスタ未登録です</div>
+            <div className="result-banner-sub">{unregisteredLocationWarning}</div>
+          </div>
+          <div className="actions">
+            <button
+              type="button"
+              className="btn secondary"
+              disabled={submitting}
+              onClick={() => setUnregisteredLocationWarning(null)}
+            >
+              キャンセル
+            </button>
+            <button
+              type="button"
+              className="btn primary"
+              disabled={submitting}
+              onClick={() => void sendPalletMove(true)}
+            >
+              そのまま登録
+            </button>
+          </div>
+        </section>
+      ) : null}
 
       {transaction ? (
         <section className="scanner-panel result-panel" aria-label="パレット移動結果">

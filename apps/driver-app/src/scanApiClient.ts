@@ -187,6 +187,14 @@ export type EmptyPalletsSuccessBody = {
   pallets: EmptyPalletRow[];
 };
 
+export type WarehouseLocationCheckSuccessBody = {
+  ok: true;
+  warehouse_code: string;
+  location_code: string;
+  is_registered_location: boolean;
+  is_unregistered_location: boolean;
+};
+
 function isRecord(v: unknown): v is Record<string, unknown> {
   return v !== null && typeof v === "object";
 }
@@ -374,6 +382,102 @@ export async function getHealth(options?: {
       },
     };
   }
+}
+
+export async function checkWarehouseLocation(
+  params: { warehouseCode: string; locationCode: string },
+  options?: { signal?: AbortSignal; timeoutMs?: number }
+): Promise<
+  | { ok: true; status: 200; data: WarehouseLocationCheckSuccessBody }
+  | { ok: false; error: ScanApiError }
+> {
+  const base = getScanApiBaseUrl();
+  const timeoutMs = options?.timeoutMs ?? 8_000;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  if (options?.signal) {
+    linkAbort(options.signal, controller);
+  }
+
+  const query = new URLSearchParams({
+    warehouse_code: params.warehouseCode,
+    location_code: params.locationCode,
+  });
+
+  let res: Response;
+  try {
+    res = await fetch(`${base}/warehouse-locations/check?${query.toString()}`, {
+      method: "GET",
+      signal: controller.signal,
+    });
+  } catch (e) {
+    clearTimeout(timeoutId);
+    if (e instanceof DOMException && e.name === "AbortError") {
+      return {
+        ok: false,
+        error: {
+          kind: "timeout",
+          message: "棚番チェックがタイムアウトしました。",
+        },
+      };
+    }
+    return {
+      ok: false,
+      error: {
+        kind: "network",
+        message: "棚番チェックに接続できません。API の起動を確認してください。",
+      },
+    };
+  }
+  clearTimeout(timeoutId);
+
+  let json: unknown;
+  try {
+    json = await res.json();
+  } catch {
+    return {
+      ok: false,
+      error: {
+        kind: "parse",
+        message: "棚番チェックで JSON 以外の応答が返りました。",
+        status: res.status,
+      },
+    };
+  }
+
+  if (res.status === 200) {
+    if (isWarehouseLocationCheckSuccessBody(json)) {
+      return { ok: true, status: 200, data: json };
+    }
+    return {
+      ok: false,
+      error: {
+        kind: "parse",
+        message: "棚番チェック結果の形式が想定と異なります。",
+        status: 200,
+      },
+    };
+  }
+
+  return {
+    ok: false,
+    error: {
+      kind: res.status === 400 ? "validation" : res.status >= 500 ? "server" : "unknown",
+      message: parseErrorBody(json),
+      status: res.status,
+    },
+  };
+}
+
+function isWarehouseLocationCheckSuccessBody(v: unknown): v is WarehouseLocationCheckSuccessBody {
+  if (!isRecord(v)) return false;
+  return (
+    v.ok === true &&
+    typeof v.warehouse_code === "string" &&
+    typeof v.location_code === "string" &&
+    typeof v.is_registered_location === "boolean" &&
+    typeof v.is_unregistered_location === "boolean"
+  );
 }
 
 export async function postInventoryMove(

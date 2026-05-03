@@ -13,6 +13,7 @@ import {
   getEmptyPallets,
   getPalletDetail,
   getPalletSearch,
+  getWarehouseLocationCheck,
   getWarehouseLocationsSearch,
   getWarehouseLocationsUnregistered,
   getHealth,
@@ -567,6 +568,34 @@ describe("scan minimal HTTP contract", () => {
 
     it("500 reaches DB layer when unregistered locations are requested", async () => {
       const { status, json } = await getWarehouseLocationsUnregistered(server.baseUrl);
+
+      expect(status).toBe(500);
+      expect(errMessage(json)).toBeTruthy();
+    });
+
+    it("400 when location check warehouse_code is missing", async () => {
+      const { status, json } = await getWarehouseLocationCheck(server.baseUrl, {
+        locationCode: "A-01",
+      });
+
+      expect(status).toBe(400);
+      expect(json).toEqual({ ok: false, error: "warehouse_code is required" });
+    });
+
+    it("400 when location check location_code is missing", async () => {
+      const { status, json } = await getWarehouseLocationCheck(server.baseUrl, {
+        warehouseCode: "KOMATSU",
+      });
+
+      expect(status).toBe(400);
+      expect(json).toEqual({ ok: false, error: "location_code is required" });
+    });
+
+    it("500 reaches DB layer when location check params are valid", async () => {
+      const { status, json } = await getWarehouseLocationCheck(server.baseUrl, {
+        warehouseCode: "KOMATSU",
+        locationCode: "A-01",
+      });
 
       expect(status).toBe(500);
       expect(errMessage(json)).toBeTruthy();

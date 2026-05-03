@@ -353,6 +353,30 @@ export async function getWarehouseLocationsUnregistered(
   return { status: res.status, json, rawText };
 }
 
+export async function getWarehouseLocationCheck(
+  baseUrl: string,
+  params?: { warehouseCode?: string; locationCode?: string }
+): Promise<ScanPostResult> {
+  const url = new URL(`${baseUrl.replace(/\/$/, "")}/warehouse-locations/check`);
+  if (params?.warehouseCode !== undefined) {
+    url.searchParams.set("warehouse_code", params.warehouseCode);
+  }
+  if (params?.locationCode !== undefined) {
+    url.searchParams.set("location_code", params.locationCode);
+  }
+  const res = await fetch(url);
+  const rawText = await res.text();
+  let json: unknown = null;
+  if (rawText.trim()) {
+    try {
+      json = JSON.parse(rawText) as unknown;
+    } catch {
+      json = { _parseError: true, rawText };
+    }
+  }
+  return { status: res.status, json, rawText };
+}
+
 export async function postWarehouseLocationCreate(
   baseUrl: string,
   body: Record<string, unknown>
