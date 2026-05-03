@@ -10,7 +10,7 @@ export function PageShell({ children }: PageShellProps) {
     <>
       <nav className="scanner-shell" aria-label="作業メニューへ戻る">
         <div className="scanner-panel">
-          <Link className="btn secondary" to="/">
+          <Link className="btn secondary" to="/menu">
             メニューへ戻る
           </Link>
         </div>
