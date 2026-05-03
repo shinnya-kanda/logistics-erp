@@ -4,10 +4,9 @@
 -- - 既存テーブル構造は変更しない
 -- - create_pallet を後方互換で拡張し、入庫時の棚番を current_location_code に保存する
 -- - PL NO / PJ NO は現場PWAでは自動発行しない
+-- - 6引数版は残し、7引数版へ委譲する（drop function は使わない）
 
 begin;
-
-drop function if exists public.create_pallet(text, text, text, text, text, text);
 
 create or replace function public.create_pallet(
   p_pallet_code text,
@@ -145,7 +144,33 @@ exception
 end;
 $$;
 
+-- 後方互換: 既存の6引数呼び出しは棚番なしで7引数版へ委譲する
+create or replace function public.create_pallet(
+  p_pallet_code text,
+  p_warehouse_code text,
+  p_created_by text default null,
+  p_remarks text default null,
+  p_inventory_type text default 'project',
+  p_project_no text default null
+)
+returns json
+language sql
+as $$
+  select public.create_pallet(
+    p_pallet_code,
+    p_warehouse_code,
+    p_created_by,
+    p_remarks,
+    p_inventory_type,
+    p_project_no,
+    null::text
+  );
+$$;
+
 grant execute on function public.create_pallet(text, text, text, text, text, text, text)
+  to anon, authenticated, service_role;
+
+grant execute on function public.create_pallet(text, text, text, text, text, text)
   to anon, authenticated, service_role;
 
 commit;
