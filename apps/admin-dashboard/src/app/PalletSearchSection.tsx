@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
+import { createPortal } from "react-dom";
 import {
   getPalletDetail,
   searchPallets,
@@ -281,6 +282,7 @@ const styles = {
 };
 
 export function PalletSearchSection() {
+  const [mounted, setMounted] = useState(false);
   const [warehouseCode, setWarehouseCode] = useState("KOMATSU");
   const [projectNo, setProjectNo] = useState("");
   const [statusFilter, setStatusFilter] = useState<PalletSearchStatus>("ALL");
@@ -314,6 +316,10 @@ export function PalletSearchSection() {
   ]
     .filter(Boolean)
     .join(" / ");
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -413,6 +419,44 @@ export function PalletSearchSection() {
     window.setTimeout(() => window.print(), 0);
   }
 
+  const printArea = (
+    <section className="print-area field-print-area" aria-label="現場パレット確認表">
+      <h1 className="field-print-title">現場パレット確認表</h1>
+      <div className="field-print-meta">
+        <div>出力日時: {printIssuedAt ?? formatUpdatedAt(new Date().toISOString())}</div>
+        <div>件数: {fieldPalletRows.length}件</div>
+      </div>
+      <table className="field-print-table">
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>パレット番号</th>
+            <th>製番</th>
+            <th>棚番</th>
+            <th>積載状態</th>
+            <th>積載数</th>
+            <th>確認欄</th>
+            <th>備考欄</th>
+          </tr>
+        </thead>
+        <tbody>
+          {fieldPalletRows.map((row, index) => (
+            <tr key={`${row.pallet_code}-${index}`}>
+              <td>{index + 1}</td>
+              <td>{row.pallet_code}</td>
+              <td>{row.project_no}</td>
+              <td>{row.location_code}</td>
+              <td>{row.load_status}</td>
+              <td>{row.item_count}</td>
+              <td className="field-print-check">□</td>
+              <td className="field-print-remarks"></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
+  );
+
   return (
     <section style={styles.panel}>
       <style>{`
@@ -434,17 +478,12 @@ export function PalletSearchSection() {
           }
 
           body * {
-            visibility: hidden;
-          }
-
-          .print-area,
-          .print-area * {
-            visibility: visible;
+            display: none !important;
           }
 
           .print-area {
-            display: block;
-            position: static;
+            display: block !important;
+            position: static !important;
             width: 100%;
             max-width: 100%;
             height: auto;
@@ -456,6 +495,10 @@ export function PalletSearchSection() {
             break-after: avoid;
             color: #000;
             font-family: sans-serif;
+          }
+
+          .print-area * {
+            display: revert !important;
           }
 
           table,
@@ -798,42 +841,7 @@ export function PalletSearchSection() {
           </tbody>
         </table>
       </div>
-
-      <section className="print-area field-print-area" aria-label="現場パレット確認表">
-        <h1 className="field-print-title">現場パレット確認表</h1>
-        <div className="field-print-meta">
-          <div>出力日時: {printIssuedAt ?? formatUpdatedAt(new Date().toISOString())}</div>
-          <div>件数: {fieldPalletRows.length}件</div>
-        </div>
-        <table className="field-print-table">
-          <thead>
-            <tr>
-              <th>No</th>
-              <th>パレット番号</th>
-              <th>製番</th>
-              <th>棚番</th>
-              <th>積載状態</th>
-              <th>積載数</th>
-              <th>確認欄</th>
-              <th>備考欄</th>
-            </tr>
-          </thead>
-          <tbody>
-            {fieldPalletRows.map((row, index) => (
-              <tr key={`${row.pallet_code}-${index}`}>
-                <td>{index + 1}</td>
-                <td>{row.pallet_code}</td>
-                <td>{row.project_no}</td>
-                <td>{row.location_code}</td>
-                <td>{row.load_status}</td>
-                <td>{row.item_count}</td>
-                <td className="field-print-check">□</td>
-                <td className="field-print-remarks"></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
+      {mounted ? createPortal(printArea, document.body) : null}
     </section>
   );
 }
