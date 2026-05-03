@@ -1,13 +1,48 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider.js";
 
-const menuItems = [
-  { label: "入庫", to: "/inventory/in" },
-  { label: "部品移動", to: "/inventory/move-part" },
-  { label: "パレット移動", to: "/pallet/move" },
-  { label: "出庫", to: "/inventory/out" },
-  { label: "パレット積付", to: "/pallet/items/add" },
-  { label: "スキャン画面", to: "/scanner" },
+const PROFILE_ROLES = ["admin", "chief", "office", "worker"] as const;
+type ProfileRole = (typeof PROFILE_ROLES)[number];
+
+function isProfileRole(role: string): role is ProfileRole {
+  return (PROFILE_ROLES as readonly string[]).includes(role);
+}
+
+const menuItems: {
+  label: string;
+  path: string;
+  allowedRoles: readonly ProfileRole[];
+}[] = [
+  {
+    label: "入庫",
+    path: "/inventory/in",
+    allowedRoles: ["worker", "chief", "admin"],
+  },
+  {
+    label: "部品移動",
+    path: "/inventory/move-part",
+    allowedRoles: ["worker", "chief", "admin"],
+  },
+  {
+    label: "パレット移動",
+    path: "/pallet/move",
+    allowedRoles: ["worker", "chief", "admin"],
+  },
+  {
+    label: "出庫",
+    path: "/inventory/out",
+    allowedRoles: ["worker", "chief", "admin"],
+  },
+  {
+    label: "パレット積付",
+    path: "/pallet/items/add",
+    allowedRoles: ["worker", "chief", "admin"],
+  },
+  {
+    label: "スキャン画面",
+    path: "/scanner",
+    allowedRoles: ["worker", "office", "chief", "admin"],
+  },
 ];
 
 export function MenuPage() {
@@ -19,6 +54,17 @@ export function MenuPage() {
     profile?.email ||
     user?.email ||
     "—";
+
+  let visibleMenuItems: typeof menuItems = [];
+  if (
+    !profileLoading &&
+    !profileError &&
+    profile != null &&
+    isProfileRole(profile.role)
+  ) {
+    const role = profile.role;
+    visibleMenuItems = menuItems.filter((item) => item.allowedRoles.includes(role));
+  }
 
   async function handleLogout() {
     const { error } = await signOut();
@@ -61,15 +107,17 @@ export function MenuPage() {
         </div>
       </div>
 
-      <div className="scanner-panel">
-        <div className="actions">
-          {menuItems.map((item) => (
-            <Link key={item.to} className="btn primary" to={item.to}>
-              {item.label}
-            </Link>
-          ))}
+      {visibleMenuItems.length > 0 ? (
+        <div className="scanner-panel">
+          <div className="actions">
+            {visibleMenuItems.map((item) => (
+              <Link key={item.path} className="btn primary" to={item.path}>
+                {item.label}
+              </Link>
+            ))}
+          </div>
         </div>
-      </div>
+      ) : null}
     </section>
   );
 }
