@@ -30,8 +30,22 @@ function normalizeCode39Text(value: string): string {
     .replace(/^-|-$/g, "");
 }
 
-function buildPlNo(prefix: string, pjNo: string, serial: number): string {
-  return `${prefix}-${pjNo}-${String(serial).padStart(4, "0")}`;
+function hashToBase36Code(input: string): string {
+  let h1 = 0xdeadbeef ^ input.length;
+  let h2 = 0x41c6ce57 ^ input.length;
+  for (let i = 0; i < input.length; i += 1) {
+    const ch = input.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  const hashNumber = 4294967296 * (2097151 & h2) + (h1 >>> 0);
+  return hashNumber.toString(36).toUpperCase().padStart(8, "0").slice(0, 8);
+}
+
+function buildPlNo(pjNo: string, outputDate: string, index: number): string {
+  return `PL${hashToBase36Code(`${pjNo}|${outputDate}|${index}`)}`;
 }
 
 const styles = {
@@ -118,8 +132,6 @@ export function InboundLabelPrintSection() {
   const [mounted, setMounted] = useState(false);
   const [pjNo, setPjNo] = useState("");
   const [palletCount, setPalletCount] = useState("5");
-  const [plPrefix, setPlPrefix] = useState("PL");
-  const [startNumber, setStartNumber] = useState("1");
   const [outputDate, setOutputDate] = useState(dateInputValue);
   const [rows, setRows] = useState<InboundLabelRow[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -169,9 +181,7 @@ export function InboundLabelPrintSection() {
   function handleGenerate(e: FormEvent) {
     e.preventDefault();
     const normalizedPjNo = normalizeCode39Text(pjNo);
-    const normalizedPrefix = normalizeCode39Text(plPrefix);
     const count = Number(palletCount);
-    const start = Number(startNumber);
 
     setError(null);
     if (!normalizedPjNo) {
@@ -179,35 +189,24 @@ export function InboundLabelPrintSection() {
       setError("PJ NO を入力してください。");
       return;
     }
-    if (!normalizedPrefix) {
-      setRows([]);
-      setError("PL NO接頭辞を入力してください。");
-      return;
-    }
     if (!Number.isInteger(count) || count <= 0) {
       setRows([]);
       setError("入庫PL数は 1 以上の整数で入力してください。");
       return;
     }
-    if (!Number.isInteger(start) || start <= 0) {
-      setRows([]);
-      setError("開始番号は 1 以上の整数で入力してください。");
-      return;
-    }
 
     const generated = Array.from({ length: count }, (_, index) => {
-      const serial = start + index;
+      const labelIndex = index + 1;
       return {
-        no: index + 1,
+        no: labelIndex,
         total: count,
-        pl_no: buildPlNo(normalizedPrefix, normalizedPjNo, serial),
+        pl_no: buildPlNo(normalizedPjNo, outputDate, labelIndex),
         pj_no: normalizedPjNo,
         output_date: outputDate,
       };
     });
 
     setPjNo(normalizedPjNo);
-    setPlPrefix(normalizedPrefix);
     setRows(generated);
   }
 
@@ -381,26 +380,6 @@ export function InboundLabelPrintSection() {
             step="1"
             value={palletCount}
             onChange={(e) => setPalletCount(e.target.value)}
-          />
-        </label>
-        <label style={styles.field}>
-          <span>PL NO接頭辞</span>
-          <input
-            style={styles.input}
-            value={plPrefix}
-            onChange={(e) => setPlPrefix(e.target.value)}
-            autoComplete="off"
-          />
-        </label>
-        <label style={styles.field}>
-          <span>開始番号</span>
-          <input
-            style={styles.input}
-            type="number"
-            min="1"
-            step="1"
-            value={startNumber}
-            onChange={(e) => setStartNumber(e.target.value)}
           />
         </label>
         <label style={styles.field}>
