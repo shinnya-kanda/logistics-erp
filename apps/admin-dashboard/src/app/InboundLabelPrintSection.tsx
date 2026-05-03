@@ -219,6 +219,7 @@ export function InboundLabelPrintSection() {
       <div className="inbound-label-group">
         {rows.map((row) => (
           <article className="inbound-label-card" key={`pl-${row.pl_no}`}>
+            <div className="inbound-label-title">パレットNO</div>
             <div className="inbound-label-main">{row.pl_no}</div>
             <div className="inbound-label-barcode-frame">
               <svg
@@ -235,6 +236,7 @@ export function InboundLabelPrintSection() {
       <div className="inbound-label-group inbound-label-group-pj">
         {rows.map((row) => (
           <article className="inbound-label-card" key={`pj-${row.no}-${row.pj_no}`}>
+            <div className="inbound-label-title">プロジェクトNO</div>
             <div className="inbound-label-main">{row.pj_no}</div>
             <div className="inbound-label-barcode-frame">
               <svg
@@ -330,6 +332,16 @@ export function InboundLabelPrintSection() {
             font-weight: 800;
             text-align: center;
             word-break: break-all;
+          }
+
+          .inbound-label-title {
+            position: absolute;
+            top: 4mm;
+            left: 5mm;
+            font-size: 10pt;
+            line-height: 1;
+            font-weight: 700;
+            letter-spacing: 0.03em;
           }
 
           .inbound-label-barcode-frame {
