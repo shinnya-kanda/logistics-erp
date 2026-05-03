@@ -3,6 +3,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { createPortal } from "react-dom";
 import {
+  getUnregisteredWarehouseLocations,
   getPalletDetail,
   searchPallets,
   type PalletDetail,
@@ -72,6 +73,10 @@ function fieldCsvFileName(date = new Date()): string {
   const hh = pad(date.getHours());
   const min = pad(date.getMinutes());
   return `pallet_field_${yyyy}${mm}${dd}_${hh}${min}.csv`;
+}
+
+function locationKey(warehouseCode: string, locationCode: string | null): string {
+  return `${warehouseCode}:${locationCode ?? ""}`;
 }
 
 type FieldPalletRow = {
@@ -242,6 +247,17 @@ const styles = {
     background: "#ffebee",
     color: "#b71c1c",
   },
+  unregisteredLocationBadge: {
+    display: "inline-block",
+    marginLeft: "0.4rem",
+    padding: "0.15rem 0.4rem",
+    borderRadius: "999px",
+    background: "#fff3e0",
+    color: "#bf360c",
+    border: "1px solid #ffb74d",
+    fontSize: "0.75rem",
+    fontWeight: 700,
+  },
   linkButton: {
     border: "none",
     padding: 0,
@@ -300,6 +316,9 @@ export function PalletSearchSection() {
   const [detailLoadingCode, setDetailLoadingCode] = useState<string | null>(null);
   const [detailError, setDetailError] = useState<string | null>(null);
   const [printIssuedAt, setPrintIssuedAt] = useState<string | null>(null);
+  const [unregisteredLocationKeys, setUnregisteredLocationKeys] = useState<Set<string>>(
+    () => new Set()
+  );
   const activeCount = rows.filter((row) => row.current_status === "ACTIVE").length;
   const outCount = rows.filter((row) => row.current_status === "OUT").length;
   const palletItemCountById = rows.reduce<Map<string, number>>((counts, row) => {
@@ -319,6 +338,20 @@ export function PalletSearchSection() {
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    async function loadUnregisteredLocationKeys() {
+      const result = await getUnregisteredWarehouseLocations();
+      if (!result.ok) return;
+      setUnregisteredLocationKeys(
+        new Set(
+          result.locations.map((row) => locationKey(row.warehouse_code, row.location_code))
+        )
+      );
+    }
+
+    void loadUnregisteredLocationKeys();
   }, []);
 
   async function handleSubmit(e: FormEvent) {
@@ -780,6 +813,11 @@ export function PalletSearchSection() {
             {rows.map((row, index) => {
               const out = isOutRow(row);
               const loadState = palletState(row, palletItemCountById.get(row.pallet_id));
+              const isUnregisteredLocation =
+                !!row.current_location_code &&
+                unregisteredLocationKeys.has(
+                  locationKey(row.warehouse_code, row.current_location_code)
+                );
               const statusStyle =
                 row.current_status === "ACTIVE"
                   ? styles.statusActive
@@ -803,7 +841,12 @@ export function PalletSearchSection() {
                 >
                   <td style={styles.td}>{row.warehouse_code}</td>
                   <td style={styles.td}>{displayValue(row.project_no)}</td>
-                  <td style={styles.td}>{displayValue(row.current_location_code)}</td>
+                  <td style={styles.td}>
+                    {displayValue(row.current_location_code)}
+                    {isUnregisteredLocation ? (
+                      <span style={styles.unregisteredLocationBadge}>⚠ 未登録棚番</span>
+                    ) : null}
+                  </td>
                   <td style={styles.td}>
                     <button
                       type="button"
