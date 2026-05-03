@@ -8,6 +8,7 @@ import { InventoryOutPage } from "./pages/InventoryOutPage.js";
 import { MenuPage } from "./pages/MenuPage.js";
 import { PalletCreatePage } from "./pages/PalletCreatePage.js";
 import { PalletItemAddPage } from "./pages/PalletItemAddPage.js";
+import { PalletMovePage } from "./pages/PalletMovePage.js";
 import { ScannerPage } from "./pages/ScannerPage.js";
 
 export default function App() {
@@ -38,10 +39,15 @@ export default function App() {
         <Routes>
           <Route path="/" element={<MenuPage />} />
           <Route path="/inventory/in" element={<InventoryInPage />} />
-          <Route path="/inventory/move" element={<InventoryMovePage />} />
+          <Route
+            path="/inventory/move"
+            element={<Navigate replace to="/inventory/move-part" />}
+          />
+          <Route path="/inventory/move-part" element={<InventoryMovePage />} />
           <Route path="/inventory/out" element={<InventoryOutPage />} />
           <Route path="/pallet/create" element={<PalletCreatePage />} />
           <Route path="/pallet/items/add" element={<PalletItemAddPage />} />
+          <Route path="/pallet/move" element={<PalletMovePage />} />
           <Route path="/scanner" element={<ScannerPage />} />
           <Route path="*" element={<Navigate replace to="/" />} />
         </Routes>
