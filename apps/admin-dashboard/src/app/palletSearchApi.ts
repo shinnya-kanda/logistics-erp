@@ -29,6 +29,23 @@ type EmptyPalletsResponse =
   | { ok: true; pallets: EmptyPalletRow[] }
   | { ok: false; error: string };
 
+export type WarehouseLocationRow = {
+  id: string;
+  warehouse_code: string;
+  location_code: string;
+  is_active: boolean;
+  remarks: string | null;
+  updated_at: string | null;
+};
+
+type WarehouseLocationSearchResponse =
+  | { ok: true; locations: WarehouseLocationRow[] }
+  | { ok: false; error: string };
+
+type WarehouseLocationMutationResponse =
+  | { ok: true; location: WarehouseLocationRow; created?: boolean }
+  | { ok: false; error: string };
+
 export type PalletDetail = {
   pallet: {
     pallet_id: string;
@@ -117,9 +134,122 @@ function isEmptyPalletRow(v: unknown): v is EmptyPalletRow {
   );
 }
 
+function isWarehouseLocationRow(v: unknown): v is WarehouseLocationRow {
+  if (!isRecord(v)) return false;
+  return (
+    typeof v.id === "string" &&
+    typeof v.warehouse_code === "string" &&
+    typeof v.location_code === "string" &&
+    typeof v.is_active === "boolean"
+  );
+}
+
 function parseError(json: unknown): string {
   if (isRecord(json) && typeof json.error === "string") return json.error;
   return "パレット検索に失敗しました。";
+}
+
+export async function searchWarehouseLocations(params: {
+  warehouseCode?: string;
+  locationCode?: string;
+  isActive?: "ALL" | "ACTIVE" | "INACTIVE";
+}): Promise<WarehouseLocationSearchResponse> {
+  const searchParams = new URLSearchParams();
+  const warehouseCode = params.warehouseCode?.trim();
+  const locationCode = params.locationCode?.trim();
+  if (warehouseCode) {
+    searchParams.set("warehouse_code", warehouseCode);
+  }
+  if (locationCode) {
+    searchParams.set("location_code", locationCode);
+  }
+  if (params.isActive === "ACTIVE") {
+    searchParams.set("is_active", "true");
+  }
+  if (params.isActive === "INACTIVE") {
+    searchParams.set("is_active", "false");
+  }
+
+  const res = await fetch(`${API_BASE}/warehouse-locations/search?${searchParams.toString()}`);
+  let json: unknown;
+  try {
+    json = await res.json();
+  } catch {
+    return { ok: false, error: "APIからJSON以外の応答が返りました。" };
+  }
+
+  if (!res.ok) {
+    return { ok: false, error: parseError(json) };
+  }
+
+  if (!isRecord(json) || json.ok !== true || !Array.isArray(json.locations)) {
+    return { ok: false, error: "棚番マスタ検索結果の形式が不正です。" };
+  }
+
+  return { ok: true, locations: json.locations.filter(isWarehouseLocationRow) };
+}
+
+export async function createWarehouseLocation(params: {
+  warehouseCode: string;
+  locationCode: string;
+  remarks?: string;
+}): Promise<WarehouseLocationMutationResponse> {
+  const res = await fetch(`${API_BASE}/warehouse-locations/create`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      warehouse_code: params.warehouseCode,
+      location_code: params.locationCode,
+      is_active: true,
+      remarks: params.remarks?.trim() || undefined,
+    }),
+  });
+  let json: unknown;
+  try {
+    json = await res.json();
+  } catch {
+    return { ok: false, error: "APIからJSON以外の応答が返りました。" };
+  }
+
+  if (!res.ok) {
+    return { ok: false, error: parseError(json) };
+  }
+
+  if (!isRecord(json) || json.ok !== true || !isWarehouseLocationRow(json.location)) {
+    return { ok: false, error: "棚番マスタ登録結果の形式が不正です。" };
+  }
+
+  return { ok: true, location: json.location, created: json.created === true };
+}
+
+export async function updateWarehouseLocationActive(params: {
+  id: string;
+  isActive: boolean;
+}): Promise<WarehouseLocationMutationResponse> {
+  const res = await fetch(`${API_BASE}/warehouse-locations/active/update`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      id: params.id,
+      is_active: params.isActive,
+    }),
+  });
+  let json: unknown;
+  try {
+    json = await res.json();
+  } catch {
+    return { ok: false, error: "APIからJSON以外の応答が返りました。" };
+  }
+
+  if (!res.ok) {
+    return { ok: false, error: parseError(json) };
+  }
+
+  if (!isRecord(json) || json.ok !== true || !isWarehouseLocationRow(json.location)) {
+    return { ok: false, error: "棚番マスタ更新結果の形式が不正です。" };
+  }
+
+  return { ok: true, location: json.location };
 }
 
 export async function getEmptyPallets(params: {

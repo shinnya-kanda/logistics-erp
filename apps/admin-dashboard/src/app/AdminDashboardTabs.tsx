@@ -4,6 +4,7 @@ import { useState } from "react";
 import { EmptyPalletSearchSection } from "./EmptyPalletSearchSection";
 import { PalletSearchSection } from "./PalletSearchSection";
 import { ProjectNoCorrectionSection } from "./ProjectNoCorrectionSection";
+import { WarehouseLocationSection } from "./WarehouseLocationSection";
 
 type AdminTab = "pallet-search" | "empty-pallet-search" | "project-no-correction" | "locations";
 
@@ -67,12 +68,7 @@ export function AdminDashboardTabs() {
       {activeTab === "pallet-search" ? <PalletSearchSection /> : null}
       {activeTab === "empty-pallet-search" ? <EmptyPalletSearchSection /> : null}
       {activeTab === "project-no-correction" ? <ProjectNoCorrectionSection /> : null}
-      {activeTab === "locations" ? (
-        <section style={styles.panel}>
-          <h2>棚番マスタ</h2>
-          <p>棚番マスタ管理は次フェーズで実装します。今回はタブ枠のみ追加しています。</p>
-        </section>
-      ) : null}
+      {activeTab === "locations" ? <WarehouseLocationSection /> : null}
     </>
   );
 }

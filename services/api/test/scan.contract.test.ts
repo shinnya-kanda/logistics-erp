@@ -13,6 +13,7 @@ import {
   getEmptyPallets,
   getPalletDetail,
   getPalletSearch,
+  getWarehouseLocationsSearch,
   getHealth,
   optionsScans,
   postInventoryIn,
@@ -24,6 +25,8 @@ import {
   postPalletMove,
   postPalletOut,
   postPalletProjectNoUpdate,
+  postWarehouseLocationActiveUpdate,
+  postWarehouseLocationCreate,
   postScans,
 } from "./helpers/httpScanClient.js";
 import {
@@ -534,6 +537,84 @@ describe("scan minimal HTTP contract", () => {
       const { status, json } = await postPalletProjectNoUpdate(server.baseUrl, {
         pallet_code: "PL-001",
         project_no: "PRJ-001",
+      });
+
+      expect(status).toBe(500);
+      expect(errMessage(json)).toBeTruthy();
+    });
+  });
+
+  describe("warehouse locations API validation (no DB connection)", () => {
+    it("400 when search is_active is invalid", async () => {
+      const { status, json } = await getWarehouseLocationsSearch(server.baseUrl, {
+        isActive: "maybe",
+      });
+
+      expect(status).toBe(400);
+      expect(json).toEqual({ ok: false, error: "is_active must be true or false" });
+    });
+
+    it("500 reaches DB layer when search params are valid", async () => {
+      const { status, json } = await getWarehouseLocationsSearch(server.baseUrl, {
+        warehouseCode: "KOMATSU",
+        isActive: "true",
+      });
+
+      expect(status).toBe(500);
+      expect(errMessage(json)).toBeTruthy();
+    });
+
+    it("400 when create warehouse_code is missing", async () => {
+      const { status, json } = await postWarehouseLocationCreate(server.baseUrl, {
+        location_code: "A-01",
+      });
+
+      expect(status).toBe(400);
+      expect(json).toEqual({ ok: false, error: "warehouse_code is required" });
+    });
+
+    it("400 when create location_code is missing", async () => {
+      const { status, json } = await postWarehouseLocationCreate(server.baseUrl, {
+        warehouse_code: "KOMATSU",
+      });
+
+      expect(status).toBe(400);
+      expect(json).toEqual({ ok: false, error: "location_code is required" });
+    });
+
+    it("500 reaches DB layer when create required fields are valid", async () => {
+      const { status, json } = await postWarehouseLocationCreate(server.baseUrl, {
+        warehouse_code: "KOMATSU",
+        location_code: "A-01",
+      });
+
+      expect(status).toBe(500);
+      expect(errMessage(json)).toBeTruthy();
+    });
+
+    it("400 when active update id is missing", async () => {
+      const { status, json } = await postWarehouseLocationActiveUpdate(server.baseUrl, {
+        is_active: true,
+      });
+
+      expect(status).toBe(400);
+      expect(json).toEqual({ ok: false, error: "id is required" });
+    });
+
+    it("400 when active update is_active is invalid", async () => {
+      const { status, json } = await postWarehouseLocationActiveUpdate(server.baseUrl, {
+        id: "00000000-0000-0000-0000-000000000000",
+        is_active: "maybe",
+      });
+
+      expect(status).toBe(400);
+      expect(json).toEqual({ ok: false, error: "is_active must be true or false" });
+    });
+
+    it("500 reaches DB layer when active update required fields are valid", async () => {
+      const { status, json } = await postWarehouseLocationActiveUpdate(server.baseUrl, {
+        id: "00000000-0000-0000-0000-000000000000",
+        is_active: false,
       });
 
       expect(status).toBe(500);

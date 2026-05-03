@@ -47,6 +47,15 @@ function parseStringArray(v: unknown): string[] | null {
   return out.length === v.length ? out : null;
 }
 
+function booleanOrNull(v: unknown): boolean | null {
+  if (typeof v === "boolean") return v;
+  if (typeof v !== "string") return null;
+  const s = v.trim().toLowerCase();
+  if (s === "true") return true;
+  if (s === "false") return false;
+  return null;
+}
+
 function parseRequestUrl(req: IncomingMessage): URL {
   return new URL(req.url ?? "/", "http://localhost");
 }
@@ -1030,6 +1039,203 @@ export async function handleScanHttp(
           error: err.message ?? "failed to update pallet project_no",
         })
       );
+    }
+    return;
+  }
+
+  if (req.method === "GET" && pathname === "/warehouse-locations/search") {
+    const warehouseCode = requestUrl.searchParams.get("warehouse_code")?.trim();
+    const locationCode = requestUrl.searchParams.get("location_code")?.trim();
+    const rawIsActive = requestUrl.searchParams.get("is_active")?.trim();
+    const isActive = rawIsActive === undefined ? null : booleanOrNull(rawIsActive);
+
+    if (rawIsActive !== undefined && isActive === null) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: false, error: "is_active must be true or false" }));
+      return;
+    }
+
+    const sql = postgres(requireDatabaseUrl(), { max: 1 });
+    try {
+      const rows = await sql`
+        SELECT
+          id,
+          warehouse_code,
+          location_code,
+          is_active,
+          remarks,
+          updated_at
+        FROM public.warehouse_locations
+        WHERE (${warehouseCode ?? null}::text IS NULL OR warehouse_code = ${warehouseCode ?? null})
+          AND (${locationCode ?? null}::text IS NULL OR location_code ILIKE ('%' || ${locationCode ?? null} || '%'))
+          AND (${isActive}::boolean IS NULL OR is_active = ${isActive})
+        ORDER BY warehouse_code ASC, location_code ASC
+      `;
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, locations: rows }));
+    } catch (e) {
+      const err = e as { message?: string };
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: false, error: err.message ?? "failed to search warehouse locations" }));
+    } finally {
+      await sql.end({ timeout: 5 });
+    }
+    return;
+  }
+
+  if (req.method === "POST" && pathname === "/warehouse-locations/create") {
+    try {
+      let body: unknown;
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "Invalid JSON body" }));
+        return;
+      }
+
+      if (!isRecord(body)) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "request body must be an object" }));
+        return;
+      }
+
+      const warehouseCode = stringOrNull(body.warehouse_code);
+      const locationCode = stringOrNull(body.location_code);
+      const isActive = booleanOrNull(body.is_active) ?? true;
+
+      if (!warehouseCode) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "warehouse_code is required" }));
+        return;
+      }
+      if (!locationCode) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "location_code is required" }));
+        return;
+      }
+
+      const sql = postgres(requireDatabaseUrl(), { max: 1 });
+      try {
+        const inserted = await sql`
+          INSERT INTO public.warehouse_locations (
+            warehouse_code,
+            location_code,
+            is_active,
+            remarks,
+            updated_at
+          )
+          VALUES (
+            ${warehouseCode},
+            ${locationCode},
+            ${isActive},
+            ${stringOrNull(body.remarks)},
+            now()
+          )
+          ON CONFLICT (warehouse_code, location_code) DO NOTHING
+          RETURNING
+            id,
+            warehouse_code,
+            location_code,
+            is_active,
+            remarks,
+            updated_at
+        `;
+
+        if (inserted[0]) {
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: true, location: inserted[0], created: true }));
+          return;
+        }
+
+        const existing = await sql`
+          SELECT
+            id,
+            warehouse_code,
+            location_code,
+            is_active,
+            remarks,
+            updated_at
+          FROM public.warehouse_locations
+          WHERE warehouse_code = ${warehouseCode}
+            AND location_code = ${locationCode}
+          LIMIT 1
+        `;
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true, location: existing[0] ?? null, created: false }));
+      } finally {
+        await sql.end({ timeout: 5 });
+      }
+    } catch (e) {
+      const err = e as { message?: string };
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: false, error: err.message ?? "failed to create warehouse location" }));
+    }
+    return;
+  }
+
+  if (req.method === "POST" && pathname === "/warehouse-locations/active/update") {
+    try {
+      let body: unknown;
+      try {
+        body = await readJsonBody(req);
+      } catch {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "Invalid JSON body" }));
+        return;
+      }
+
+      if (!isRecord(body)) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "request body must be an object" }));
+        return;
+      }
+
+      const id = stringOrNull(body.id);
+      const isActive = booleanOrNull(body.is_active);
+
+      if (!id) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "id is required" }));
+        return;
+      }
+      if (isActive === null) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "is_active must be true or false" }));
+        return;
+      }
+
+      const sql = postgres(requireDatabaseUrl(), { max: 1 });
+      try {
+        const rows = await sql`
+          UPDATE public.warehouse_locations
+          SET is_active = ${isActive},
+              updated_at = now()
+          WHERE id = ${id}
+          RETURNING
+            id,
+            warehouse_code,
+            location_code,
+            is_active,
+            remarks,
+            updated_at
+        `;
+
+        if (!rows[0]) {
+          res.writeHead(404, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: "warehouse_location_not_found" }));
+          return;
+        }
+
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true, location: rows[0] }));
+      } finally {
+        await sql.end({ timeout: 5 });
+      }
+    } catch (e) {
+      const err = e as { message?: string };
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: false, error: err.message ?? "failed to update warehouse location active" }));
     }
     return;
   }
