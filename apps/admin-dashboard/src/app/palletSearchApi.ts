@@ -2,6 +2,7 @@ export type PalletSearchRow = {
   pallet_id: string;
   pallet_code: string;
   warehouse_code: string;
+  project_no: string | null;
   current_location_code: string | null;
   current_status: string | null;
   part_no: string | null;
@@ -20,6 +21,7 @@ export type PalletDetail = {
     pallet_id: string;
     pallet_code: string;
     warehouse_code: string;
+    project_no: string | null;
     current_location_code: string | null;
     current_status: string | null;
     created_at: string | null;
@@ -52,6 +54,7 @@ export type PalletSearchStatus = "ALL" | "ACTIVE" | "OUT";
 
 type PalletSearchParams = {
   warehouseCode?: string;
+  projectNo?: string;
   status?: PalletSearchStatus;
   partNo?: string;
   palletCode?: string;
@@ -91,16 +94,21 @@ function parseError(json: unknown): string {
 
 export async function searchPallets({
   warehouseCode,
+  projectNo,
   status = "ALL",
   partNo,
   palletCode,
 }: PalletSearchParams): Promise<PalletSearchResponse> {
   const params: string[] = [];
   const trimmedWarehouseCode = warehouseCode?.trim();
+  const trimmedProjectNo = projectNo?.trim();
   const trimmedPartNo = partNo?.trim();
   const trimmedPalletCode = palletCode?.trim();
   if (trimmedWarehouseCode) {
     params.push(`warehouse_code=${encodeURIComponent(trimmedWarehouseCode)}`);
+  }
+  if (trimmedProjectNo) {
+    params.push(`project_no=${encodeURIComponent(trimmedProjectNo)}`);
   }
   if (status === "ACTIVE" || status === "OUT") {
     params.push(`status=${encodeURIComponent(status)}`);

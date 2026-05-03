@@ -175,11 +175,13 @@ const styles = {
 
 export function PalletSearchSection() {
   const [warehouseCode, setWarehouseCode] = useState("KOMATSU");
+  const [projectNo, setProjectNo] = useState("");
   const [statusFilter, setStatusFilter] = useState<PalletSearchStatus>("ALL");
   const [partNo, setPartNo] = useState("");
   const [palletCode, setPalletCode] = useState("");
   const [rows, setRows] = useState<PalletSearchRow[]>([]);
   const [searchedWarehouseCode, setSearchedWarehouseCode] = useState("");
+  const [searchedProjectNo, setSearchedProjectNo] = useState("");
   const [searchedStatus, setSearchedStatus] = useState<PalletSearchStatus>("ALL");
   const [searchedPartNo, setSearchedPartNo] = useState("");
   const [searchedPalletCode, setSearchedPalletCode] = useState("");
@@ -192,6 +194,7 @@ export function PalletSearchSection() {
   const outCount = rows.filter((row) => row.current_status === "OUT").length;
   const searchConditionText = [
     searchedWarehouseCode ? `warehouse_code: ${searchedWarehouseCode}` : null,
+    searchedProjectNo ? `project_no: ${searchedProjectNo}` : null,
     searchedStatus === "ALL" ? null : `status: ${searchedStatus}`,
     searchedPartNo ? `part_no: ${searchedPartNo}` : null,
     searchedPalletCode ? `pallet_code: ${searchedPalletCode}` : null,
@@ -202,13 +205,14 @@ export function PalletSearchSection() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     const code = warehouseCode.trim();
+    const project = projectNo.trim();
     const part = partNo.trim();
     const pallet = palletCode.trim();
     setError(null);
     setDetailError(null);
 
-    if (!code && !part && !pallet) {
-      setError("warehouse_code、part_no、pallet_code のいずれかを入力してください。");
+    if (!code && !project && !part && !pallet) {
+      setError("warehouse_code、project_no、part_no、pallet_code のいずれかを入力してください。");
       return;
     }
 
@@ -216,6 +220,7 @@ export function PalletSearchSection() {
     try {
       const result = await searchPallets({
         warehouseCode: code,
+        projectNo: project,
         status: statusFilter,
         partNo: part,
         palletCode: pallet,
@@ -229,6 +234,7 @@ export function PalletSearchSection() {
       setRows(result.pallets);
       setDetail(null);
       setSearchedWarehouseCode(code);
+      setSearchedProjectNo(project);
       setSearchedStatus(statusFilter);
       setSearchedPartNo(part);
       setSearchedPalletCode(pallet);
@@ -268,7 +274,7 @@ export function PalletSearchSection() {
   return (
     <section style={styles.panel}>
       <h2>パレット検索</h2>
-      <p>warehouse_code、part_no、pallet_code を組み合わせて検索できます。</p>
+      <p>warehouse_code、project_no、part_no、pallet_code を組み合わせて検索できます。</p>
 
       <form style={styles.form} onSubmit={handleSubmit}>
         <label style={styles.field}>
@@ -277,6 +283,15 @@ export function PalletSearchSection() {
             style={styles.input}
             value={warehouseCode}
             onChange={(e) => setWarehouseCode(e.target.value)}
+            autoComplete="off"
+          />
+        </label>
+        <label style={styles.field}>
+          <span>製番 / project_no</span>
+          <input
+            style={styles.input}
+            value={projectNo}
+            onChange={(e) => setProjectNo(e.target.value)}
             autoComplete="off"
           />
         </label>
@@ -355,6 +370,9 @@ export function PalletSearchSection() {
             </div>
             <div>
               <strong>warehouse_code:</strong> {detail.pallet.warehouse_code}
+            </div>
+            <div>
+              <strong>project_no:</strong> {displayValue(detail.pallet.project_no)}
             </div>
             <div>
               <strong>current_location_code:</strong>{" "}
@@ -439,6 +457,7 @@ export function PalletSearchSection() {
           <thead>
             <tr>
               <th style={styles.th}>warehouse_code</th>
+              <th style={styles.th}>project_no</th>
               <th style={styles.th}>棚番</th>
               <th style={styles.th}>PL</th>
               <th style={styles.th}>状態</th>
@@ -464,6 +483,7 @@ export function PalletSearchSection() {
                   style={out ? styles.outRow : undefined}
                 >
                   <td style={styles.td}>{row.warehouse_code}</td>
+                  <td style={styles.td}>{displayValue(row.project_no)}</td>
                   <td style={styles.td}>{displayValue(row.current_location_code)}</td>
                   <td style={styles.td}>
                     <button
@@ -489,7 +509,7 @@ export function PalletSearchSection() {
             })}
             {rows.length === 0 ? (
               <tr>
-                <td style={styles.td} colSpan={9}>
+                <td style={styles.td} colSpan={10}>
                   検索結果はありません。
                 </td>
               </tr>
