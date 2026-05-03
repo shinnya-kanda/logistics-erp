@@ -101,6 +101,9 @@ describe("scan minimal HTTP contract", () => {
       expect(res.status).toBe(204);
       expect(res.headers.get("access-control-allow-origin")).toBeTruthy();
       expect(res.headers.get("access-control-allow-methods")).toContain("POST");
+      expect(res.headers.get("access-control-allow-headers") ?? "").toMatch(
+        /Authorization/i
+      );
     });
   });
 
@@ -1067,5 +1070,37 @@ describe("scan minimal HTTP contract", () => {
       expect(r.expected?.shipment_item_id).toBe(item.id);
       expect(r.issue).toBeUndefined();
     });
+  });
+});
+
+describe("scan API auth guard (strict bypass off)", () => {
+  let server: TestScanServer;
+
+  beforeAll(async () => {
+    server = await startTestScanServer({ skipAuthGuard: false });
+  });
+
+  afterAll(async () => {
+    await server.close();
+  });
+
+  it("401 when Authorization missing on POST /pallets/create", async () => {
+    const res = await fetch(`${server.baseUrl}/pallets/create`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    expect(res.status).toBe(401);
+    const json = (await res.json()) as unknown;
+    expect(isRecord(json)).toBe(true);
+    if (!isRecord(json)) return;
+    expect(json.ok).toBe(false);
+    expect(json.error).toBe("unauthorized");
+  });
+
+  it("GET /health without auth still 200", async () => {
+    const { status, json } = await getHealth(server.baseUrl);
+    expect(status).toBe(200);
+    expect(json).toEqual({ ok: true, service: "scan-minimal" });
   });
 });

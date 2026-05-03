@@ -3,16 +3,37 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { processScanInput, rebuildShipment, requireDatabaseUrl } from "@logistics-erp/db";
 import { ScanInputValidationError } from "@logistics-erp/schema";
 import postgres from "postgres";
+import { requireApiRole, type ApiRole } from "./authApiGuard.js";
 
 export type ScanHttpHandlerOptions = {
   /** Access-Control-Allow-Origin（既定 *） */
   corsOrigin?: string;
+  /** 契約テスト等: 認証ガードをスキップ（本番では指定しない） */
+  skipAuthGuard?: boolean;
 };
+
+const API_FIELD_ROLES: ApiRole[] = ["admin", "chief", "worker"];
+const API_READ_ROLES: ApiRole[] = ["admin", "chief", "office", "worker"];
+
+async function guardRole(
+  req: IncomingMessage,
+  res: ServerResponse,
+  roles: readonly ApiRole[],
+  options?: ScanHttpHandlerOptions
+): Promise<boolean> {
+  const result = await requireApiRole(req, roles, { skip: options?.skipAuthGuard });
+  if (!result.ok) {
+    res.writeHead(result.status, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(result.body));
+    return false;
+  }
+  return true;
+}
 
 function setCors(res: ServerResponse): void {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 }
 
 async function readJsonBody(req: IncomingMessage): Promise<unknown> {
@@ -92,6 +113,7 @@ export async function handleScanHttp(
   }
 
   if (req.method === "POST" && pathname === "/scans") {
+    if (!(await guardRole(req, res, API_FIELD_ROLES, options))) return;
     try {
       let body: unknown;
       try {
@@ -124,6 +146,7 @@ export async function handleScanHttp(
   }
 
   if (req.method === "POST" && pathname === "/rebuild") {
+    if (!(await guardRole(req, res, API_READ_ROLES, options))) return;
     try {
       let body: unknown;
       try {
@@ -153,6 +176,7 @@ export async function handleScanHttp(
   }
 
   if (req.method === "POST" && pathname === "/inventory/out") {
+    if (!(await guardRole(req, res, API_FIELD_ROLES, options))) return;
     try {
       let body: unknown;
       try {
@@ -235,6 +259,7 @@ export async function handleScanHttp(
   }
 
   if (req.method === "POST" && pathname === "/inventory/in") {
+    if (!(await guardRole(req, res, API_FIELD_ROLES, options))) return;
     try {
       let body: unknown;
       try {
@@ -318,6 +343,7 @@ export async function handleScanHttp(
   }
 
   if (req.method === "POST" && pathname === "/inventory/move") {
+    if (!(await guardRole(req, res, API_FIELD_ROLES, options))) return;
     try {
       let body: unknown;
       try {
@@ -415,6 +441,7 @@ export async function handleScanHttp(
   }
 
   if (req.method === "POST" && pathname === "/pallets/create") {
+    if (!(await guardRole(req, res, API_FIELD_ROLES, options))) return;
     try {
       let body: unknown;
       try {
@@ -501,6 +528,7 @@ export async function handleScanHttp(
   }
 
   if (req.method === "POST" && pathname === "/pallets/items/add") {
+    if (!(await guardRole(req, res, API_FIELD_ROLES, options))) return;
     try {
       let body: unknown;
       try {
@@ -577,6 +605,7 @@ export async function handleScanHttp(
   }
 
   if (req.method === "POST" && pathname === "/pallets/items/out") {
+    if (!(await guardRole(req, res, API_FIELD_ROLES, options))) return;
     try {
       let body: unknown;
       try {
@@ -664,6 +693,7 @@ export async function handleScanHttp(
   }
 
   if (req.method === "POST" && pathname === "/pallets/move") {
+    if (!(await guardRole(req, res, API_FIELD_ROLES, options))) return;
     try {
       let body: unknown;
       try {
@@ -747,6 +777,7 @@ export async function handleScanHttp(
   }
 
   if (req.method === "POST" && pathname === "/pallets/out") {
+    if (!(await guardRole(req, res, API_FIELD_ROLES, options))) return;
     try {
       let body: unknown;
       try {
@@ -811,6 +842,7 @@ export async function handleScanHttp(
   }
 
   if (req.method === "GET" && pathname === "/pallets/search") {
+    if (!(await guardRole(req, res, API_READ_ROLES, options))) return;
     const warehouseCode = requestUrl.searchParams.get("warehouse_code")?.trim();
     const projectNo = requestUrl.searchParams.get("project_no")?.trim();
     const rawStatus = requestUrl.searchParams.get("status")?.trim().toUpperCase();
@@ -913,6 +945,7 @@ export async function handleScanHttp(
   }
 
   if (req.method === "GET" && pathname === "/pallets/empty") {
+    if (!(await guardRole(req, res, API_READ_ROLES, options))) return;
     const warehouseCode = requestUrl.searchParams.get("warehouse_code")?.trim() || "KOMATSU";
     const projectNo = requestUrl.searchParams.get("project_no")?.trim() || null;
     const sql = postgres(requireDatabaseUrl(), { max: 1 });
@@ -940,6 +973,7 @@ export async function handleScanHttp(
   }
 
   if (req.method === "POST" && pathname === "/pallets/project-no/update") {
+    if (!(await guardRole(req, res, API_READ_ROLES, options))) return;
     try {
       let body: unknown;
       try {
@@ -1058,6 +1092,7 @@ export async function handleScanHttp(
   }
 
   if (req.method === "GET" && pathname === "/warehouse-locations/search") {
+    if (!(await guardRole(req, res, API_READ_ROLES, options))) return;
     const warehouseCode = requestUrl.searchParams.get("warehouse_code")?.trim();
     const locationCode = requestUrl.searchParams.get("location_code")?.trim();
     const rawIsActive = requestUrl.searchParams.get("is_active")?.trim();
@@ -1098,6 +1133,7 @@ export async function handleScanHttp(
   }
 
   if (req.method === "GET" && pathname === "/warehouse-locations/unregistered") {
+    if (!(await guardRole(req, res, API_READ_ROLES, options))) return;
     const sql = postgres(requireDatabaseUrl(), { max: 1 });
     try {
       const rows = await sql`
@@ -1127,6 +1163,7 @@ export async function handleScanHttp(
   }
 
   if (req.method === "GET" && pathname === "/warehouse-locations/check") {
+    if (!(await guardRole(req, res, API_READ_ROLES, options))) return;
     const warehouseCode = requestUrl.searchParams.get("warehouse_code")?.trim();
     const locationCode = requestUrl.searchParams.get("location_code")?.trim();
 
@@ -1172,6 +1209,7 @@ export async function handleScanHttp(
   }
 
   if (req.method === "POST" && pathname === "/warehouse-locations/create") {
+    if (!(await guardRole(req, res, API_READ_ROLES, options))) return;
     try {
       let body: unknown;
       try {
@@ -1263,6 +1301,7 @@ export async function handleScanHttp(
   }
 
   if (req.method === "POST" && pathname === "/warehouse-locations/active/update") {
+    if (!(await guardRole(req, res, API_READ_ROLES, options))) return;
     try {
       let body: unknown;
       try {
@@ -1329,6 +1368,7 @@ export async function handleScanHttp(
   }
 
   if (req.method === "GET" && pathname === "/pallets/detail") {
+    if (!(await guardRole(req, res, API_READ_ROLES, options))) return;
     const palletCode = requestUrl.searchParams.get("pallet_code")?.trim();
     if (!palletCode) {
       res.writeHead(400, { "Content-Type": "application/json" });

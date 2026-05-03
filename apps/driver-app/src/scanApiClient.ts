@@ -1,6 +1,7 @@
 import type { ScanHttpPostScansSuccessBody } from "@logistics-erp/schema";
 import type { ScanInputPayload } from "@logistics-erp/schema";
 import { getScanApiBaseUrl } from "./config.js";
+import { getSupabaseBrowserClient } from "./lib/supabaseClient.js";
 
 const DEFAULT_TIMEOUT_MS = 15_000;
 export const WAREHOUSE_CODE_STORAGE_KEY = "logistics_erp_warehouse_code";
@@ -35,6 +36,15 @@ function linkAbort(parent: AbortSignal, child: AbortController): void {
     return;
   }
   parent.addEventListener("abort", () => child.abort(), { once: true });
+}
+
+/** Scan API 認証用（未ログイン時はヘッダ無し） */
+async function scanAuthHeaders(): Promise<Record<string, string>> {
+  const client = getSupabaseBrowserClient();
+  if (!client) return {};
+  const { data } = await client.auth.getSession();
+  const token = data.session?.access_token;
+  return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 export type ScanApiErrorKind =
@@ -229,7 +239,7 @@ export async function postScan(
   try {
     res = await fetch(`${base}/scans`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(await scanAuthHeaders()) },
       body: JSON.stringify(body),
       signal: controller.signal,
     });
@@ -409,6 +419,7 @@ export async function checkWarehouseLocation(
   try {
     res = await fetch(`${base}/warehouse-locations/check?${query.toString()}`, {
       method: "GET",
+      headers: { ...(await scanAuthHeaders()) },
       signal: controller.signal,
     });
   } catch (e) {
@@ -510,7 +521,7 @@ export async function postInventoryMove(
   try {
     res = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(await scanAuthHeaders()) },
       body: JSON.stringify(body),
       signal: controller.signal,
     });
@@ -622,7 +633,7 @@ export async function postPalletCreate(
   try {
     res = await fetch(`${base}/pallets/create`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(await scanAuthHeaders()) },
       body: JSON.stringify(body),
       signal: controller.signal,
     });
@@ -724,7 +735,7 @@ export async function postPalletItemAdd(
   try {
     res = await fetch(`${base}/pallets/items/add`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(await scanAuthHeaders()) },
       body: JSON.stringify(body),
       signal: controller.signal,
     });
@@ -826,7 +837,7 @@ export async function postPalletItemOut(
   try {
     res = await fetch(`${base}/pallets/items/out`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(await scanAuthHeaders()) },
       body: JSON.stringify(body),
       signal: controller.signal,
     });
@@ -926,7 +937,7 @@ export async function postPalletMove(
   try {
     res = await fetch(`${base}/pallets/move`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(await scanAuthHeaders()) },
       body: JSON.stringify(body),
       signal: controller.signal,
     });
@@ -1026,7 +1037,7 @@ export async function postPalletOut(
   try {
     res = await fetch(`${base}/pallets/out`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(await scanAuthHeaders()) },
       body: JSON.stringify(body),
       signal: controller.signal,
     });
@@ -1139,6 +1150,7 @@ export async function searchActivePalletsByPartNo(
   try {
     res = await fetch(`${base}/pallets/search?${query.toString()}`, {
       method: "GET",
+      headers: { ...(await scanAuthHeaders()) },
       signal: controller.signal,
     });
   } catch (e) {
@@ -1254,6 +1266,7 @@ export async function getEmptyPallets(
   try {
     res = await fetch(`${base}/pallets/empty?${query.toString()}`, {
       method: "GET",
+      headers: { ...(await scanAuthHeaders()) },
       signal: controller.signal,
     });
   } catch (e) {
