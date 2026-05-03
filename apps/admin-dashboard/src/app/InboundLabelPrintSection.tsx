@@ -181,38 +181,22 @@ export function InboundLabelPrintSection() {
 
   const printArea = (
     <section className="inbound-label-print-area" aria-label="入庫前ラベル">
-      <div className="inbound-print-header">
-        <h1>入庫前ラベル</h1>
-        <div>出力日: {outputDate}</div>
-      </div>
-
-      <h2>PL NOラベル</h2>
-      <div className="inbound-label-grid">
+      <div className="inbound-label-group">
         {rows.map((row) => (
           <article className="inbound-label-card" key={`pl-${row.pl_no}`}>
-            <div className="inbound-label-kind">PL NO</div>
             <div className="inbound-label-main">{row.pl_no}</div>
             <div className="inbound-label-barcode">{barcodeText(row.pl_no)}</div>
-            <div className="inbound-label-meta">PJ NO: {row.pj_no}</div>
-            <div className="inbound-label-meta">出力日: {row.output_date}</div>
-            <div className="inbound-label-meta">
-              No. {row.no} / {row.total}
-            </div>
+            <div className="inbound-label-date">{row.output_date}</div>
           </article>
         ))}
       </div>
 
-      <h2 className="inbound-print-section-title">PJ NOラベル</h2>
-      <div className="inbound-label-grid">
+      <div className="inbound-label-group inbound-label-group-pj">
         {rows.map((row) => (
           <article className="inbound-label-card" key={`pj-${row.no}-${row.pj_no}`}>
-            <div className="inbound-label-kind">PJ NO</div>
             <div className="inbound-label-main">{row.pj_no}</div>
             <div className="inbound-label-barcode">{barcodeText(row.pj_no)}</div>
-            <div className="inbound-label-meta">出力日: {row.output_date}</div>
-            <div className="inbound-label-meta">
-              No. {row.no} / {row.total}
-            </div>
+            <div className="inbound-label-date">{row.output_date}</div>
           </article>
         ))}
       </div>
@@ -229,7 +213,7 @@ export function InboundLabelPrintSection() {
         @media print {
           @page {
             size: A4 landscape;
-            margin: 8mm;
+            margin: 3mm;
           }
 
           html,
@@ -261,75 +245,64 @@ export function InboundLabelPrintSection() {
             display: revert !important;
           }
 
-          .inbound-print-header {
-            display: flex !important;
-            justify-content: space-between;
-            align-items: baseline;
-            margin-bottom: 3mm;
-            font-size: 9pt;
-          }
-
-          .inbound-print-header h1 {
-            margin: 0;
-            font-size: 16pt;
-          }
-
-          .inbound-label-print-area h2 {
-            margin: 2mm 0;
-            font-size: 11pt;
-          }
-
-          .inbound-print-section-title {
-            page-break-before: auto;
-            break-before: auto;
-            margin-top: 4mm !important;
-          }
-
-          .inbound-label-grid {
+          .inbound-label-group {
             display: grid !important;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 4mm;
-            margin-bottom: 2mm;
+            grid-template-columns: repeat(2, 1fr);
+            grid-auto-rows: calc((100vh - 4mm) / 3);
+            gap: 2mm;
+            width: 100%;
+            min-height: calc(100vh - 1mm);
+            margin: 0;
+            padding: 0;
+          }
+
+          .inbound-label-group-pj {
+            page-break-before: always;
+            break-before: page;
           }
 
           .inbound-label-card {
-            display: block !important;
-            min-height: 34mm;
-            padding: 4mm;
-            border: 1px solid #111;
-            border-radius: 2mm;
+            display: flex !important;
+            position: relative;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 0;
+            padding: 7mm 6mm 8mm;
+            border: 1.2px solid #111;
+            border-radius: 1.5mm;
             page-break-inside: avoid;
             break-inside: avoid;
           }
 
-          .inbound-label-kind {
-            font-size: 8pt;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-          }
-
           .inbound-label-main {
-            margin-top: 1.5mm;
-            font-size: 15pt;
+            width: 100%;
+            margin: 0 0 7mm;
+            font-size: 28pt;
+            line-height: 1.05;
             font-weight: 800;
-            word-break: break-all;
-          }
-
-          .inbound-label-barcode {
-            margin-top: 2mm;
-            padding: 1.5mm 2mm;
-            border: 1px solid #333;
-            font-family: monospace;
-            font-size: 14pt;
-            letter-spacing: 0.08em;
             text-align: center;
             word-break: break-all;
           }
 
-          .inbound-label-meta {
-            margin-top: 1.5mm;
-            font-size: 8.5pt;
-            line-height: 1.15;
+          .inbound-label-barcode {
+            width: 88%;
+            padding: 3mm 4mm;
+            border: 1px solid #333;
+            font-family: monospace;
+            font-size: 22pt;
+            line-height: 1.1;
+            letter-spacing: 0.12em;
+            text-align: center;
+            word-break: break-all;
+          }
+
+          .inbound-label-date {
+            position: absolute;
+            right: 5mm;
+            bottom: 4mm;
+            font-size: 9pt;
+            line-height: 1;
           }
         }
       `}</style>
