@@ -11,11 +11,12 @@
   },
   "dependencies": {
     "@logistics-erp/schema": "workspace:*",
-    "@logistics-erp/ui": "workspace:*",
     "@logistics-erp/types": "workspace:*",
+    "@logistics-erp/ui": "workspace:*",
     "@supabase/supabase-js": "^2.45.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.14.2"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",

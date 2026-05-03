@@ -1,15 +1,14 @@
 import { useMemo } from "react";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthPanel } from "./AuthPanel.js";
 import { getSupabaseBrowserClient } from "./supabaseClient.js";
-import { InventoryMoveApp } from "./InventoryMoveApp.js";
-import { PalletCreateApp } from "./PalletCreateApp.js";
-import { PalletItemAddApp } from "./PalletItemAddApp.js";
-import { PalletMoveApp } from "./PalletMoveApp.js";
-import { PalletOutApp } from "./PalletOutApp.js";
-import { PalletItemOutApp } from "./PalletItemOutApp.js";
-import { PartLocationSearchApp } from "./PartLocationSearchApp.js";
-import { EmptyPalletSearchApp } from "./EmptyPalletSearchApp.js";
-import { ScannerApp } from "./ScannerApp.js";
+import { InventoryInPage } from "./pages/InventoryInPage.js";
+import { InventoryMovePage } from "./pages/InventoryMovePage.js";
+import { InventoryOutPage } from "./pages/InventoryOutPage.js";
+import { MenuPage } from "./pages/MenuPage.js";
+import { PalletCreatePage } from "./pages/PalletCreatePage.js";
+import { PalletItemAddPage } from "./pages/PalletItemAddPage.js";
+import { ScannerPage } from "./pages/ScannerPage.js";
 
 export default function App() {
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
@@ -31,19 +30,22 @@ export default function App() {
   }
 
   return (
-    <main className="app-root">
-      <div className="scanner-shell">
-        <AuthPanel client={supabase} />
-      </div>
-      <InventoryMoveApp />
-      <PalletCreateApp />
-      <PalletItemAddApp />
-      <PalletMoveApp />
-      <PalletOutApp />
-      <PartLocationSearchApp />
-      <PalletItemOutApp />
-      <EmptyPalletSearchApp />
-      <ScannerApp />
-    </main>
+    <BrowserRouter>
+      <main className="app-root">
+        <div className="scanner-shell">
+          <AuthPanel client={supabase} />
+        </div>
+        <Routes>
+          <Route path="/" element={<MenuPage />} />
+          <Route path="/inventory/in" element={<InventoryInPage />} />
+          <Route path="/inventory/move" element={<InventoryMovePage />} />
+          <Route path="/inventory/out" element={<InventoryOutPage />} />
+          <Route path="/pallet/create" element={<PalletCreatePage />} />
+          <Route path="/pallet/items/add" element={<PalletItemAddPage />} />
+          <Route path="/scanner" element={<ScannerPage />} />
+          <Route path="*" element={<Navigate replace to="/" />} />
+        </Routes>
+      </main>
+    </BrowserRouter>
   );
 }
