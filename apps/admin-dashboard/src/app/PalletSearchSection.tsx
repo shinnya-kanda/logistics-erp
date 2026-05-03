@@ -416,7 +416,7 @@ export function PalletSearchSection() {
   return (
     <section style={styles.panel}>
       <style>{`
-        .field-print-area {
+        .print-area {
           display: none;
         }
 
@@ -430,19 +430,29 @@ export function PalletSearchSection() {
             visibility: hidden;
           }
 
-          .field-print-area,
-          .field-print-area * {
+          .print-area,
+          .print-area * {
             visibility: visible;
           }
 
-          .field-print-area {
+          .print-area {
             display: block;
-            position: absolute;
-            left: 0;
-            top: 0;
+            position: static;
             width: 100%;
+            height: auto;
+            min-height: auto;
+            margin: 0;
+            padding: 0;
+            page-break-after: auto;
+            break-after: auto;
             color: #000;
             font-family: sans-serif;
+          }
+
+          table,
+          tr {
+            page-break-inside: avoid;
+            break-inside: avoid;
           }
 
           .field-print-title {
@@ -483,6 +493,10 @@ export function PalletSearchSection() {
 
           .field-print-remarks {
             min-width: 38mm;
+          }
+
+          .field-print-empty {
+            display: none;
           }
         }
       `}</style>
@@ -764,7 +778,7 @@ export function PalletSearchSection() {
         </table>
       </div>
 
-      <section className="field-print-area" aria-label="現場パレット確認表">
+      <section className="print-area field-print-area" aria-label="現場パレット確認表">
         <h1 className="field-print-title">現場パレット確認表</h1>
         <div className="field-print-meta">
           <div>出力日時: {printIssuedAt ?? formatUpdatedAt(new Date().toISOString())}</div>
