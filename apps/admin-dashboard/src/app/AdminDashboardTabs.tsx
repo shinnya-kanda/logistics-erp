@@ -1,18 +1,25 @@
 "use client";
 
 import { useState } from "react";
+import { BillingCheckSection } from "./BillingCheckSection";
 import { EmptyPalletSearchSection } from "./EmptyPalletSearchSection";
 import { PalletSearchSection } from "./PalletSearchSection";
 import { ProjectNoCorrectionSection } from "./ProjectNoCorrectionSection";
 import { WarehouseLocationSection } from "./WarehouseLocationSection";
 
-type AdminTab = "pallet-search" | "empty-pallet-search" | "project-no-correction" | "locations";
+type AdminTab =
+  | "pallet-search"
+  | "empty-pallet-search"
+  | "project-no-correction"
+  | "locations"
+  | "billing-check";
 
 const tabs: Array<{ id: AdminTab; label: string }> = [
   { id: "pallet-search", label: "パレット検索" },
   { id: "empty-pallet-search", label: "空パレット検索" },
   { id: "project-no-correction", label: "project_no補正" },
   { id: "locations", label: "棚番マスタ" },
+  { id: "billing-check", label: "請求確認" },
 ];
 
 const styles = {
@@ -69,6 +76,7 @@ export function AdminDashboardTabs() {
       {activeTab === "empty-pallet-search" ? <EmptyPalletSearchSection /> : null}
       {activeTab === "project-no-correction" ? <ProjectNoCorrectionSection /> : null}
       {activeTab === "locations" ? <WarehouseLocationSection /> : null}
+      {activeTab === "billing-check" ? <BillingCheckSection /> : null}
     </>
   );
 }
