@@ -31,14 +31,22 @@ function statusLabel(status: string | null): string {
   return displayValue(status);
 }
 
-function palletState(row: PalletSearchRow): "empty" | "loaded" | "out" {
+type PalletLoadState = "empty" | "low" | "medium" | "full" | "out";
+
+function palletState(row: PalletSearchRow, itemCount?: number): PalletLoadState {
   if (row.current_status === "OUT") return "out";
-  return row.part_no ? "loaded" : "empty";
+  if (itemCount === undefined) return row.part_no ? "full" : "empty";
+  if (itemCount === 0) return "empty";
+  if (itemCount <= 4) return "low";
+  if (itemCount <= 10) return "medium";
+  return "full";
 }
 
-function palletStateLabel(state: "empty" | "loaded" | "out"): string {
+function palletStateLabel(state: PalletLoadState): string {
   if (state === "out") return "出庫済";
-  if (state === "loaded") return "満載";
+  if (state === "full") return "満載";
+  if (state === "medium") return "中";
+  if (state === "low") return "少";
   return "空";
 }
 
@@ -146,16 +154,24 @@ const styles = {
     color: "#455a64",
   },
   palletStateEmpty: {
-    background: "#fff8e1",
-    color: "#8a5a00",
+    background: "#eeeeee",
+    color: "#424242",
   },
-  palletStateLoaded: {
+  palletStateLow: {
     background: "#e3f2fd",
     color: "#0d47a1",
   },
+  palletStateMedium: {
+    background: "#fff3e0",
+    color: "#e65100",
+  },
+  palletStateFull: {
+    background: "#e8f5e9",
+    color: "#1b5e20",
+  },
   palletStateOut: {
-    background: "#eeeeee",
-    color: "#424242",
+    background: "#ffebee",
+    color: "#b71c1c",
   },
   linkButton: {
     border: "none",
@@ -215,6 +231,10 @@ export function PalletSearchSection() {
   const [detailError, setDetailError] = useState<string | null>(null);
   const activeCount = rows.filter((row) => row.current_status === "ACTIVE").length;
   const outCount = rows.filter((row) => row.current_status === "OUT").length;
+  const palletItemCountById = rows.reduce<Map<string, number>>((counts, row) => {
+    counts.set(row.pallet_id, (counts.get(row.pallet_id) ?? 0) + (row.part_no ? 1 : 0));
+    return counts;
+  }, new Map<string, number>());
   const searchConditionText = [
     searchedWarehouseCode ? `warehouse_code: ${searchedWarehouseCode}` : null,
     searchedProjectNo ? `project_no: ${searchedProjectNo}` : null,
@@ -495,7 +515,7 @@ export function PalletSearchSection() {
           <tbody>
             {rows.map((row, index) => {
               const out = isOutRow(row);
-              const loadState = palletState(row);
+              const loadState = palletState(row, palletItemCountById.get(row.pallet_id));
               const statusStyle =
                 row.current_status === "ACTIVE"
                   ? styles.statusActive
@@ -505,9 +525,13 @@ export function PalletSearchSection() {
               const palletStateStyle =
                 loadState === "empty"
                   ? styles.palletStateEmpty
-                  : loadState === "loaded"
-                    ? styles.palletStateLoaded
-                    : styles.palletStateOut;
+                  : loadState === "low"
+                    ? styles.palletStateLow
+                    : loadState === "medium"
+                      ? styles.palletStateMedium
+                      : loadState === "full"
+                        ? styles.palletStateFull
+                        : styles.palletStateOut;
               return (
                 <tr
                   key={`${row.pallet_id}-${row.part_no ?? "empty"}-${index}`}
