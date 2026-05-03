@@ -9,12 +9,16 @@ import {
 } from "react";
 import type { Session, SupabaseClient, User } from "@supabase/supabase-js";
 import { useAuthSession } from "./useAuthSession";
+import { useUserProfile, type UserProfileRow } from "./useUserProfile";
 
 export type AuthContextValue = {
   client: SupabaseClient;
   session: Session | null;
   user: User | null;
   loading: boolean;
+  profile: UserProfileRow | null;
+  profileLoading: boolean;
+  profileError: string | null;
   signOut: () => ReturnType<SupabaseClient["auth"]["signOut"]>;
 };
 
@@ -28,6 +32,11 @@ export function AuthProvider({
   children: ReactNode;
 }) {
   const { session, user, loading } = useAuthSession(client);
+  const {
+    profile,
+    loading: profileLoading,
+    error: profileError,
+  } = useUserProfile(client, user?.id ?? null);
 
   const signOut = useCallback(() => client.auth.signOut(), [client]);
 
@@ -37,9 +46,12 @@ export function AuthProvider({
       session,
       user,
       loading,
+      profile,
+      profileLoading,
+      profileError,
       signOut,
     }),
-    [client, session, user, loading, signOut]
+    [client, session, user, loading, profile, profileLoading, profileError, signOut]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
