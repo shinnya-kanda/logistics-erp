@@ -50,6 +50,29 @@ function palletStateLabel(state: PalletLoadState): string {
   return "空";
 }
 
+function palletStateSortOrder(state: PalletLoadState): number {
+  if (state === "full") return 0;
+  if (state === "medium") return 1;
+  if (state === "low") return 2;
+  if (state === "empty") return 3;
+  return 4;
+}
+
+function csvEscape(value: string | number): string {
+  const s = String(value);
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+function fieldCsvFileName(date = new Date()): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const yyyy = date.getFullYear();
+  const mm = pad(date.getMonth() + 1);
+  const dd = pad(date.getDate());
+  const hh = pad(date.getHours());
+  const min = pad(date.getMinutes());
+  return `pallet_field_${yyyy}${mm}${dd}_${hh}${min}.csv`;
+}
+
 const styles = {
   panel: {
     marginTop: "2rem",
@@ -314,6 +337,60 @@ export function PalletSearchSection() {
     }
   }
 
+  function handleDownloadFieldCsv() {
+    const palletRows = Array.from(
+      rows
+        .reduce<Map<string, PalletSearchRow>>((map, row) => {
+          if (!map.has(row.pallet_id)) map.set(row.pallet_id, row);
+          return map;
+        }, new Map<string, PalletSearchRow>())
+        .values()
+    );
+    const csvRows = palletRows
+      .map((row) => {
+        const itemCount = palletItemCountById.get(row.pallet_id);
+        const loadState = palletState(row, itemCount);
+        return {
+          pallet_code: row.pallet_code,
+          project_no: row.project_no ?? "",
+          location_code: row.current_location_code ?? "",
+          load_status: palletStateLabel(loadState),
+          item_count: itemCount ?? (row.part_no ? 1 : 0),
+          sort_load_status: palletStateSortOrder(loadState),
+        };
+      })
+      .sort((a, b) => {
+        const projectCompare = a.project_no.localeCompare(b.project_no, "ja");
+        if (projectCompare !== 0) return projectCompare;
+        if (a.sort_load_status !== b.sort_load_status) {
+          return a.sort_load_status - b.sort_load_status;
+        }
+        return a.location_code.localeCompare(b.location_code, "ja");
+      });
+
+    const header = ["pallet_code", "project_no", "location_code", "load_status", "item_count"];
+    const csv = [
+      header,
+      ...csvRows.map((row) => [
+        row.pallet_code,
+        row.project_no,
+        row.location_code,
+        row.load_status,
+        row.item_count,
+      ]),
+    ]
+      .map((row) => row.map(csvEscape).join(","))
+      .join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fieldCsvFileName();
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <section style={styles.panel}>
       <h2>パレット検索</h2>
@@ -384,6 +461,14 @@ export function PalletSearchSection() {
         <span style={styles.resultSummarySub}>
           ACTIVE: {activeCount} / OUT: {outCount}
         </span>
+        <button
+          style={styles.secondaryButton}
+          type="button"
+          onClick={handleDownloadFieldCsv}
+          disabled={rows.length === 0}
+        >
+          現場CSV出力
+        </button>
       </div>
 
       {detailLoadingCode ? (
