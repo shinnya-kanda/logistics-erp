@@ -25,14 +25,24 @@ type LedgerRow = {
   updated_at: string;
 };
 
-function csvFileName(date = new Date()): string {
+function dateInputValue(date = new Date()): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   const yyyy = date.getFullYear();
   const mm = pad(date.getMonth() + 1);
   const dd = pad(date.getDate());
-  const hh = pad(date.getHours());
-  const min = pad(date.getMinutes());
-  return `pallet_inventory_ledger_${yyyy}${mm}${dd}_${hh}${min}.csv`;
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function firstDayOfCurrentMonth(date = new Date()): string {
+  return dateInputValue(new Date(date.getFullYear(), date.getMonth(), 1));
+}
+
+function compactDate(value: string): string {
+  return value.replace(/-/g, "");
+}
+
+function csvFileName(startDate: string, endDate: string): string {
+  return `pallet_inventory_ledger_${compactDate(startDate)}_${compactDate(endDate)}.csv`;
 }
 
 function csvEscape(value: string | number): string {
@@ -216,6 +226,8 @@ const styles = {
 export function InventoryLedgerSection() {
   const [warehouseCode, setWarehouseCode] = useState("KOMATSU");
   const [projectNo, setProjectNo] = useState("");
+  const [aggregationStartDate, setAggregationStartDate] = useState(firstDayOfCurrentMonth);
+  const [aggregationEndDate, setAggregationEndDate] = useState(dateInputValue);
   const [rows, setRows] = useState<LedgerRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -270,6 +282,8 @@ export function InventoryLedgerSection() {
 
   function handleDownloadCsv() {
     const header = [
+      "aggregation_start_date",
+      "aggregation_end_date",
       "warehouse_code",
       "project_no",
       "pallet_code",
@@ -288,6 +302,8 @@ export function InventoryLedgerSection() {
     const csv = [
       header,
       ...rows.map((row) => [
+        aggregationStartDate,
+        aggregationEndDate,
         row.warehouse_code,
         row.project_no,
         row.pallet_code,
@@ -311,7 +327,7 @@ export function InventoryLedgerSection() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = csvFileName();
+    a.download = csvFileName(aggregationStartDate, aggregationEndDate);
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -320,6 +336,7 @@ export function InventoryLedgerSection() {
     <section style={styles.panel}>
       <h2>在庫台帳</h2>
       <p>社内確認・棚管理・在庫台帳用に、現在のパレット在庫状態をCSV出力します。</p>
+      <p>現在は履歴期間集計ではなく、指定期間情報付きの現在在庫台帳です</p>
 
       <form style={styles.form} onSubmit={handleSearch}>
         <label style={styles.field}>
@@ -340,6 +357,24 @@ export function InventoryLedgerSection() {
             autoComplete="off"
           />
         </label>
+        <label style={styles.field}>
+          <span>集計開始日</span>
+          <input
+            style={styles.input}
+            type="date"
+            value={aggregationStartDate}
+            onChange={(e) => setAggregationStartDate(e.target.value)}
+          />
+        </label>
+        <label style={styles.field}>
+          <span>集計終了日</span>
+          <input
+            style={styles.input}
+            type="date"
+            value={aggregationEndDate}
+            onChange={(e) => setAggregationEndDate(e.target.value)}
+          />
+        </label>
         <button style={styles.button} type="submit" disabled={loading}>
           {loading ? "取得中..." : "在庫台帳データ取得"}
         </button>
@@ -354,6 +389,11 @@ export function InventoryLedgerSection() {
       </form>
 
       {error ? <div style={styles.error}>{error}</div> : null}
+
+      <p>
+        <strong>集計期間：</strong>
+        {aggregationStartDate} 〜 {aggregationEndDate}
+      </p>
 
       <div style={styles.summaryGrid}>
         <div style={styles.summaryCard}>
