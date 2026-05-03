@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { BillingCheckSection } from "./BillingCheckSection";
 import { EmptyPalletSearchSection } from "./EmptyPalletSearchSection";
+import { InventoryLedgerSection } from "./InventoryLedgerSection";
 import { PalletSearchSection } from "./PalletSearchSection";
 import { ProjectNoCorrectionSection } from "./ProjectNoCorrectionSection";
 import { WarehouseLocationSection } from "./WarehouseLocationSection";
@@ -12,7 +13,8 @@ type AdminTab =
   | "empty-pallet-search"
   | "project-no-correction"
   | "locations"
-  | "billing-check";
+  | "billing-check"
+  | "inventory-ledger";
 
 const tabs: Array<{ id: AdminTab; label: string }> = [
   { id: "pallet-search", label: "パレット検索" },
@@ -20,6 +22,7 @@ const tabs: Array<{ id: AdminTab; label: string }> = [
   { id: "project-no-correction", label: "project_no補正" },
   { id: "locations", label: "棚番マスタ" },
   { id: "billing-check", label: "請求確認" },
+  { id: "inventory-ledger", label: "在庫台帳" },
 ];
 
 const styles = {
@@ -77,6 +80,7 @@ export function AdminDashboardTabs() {
       {activeTab === "project-no-correction" ? <ProjectNoCorrectionSection /> : null}
       {activeTab === "locations" ? <WarehouseLocationSection /> : null}
       {activeTab === "billing-check" ? <BillingCheckSection /> : null}
+      {activeTab === "inventory-ledger" ? <InventoryLedgerSection /> : null}
     </>
   );
 }
