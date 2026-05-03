@@ -134,7 +134,7 @@ export function PalletOutApp() {
 
     const palletCode = normalizeCode39(fields.pallet_code);
     const warehouseCode = setStoredWarehouseCode(warehouseCodeDraft);
-    const projectNo = fields.project_no.trim() || warehouseCode;
+    const projectNo = trimOrUndefined(fields.project_no);
 
     setResult(null);
     setError(null);
@@ -151,7 +151,7 @@ export function PalletOutApp() {
     setFields((f) => ({
       ...f,
       pallet_code: palletCode,
-      project_no: projectNo,
+      project_no: fields.project_no,
     }));
     setSubmitting(true);
 

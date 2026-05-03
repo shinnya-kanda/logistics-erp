@@ -200,7 +200,7 @@ export function PalletItemOutApp() {
     const partNo = fields.part_no.trim().toUpperCase();
     const quantity = Number(fields.quantity);
     const warehouseCode = setStoredWarehouseCode(warehouseCodeDraft);
-    const projectNo = fields.project_no.trim() || warehouseCode;
+    const projectNo = trimOrUndefined(fields.project_no);
 
     setResult(null);
     setError(null);
@@ -230,7 +230,7 @@ export function PalletItemOutApp() {
       ...f,
       pallet_code: palletCode,
       part_no: partNo,
-      project_no: projectNo,
+      project_no: fields.project_no,
     }));
     setSubmitting(true);
 

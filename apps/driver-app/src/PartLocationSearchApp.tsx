@@ -109,7 +109,7 @@ export function PartLocationSearchApp() {
     if (submitting) return;
 
     const warehouseCode = setStoredWarehouseCode(warehouseCodeDraft);
-    const projectNo = fields.project_no.trim() || warehouseCode;
+    const projectNo = fields.project_no.trim() || undefined;
     const partNo = (partNoOverride ?? fields.part_no).trim().toUpperCase();
     setError(null);
     setReaderMessage(null);

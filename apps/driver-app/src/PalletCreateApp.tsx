@@ -99,7 +99,7 @@ export function PalletCreateApp() {
 
     const palletCode = normalizePalletCode(fields.pallet_code);
     const warehouseCode = setStoredWarehouseCode(warehouseCodeDraft);
-    const projectNo = fields.project_no.trim() || warehouseCode;
+    const projectNo = trimOrUndefined(fields.project_no);
 
     setResult(null);
     setError(null);

@@ -60,7 +60,7 @@ export function EmptyPalletSearchApp() {
     if (submitting) return;
 
     const code = setStoredWarehouseCode(warehouseCodeDraft);
-    const searchProjectNo = projectNo.trim() || code;
+    const searchProjectNo = projectNo.trim() || undefined;
     setError(null);
     setSubmitting(true);
 
@@ -69,7 +69,7 @@ export function EmptyPalletSearchApp() {
       if (res.ok) {
         playSuccessBeep();
         setRows(res.data.pallets);
-        setSearchedWarehouseCode(searchProjectNo);
+        setSearchedWarehouseCode(searchProjectNo ?? code);
         return;
       }
 

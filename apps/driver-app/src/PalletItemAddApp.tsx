@@ -183,7 +183,7 @@ export function PalletItemAddApp() {
     const partNo = fields.part_no.trim().toUpperCase();
     const quantity = Number(fields.quantity);
     const warehouseCode = setStoredWarehouseCode(warehouseCodeDraft);
-    const projectNo = fields.project_no.trim() || warehouseCode;
+    const projectNo = trimOrUndefined(fields.project_no);
     const quantityUnit = fields.quantity_unit.trim() || "pcs";
 
     setResult(null);

@@ -154,7 +154,7 @@ export function PalletMoveApp() {
     const palletCode = normalizeCode39(fields.pallet_code);
     const toLocationCode = normalizeCode39(fields.to_location_code);
     const warehouseCode = setStoredWarehouseCode(warehouseCodeDraft);
-    const projectNo = fields.project_no.trim() || warehouseCode;
+    const projectNo = trimOrUndefined(fields.project_no);
 
     setResult(null);
     setError(null);
@@ -180,7 +180,7 @@ export function PalletMoveApp() {
       ...f,
       pallet_code: palletCode,
       to_location_code: toLocationCode,
-      project_no: projectNo,
+      project_no: fields.project_no,
     }));
     setSubmitting(true);
 

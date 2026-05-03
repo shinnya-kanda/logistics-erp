@@ -799,7 +799,7 @@ export async function handleScanHttp(
       res.end(
         JSON.stringify({
           ok: false,
-          error: "warehouse_code or part_no or pallet_code is required",
+          error: "warehouse_code or project_no or part_no or pallet_code is required",
         })
       );
       return;

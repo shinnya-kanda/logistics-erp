@@ -408,13 +408,13 @@ describe("scan minimal HTTP contract", () => {
   });
 
   describe("GET /pallets/search validation (no DB connection)", () => {
-    it("400 when warehouse_code, part_no, and pallet_code are missing", async () => {
+    it("400 when warehouse_code, project_no, part_no, and pallet_code are missing", async () => {
       const { status, json } = await getPalletSearch(server.baseUrl);
 
       expect(status).toBe(400);
       expect(json).toEqual({
         ok: false,
-        error: "warehouse_code or part_no or pallet_code is required",
+        error: "warehouse_code or project_no or part_no or pallet_code is required",
       });
     });
 
