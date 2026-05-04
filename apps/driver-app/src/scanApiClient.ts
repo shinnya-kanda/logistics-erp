@@ -1,6 +1,6 @@
 import type { ScanHttpPostScansSuccessBody } from "@logistics-erp/schema";
 import type { ScanInputPayload } from "@logistics-erp/schema";
-import { getScanApiBaseUrl } from "./config.js";
+import { getScanApiBaseUrl, getSupabaseFunctionsBaseUrl } from "./config.js";
 import { getSupabaseBrowserClient } from "./lib/supabaseClient.js";
 
 const DEFAULT_TIMEOUT_MS = 15_000;
@@ -45,6 +45,14 @@ async function scanAuthHeaders(): Promise<Record<string, string>> {
   const { data } = await client.auth.getSession();
   const token = data.session?.access_token;
   return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+async function edgeFunctionHeaders(json = false): Promise<Record<string, string>> {
+  return {
+    ...(json ? { "Content-Type": "application/json" } : {}),
+    ...(await scanAuthHeaders()),
+    apikey: (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined) ?? "",
+  };
 }
 
 export type ScanApiErrorKind =
@@ -621,7 +629,7 @@ export async function postPalletCreate(
   | { ok: true; status: 200; data: PalletCreateSuccessBody }
   | { ok: false; error: ScanApiError }
 > {
-  const base = getScanApiBaseUrl();
+  const base = getSupabaseFunctionsBaseUrl();
   const timeoutMs = options?.timeoutMs ?? 10_000;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
@@ -631,10 +639,16 @@ export async function postPalletCreate(
 
   let res: Response;
   try {
-    res = await fetch(`${base}/pallets/create`, {
+    res = await fetch(`${base}/pallet-create`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", ...(await scanAuthHeaders()) },
-      body: JSON.stringify(body),
+      headers: await edgeFunctionHeaders(true),
+      body: JSON.stringify({
+        pallet_code: body.pallet_code,
+        project_no: body.project_no,
+        current_location_code: body.current_location_code,
+        created_by: body.created_by,
+        remarks: body.remarks,
+      }),
       signal: controller.signal,
     });
   } catch (e) {

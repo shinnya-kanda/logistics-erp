@@ -18,6 +18,19 @@ type PalletSearchResponse =
   | { ok: true; pallets: PalletSearchRow[] }
   | { ok: false; error: string };
 
+export type PalletCreateResponse =
+  | { ok: true; pallet: Record<string, unknown>; created: boolean }
+  | { ok: false; error: string; message?: string };
+
+type PalletCreateParams = {
+  palletCode: string;
+  projectNo?: string;
+  currentLocationCode?: string;
+  inventoryType?: string;
+  createdBy?: string;
+  remarks?: string;
+};
+
 type InventorySearchParams = {
   projectNo?: string;
   partNo?: string;
@@ -424,6 +437,45 @@ export async function searchPallets({
 
   const pallets = json.pallets.filter(isPalletSearchRow);
   return { ok: true, pallets };
+}
+
+export async function createPallet(
+  params: PalletCreateParams
+): Promise<PalletCreateResponse> {
+  const res = await fetch(`${FUNCTIONS_BASE}/pallet-create`, {
+    method: "POST",
+    headers: {
+      ...(await edgeFunctionHeaders()),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      pallet_code: params.palletCode,
+      project_no: params.projectNo?.trim() || undefined,
+      current_location_code: params.currentLocationCode?.trim() || undefined,
+      inventory_type: params.inventoryType?.trim() || undefined,
+      created_by: params.createdBy?.trim() || undefined,
+      remarks: params.remarks?.trim() || undefined,
+    }),
+  });
+
+  let json: unknown;
+  try {
+    json = await res.json();
+  } catch {
+    return { ok: false, error: "APIからJSON以外の応答が返りました。" };
+  }
+
+  if (!res.ok) {
+    const message =
+      isRecord(json) && typeof json.message === "string" ? json.message : undefined;
+    return { ok: false, error: parseError(json), message };
+  }
+
+  if (!isRecord(json) || json.ok !== true || !isRecord(json.pallet)) {
+    return { ok: false, error: "パレット作成結果の形式が不正です。" };
+  }
+
+  return { ok: true, pallet: json.pallet, created: json.created === true };
 }
 
 export async function searchInventory({
