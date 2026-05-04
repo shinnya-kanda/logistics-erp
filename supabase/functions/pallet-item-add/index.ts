@@ -113,7 +113,7 @@ serve(async (req) => {
       p_quantity: quantity,
       p_warehouse_code: guard.warehouseCode,
       p_quantity_unit: stringOrNull(body.quantity_unit) ?? "pcs",
-      p_created_by: stringOrNull(body.created_by),
+      p_created_by: guard.userId,
       p_remarks: stringOrNull(body.remarks),
       p_project_no: projectNo,
     });

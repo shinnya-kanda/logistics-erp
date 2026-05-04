@@ -737,7 +737,7 @@ export async function postPalletItemAdd(
   | { ok: true; status: 200; data: PalletItemAddSuccessBody }
   | { ok: false; error: ScanApiError }
 > {
-  const base = getScanApiBaseUrl();
+  const base = getSupabaseFunctionsBaseUrl();
   const timeoutMs = options?.timeoutMs ?? 10_000;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
@@ -747,10 +747,18 @@ export async function postPalletItemAdd(
 
   let res: Response;
   try {
-    res = await fetch(`${base}/pallets/items/add`, {
+    res = await fetch(`${base}/pallet-item-add`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", ...(await scanAuthHeaders()) },
-      body: JSON.stringify(body),
+      headers: await edgeFunctionHeaders(true),
+      body: JSON.stringify({
+        pallet_code: body.pallet_code,
+        part_no: body.part_no,
+        quantity: body.quantity,
+        project_no: body.project_no,
+        quantity_unit: body.quantity_unit,
+        created_by: body.created_by,
+        remarks: body.remarks,
+      }),
       signal: controller.signal,
     });
   } catch (e) {
