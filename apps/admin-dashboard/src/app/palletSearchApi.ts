@@ -202,8 +202,8 @@ async function edgeFunctionHeaders(): Promise<Record<string, string>> {
 }
 
 export async function getUnregisteredWarehouseLocations(): Promise<UnregisteredWarehouseLocationResponse> {
-  const res = await fetch(`${API_BASE}/warehouse-locations/unregistered`, {
-    headers: await adminApiHeaders(),
+  const res = await fetch(`${FUNCTIONS_BASE}/warehouse-locations-unregistered`, {
+    headers: await edgeFunctionHeaders(),
   });
   let json: unknown;
   try {
