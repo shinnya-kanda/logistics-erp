@@ -114,6 +114,26 @@ export type InventoryInSuccessBody = {
   transaction: Record<string, unknown>;
 };
 
+export type InventoryOutPayload = {
+  part_no: string;
+  quantity: number;
+  warehouse_code: string;
+  from_location_code: string;
+  inventory_type?: string;
+  project_no?: string;
+  mrp_key?: string;
+  quantity_unit?: string;
+  operator_id?: string;
+  operator_name?: string;
+  remarks?: string;
+  idempotency_key: string;
+};
+
+export type InventoryOutSuccessBody = {
+  ok: true;
+  transactions: Record<string, unknown>[];
+};
+
 export type PalletCreatePayload = {
   pallet_code: string;
   warehouse_code: string;
@@ -769,6 +789,118 @@ function isInventoryInSuccessBody(v: unknown): v is InventoryInSuccessBody {
   if (!isRecord(v)) return false;
   if (v.ok !== true) return false;
   if (!isRecord(v.transaction)) return false;
+  return true;
+}
+
+export async function postInventoryOut(
+  body: InventoryOutPayload,
+  options?: { signal?: AbortSignal; timeoutMs?: number }
+): Promise<
+  | { ok: true; status: 200; data: InventoryOutSuccessBody }
+  | { ok: false; error: ScanApiError }
+> {
+  const base = getSupabaseFunctionsBaseUrl();
+  const timeoutMs = options?.timeoutMs ?? 10_000;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  if (options?.signal) {
+    linkAbort(options.signal, controller);
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(`${base}/inventory-out`, {
+      method: "POST",
+      headers: await edgeFunctionHeaders(true),
+      body: JSON.stringify({
+        part_no: body.part_no,
+        quantity: body.quantity,
+        from_location_code: body.from_location_code,
+        inventory_type: body.inventory_type,
+        project_no: body.project_no,
+        mrp_key: body.mrp_key,
+        quantity_unit: body.quantity_unit,
+        operator_name: body.operator_name,
+        remarks: body.remarks,
+        idempotency_key: body.idempotency_key,
+      }),
+      signal: controller.signal,
+    });
+  } catch (e) {
+    clearTimeout(timeoutId);
+    if (e instanceof DOMException && e.name === "AbortError") {
+      return {
+        ok: false,
+        error: {
+          kind: "timeout",
+          message: "API通信タイムアウト",
+        },
+      };
+    }
+    return {
+      ok: false,
+      error: {
+        kind: "network",
+        message: "ネットワークに接続できません。API の起動を確認してください。",
+      },
+    };
+  }
+  clearTimeout(timeoutId);
+
+  let json: unknown;
+  try {
+    json = await res.json();
+  } catch {
+    return {
+      ok: false,
+      error: {
+        kind: "parse",
+        message: "サーバーから JSON 以外の応答が返りました。",
+        status: res.status,
+      },
+    };
+  }
+
+  if (res.status === 200) {
+    if (isInventoryOutSuccessBody(json)) {
+      return { ok: true, status: 200, data: json };
+    }
+    return {
+      ok: false,
+      error: {
+        kind: "server",
+        message: parseErrorBody(json),
+        status: 200,
+      },
+    };
+  }
+
+  if (res.status === 400) {
+    return {
+      ok: false,
+      error: {
+        kind: "validation",
+        message: parseErrorBody(json),
+        status: 400,
+      },
+    };
+  }
+
+  return {
+    ok: false,
+    error: {
+      kind: res.status >= 500 ? "server" : "unknown",
+      message: parseErrorBody(json),
+      status: res.status,
+    },
+  };
+}
+
+function isInventoryOutSuccessBody(v: unknown): v is InventoryOutSuccessBody {
+  if (!isRecord(v)) return false;
+  if (v.ok !== true) return false;
+  if (!Array.isArray(v.transactions)) return false;
+  if (!v.transactions.every(isRecord)) return false;
   return true;
 }
 
