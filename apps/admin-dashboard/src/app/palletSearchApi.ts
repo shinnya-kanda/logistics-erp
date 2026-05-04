@@ -194,6 +194,13 @@ async function adminApiHeaders(json = false): Promise<Record<string, string>> {
   return headers;
 }
 
+async function edgeFunctionHeaders(): Promise<Record<string, string>> {
+  return {
+    ...(await adminApiHeaders()),
+    apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
+  };
+}
+
 export async function getUnregisteredWarehouseLocations(): Promise<UnregisteredWarehouseLocationResponse> {
   const res = await fetch(`${API_BASE}/warehouse-locations/unregistered`, {
     headers: await adminApiHeaders(),
@@ -231,7 +238,7 @@ export async function searchWarehouseLocations(params: {
   }
 
   const res = await fetch(`${FUNCTIONS_BASE}/location-search?${searchParams.toString()}`, {
-    headers: await adminApiHeaders(),
+    headers: await edgeFunctionHeaders(),
   });
   let json: unknown;
   try {
