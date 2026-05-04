@@ -18,6 +18,14 @@ type PalletSearchResponse =
   | { ok: true; pallets: PalletSearchRow[] }
   | { ok: false; error: string };
 
+type InventorySearchParams = {
+  projectNo?: string;
+  partNo?: string;
+  locationCode?: string;
+  inventoryType?: string;
+  status?: PalletSearchStatus;
+};
+
 export type EmptyPalletRow = {
   pallet_id: string;
   pallet_code: string;
@@ -414,6 +422,56 @@ export async function searchPallets({
 
   const pallets = json.pallets.filter(isPalletSearchRow);
   return { ok: true, pallets };
+}
+
+export async function searchInventory({
+  projectNo,
+  partNo,
+  locationCode,
+  inventoryType,
+  status = "ALL",
+}: InventorySearchParams): Promise<PalletSearchResponse> {
+  const params: string[] = [];
+  const trimmedProjectNo = projectNo?.trim();
+  const trimmedPartNo = partNo?.trim();
+  const trimmedLocationCode = locationCode?.trim();
+  const trimmedInventoryType = inventoryType?.trim();
+  if (trimmedProjectNo) {
+    params.push(`project_no=${encodeURIComponent(trimmedProjectNo)}`);
+  }
+  if (trimmedPartNo) {
+    params.push(`part_no=${encodeURIComponent(trimmedPartNo)}`);
+  }
+  if (trimmedLocationCode) {
+    params.push(`location_code=${encodeURIComponent(trimmedLocationCode)}`);
+  }
+  if (trimmedInventoryType) {
+    params.push(`inventory_type=${encodeURIComponent(trimmedInventoryType)}`);
+  }
+  if (status === "ACTIVE" || status === "OUT") {
+    params.push(`status=${encodeURIComponent(status)}`);
+  }
+
+  const query = params.length > 0 ? `?${params.join("&")}` : "";
+  const res = await fetch(`${FUNCTIONS_BASE}/inventory-search${query}`, {
+    headers: await edgeFunctionHeaders(),
+  });
+  let json: unknown;
+  try {
+    json = await res.json();
+  } catch {
+    return { ok: false, error: "APIからJSON以外の応答が返りました。" };
+  }
+
+  if (!res.ok) {
+    return { ok: false, error: parseError(json) };
+  }
+
+  if (!isRecord(json) || json.ok !== true || !Array.isArray(json.pallets)) {
+    return { ok: false, error: "在庫照会結果の形式が不正です。" };
+  }
+
+  return { ok: true, pallets: json.pallets.filter(isPalletSearchRow) };
 }
 
 export async function getPalletDetail(

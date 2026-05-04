@@ -377,6 +377,9 @@ verify_jwt = false
 [functions.warehouse-locations-unregistered]
 verify_jwt = false
 
+[functions.inventory-search]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

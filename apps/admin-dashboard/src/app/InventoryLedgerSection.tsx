@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import {
   getUnregisteredWarehouseLocations,
-  searchPallets,
+  searchInventory,
   type PalletSearchRow,
 } from "./palletSearchApi";
 
@@ -252,7 +252,7 @@ export function InventoryLedgerSection() {
     setError(null);
     try {
       const [palletResult, locationResult] = await Promise.all([
-        searchPallets({ warehouseCode: code, projectNo: project, status: "ALL" }),
+        searchInventory({ projectNo: project, status: "ALL" }),
         getUnregisteredWarehouseLocations(),
       ]);
       if (!palletResult.ok) {
