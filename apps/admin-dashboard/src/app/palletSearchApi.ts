@@ -284,11 +284,13 @@ export async function createWarehouseLocation(params: {
   locationCode: string;
   remarks?: string;
 }): Promise<WarehouseLocationMutationResponse> {
-  const res = await fetch(`${API_BASE}/warehouse-locations/create`, {
+  const res = await fetch(`${FUNCTIONS_BASE}/warehouse-location-create`, {
     method: "POST",
-    headers: await adminApiHeaders(true),
+    headers: {
+      ...(await edgeFunctionHeaders()),
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify({
-      warehouse_code: params.warehouseCode,
       location_code: params.locationCode,
       is_active: true,
       remarks: params.remarks?.trim() || undefined,
