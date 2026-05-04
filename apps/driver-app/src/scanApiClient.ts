@@ -75,6 +75,11 @@ export type InventoryMovePayload = {
   warehouse_code: string;
   from_location_code: string;
   to_location_code: string;
+  inventory_type?: string;
+  project_no?: string;
+  mrp_key?: string;
+  quantity_unit?: string;
+  operator_id?: string;
   operator_name?: string;
   remarks?: string;
   idempotency_key: string;
@@ -532,7 +537,7 @@ export async function postInventoryMove(
   | { ok: true; status: 200; data: InventoryMoveSuccessBody }
   | { ok: false; error: ScanApiError }
 > {
-  const base = getScanApiBaseUrl();
+  const base = getSupabaseFunctionsBaseUrl();
   const timeoutMs = options?.timeoutMs ?? 10_000;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
@@ -540,7 +545,7 @@ export async function postInventoryMove(
     linkAbort(options.signal, controller);
   }
 
-  const url = `${base}/inventory/move`;
+  const url = `${base}/inventory-move`;
   console.log("[MOVE API] URL:", url);
   console.log("[MOVE API] BODY:", body);
   options?.onDebug?.(`[MOVE API] URL: ${url}`);
@@ -550,8 +555,20 @@ export async function postInventoryMove(
   try {
     res = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json", ...(await scanAuthHeaders()) },
-      body: JSON.stringify(body),
+      headers: await edgeFunctionHeaders(true),
+      body: JSON.stringify({
+        part_no: body.part_no,
+        quantity: body.quantity,
+        from_location_code: body.from_location_code,
+        to_location_code: body.to_location_code,
+        inventory_type: body.inventory_type,
+        project_no: body.project_no,
+        mrp_key: body.mrp_key,
+        quantity_unit: body.quantity_unit,
+        operator_name: body.operator_name,
+        remarks: body.remarks,
+        idempotency_key: body.idempotency_key,
+      }),
       signal: controller.signal,
     });
     console.log("[MOVE API] RESPONSE STATUS:", res.status);
