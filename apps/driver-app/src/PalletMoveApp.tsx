@@ -1,9 +1,11 @@
 import { useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import {
   checkWarehouseLocation,
+  getPalletMoveLookup,
   getStoredWarehouseCode,
   postPalletMove,
   setStoredWarehouseCode,
+  type PalletMoveLookupSuccessBody,
   type PalletMoveSuccessBody,
   type ScanApiError,
 } from "./scanApiClient.js";
@@ -13,7 +15,6 @@ type ReaderTarget = "pallet_code" | "to_location_code";
 type PalletMoveFields = {
   pallet_code: string;
   to_location_code: string;
-  project_no: string;
   operator_name: string;
   remarks: string;
 };
@@ -21,7 +22,6 @@ type PalletMoveFields = {
 const initialFields: PalletMoveFields = {
   pallet_code: "",
   to_location_code: "",
-  project_no: "",
   operator_name: "",
   remarks: "",
 };
@@ -121,9 +121,29 @@ export function PalletMoveApp() {
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<PalletMoveSuccessBody | null>(null);
   const [error, setError] = useState<ScanApiError | null>(null);
+  const [palletLookup, setPalletLookup] = useState<PalletMoveLookupSuccessBody["pallet"] | null>(
+    null
+  );
+  const [palletLookupError, setPalletLookupError] = useState<string | null>(null);
   const [unregisteredLocationWarning, setUnregisteredLocationWarning] = useState<string | null>(
     null
   );
+
+  async function loadPalletLookup(rawPalletCode: string) {
+    const palletCode = normalizeCode39(rawPalletCode);
+    setPalletLookup(null);
+    setPalletLookupError(null);
+    if (!palletCode || !isValidCode39Value(palletCode)) return null;
+
+    const lookup = await getPalletMoveLookup(palletCode);
+    if (lookup.ok) {
+      setPalletLookup(lookup.data.pallet);
+      return lookup.data.pallet;
+    }
+
+    setPalletLookupError(lookup.error.message);
+    return null;
+  }
 
   function applyReaderValue() {
     if (!readerValue.trim()) return;
@@ -139,6 +159,9 @@ export function PalletMoveApp() {
     }
 
     setFields((f) => ({ ...f, [readerTarget]: normalized }));
+    if (readerTarget === "pallet_code") {
+      void loadPalletLookup(normalized);
+    }
     setReaderMessage(`${readerTargetLabel(readerTarget)} ${normalized} を反映しました。`);
     setReaderValue("");
     setReaderTarget((target) =>
@@ -159,7 +182,6 @@ export function PalletMoveApp() {
     const palletCode = normalizeCode39(fields.pallet_code);
     const toLocationCode = normalizeCode39(fields.to_location_code);
     const warehouseCode = setStoredWarehouseCode(warehouseCodeDraft);
-    const projectNo = trimOrUndefined(fields.project_no);
 
     setResult(null);
     setError(null);
@@ -181,6 +203,9 @@ export function PalletMoveApp() {
       return;
     }
 
+    const currentPallet =
+      palletLookup?.pallet_code === palletCode ? palletLookup : await loadPalletLookup(palletCode);
+
     if (!confirmedUnregisteredLocation) {
       setUnregisteredLocationWarning(null);
       const locationCheck = await checkWarehouseLocation({
@@ -197,7 +222,6 @@ export function PalletMoveApp() {
       ...f,
       pallet_code: palletCode,
       to_location_code: toLocationCode,
-      project_no: fields.project_no,
     }));
     setUnregisteredLocationWarning(null);
     setSubmitting(true);
@@ -207,8 +231,7 @@ export function PalletMoveApp() {
         {
           pallet_code: palletCode,
           to_location_code: toLocationCode,
-          warehouse_code: warehouseCode,
-          project_no: projectNo,
+          from_location_code: currentPallet?.current_location_code ?? null,
           operator_name: trimOrUndefined(fields.operator_name),
           remarks: trimOrUndefined(fields.remarks),
           idempotency_key: createClientIdempotencyKey("pallet-move"),
@@ -221,9 +244,10 @@ export function PalletMoveApp() {
         setResult(res.data);
         setFields((f) => ({
           ...initialFields,
-          project_no: f.project_no,
           operator_name: f.operator_name,
         }));
+        setPalletLookup(null);
+        setPalletLookupError(null);
         setReaderValue("");
         setReaderMessage(null);
         setReaderTarget("pallet_code");
@@ -307,12 +331,29 @@ export function PalletMoveApp() {
             <input
               className="input large"
               value={fields.pallet_code}
-              onChange={(e) => setFields((f) => ({ ...f, pallet_code: e.target.value }))}
+              onChange={(e) => {
+                setPalletLookup(null);
+                setPalletLookupError(null);
+                setFields((f) => ({ ...f, pallet_code: e.target.value }));
+              }}
+              onBlur={(e) => void loadPalletLookup(e.target.value)}
               disabled={submitting}
               autoComplete="off"
               autoCapitalize="characters"
             />
           </label>
+
+          <div className="field">
+            <span className="label">パレット情報</span>
+            <div className="muted small">
+              project_no: {palletLookup?.project_no ?? "-"}
+              <br />
+              現在棚番: {palletLookup?.current_location_code ?? "-"}
+            </div>
+            {palletLookupError ? (
+              <p className="error-message small">{palletLookupError}</p>
+            ) : null}
+          </div>
 
           <label className="field">
             <span className="label">移動先棚コード *</span>
@@ -336,17 +377,6 @@ export function PalletMoveApp() {
               value={warehouseCodeDraft}
               onChange={(e) => setWarehouseCodeDraft(e.target.value)}
               onBlur={(e) => setWarehouseCodeDraft(setStoredWarehouseCode(e.target.value))}
-              disabled={submitting}
-              autoComplete="off"
-            />
-          </label>
-
-          <label className="field">
-            <span className="label">project_no</span>
-            <input
-              className="input"
-              value={fields.project_no}
-              onChange={(e) => setFields((f) => ({ ...f, project_no: e.target.value }))}
               disabled={submitting}
               autoComplete="off"
             />

@@ -192,12 +192,19 @@ export type PalletItemOutSuccessBody = {
 export type PalletMovePayload = {
   pallet_code: string;
   to_location_code: string;
-  warehouse_code: string;
-  project_no?: string;
-  operator_id?: string;
+  from_location_code?: string | null;
   operator_name?: string;
   remarks?: string;
   idempotency_key: string;
+};
+
+export type PalletMoveLookupSuccessBody = {
+  ok: true;
+  pallet: {
+    pallet_code: string;
+    project_no: string | null;
+    current_location_code: string | null;
+  };
 };
 
 export type PalletMoveSuccessBody = {
@@ -1222,6 +1229,62 @@ function isPalletItemOutSuccessBody(v: unknown): v is PalletItemOutSuccessBody {
   return true;
 }
 
+export async function getPalletMoveLookup(
+  palletCode: string
+): Promise<
+  | { ok: true; data: PalletMoveLookupSuccessBody }
+  | { ok: false; error: ScanApiError }
+> {
+  const client = getSupabaseBrowserClient();
+  if (!client) {
+    return {
+      ok: false,
+      error: {
+        kind: "unknown",
+        message: "Supabase の接続設定がありません。",
+      },
+    };
+  }
+
+  const { data, error } = await client
+    .from("pallet_units")
+    .select("pallet_code, project_no, current_location_code")
+    .eq("pallet_code", palletCode)
+    .maybeSingle<{
+      pallet_code: string;
+      project_no: string | null;
+      current_location_code: string | null;
+    }>();
+
+  if (error) {
+    return {
+      ok: false,
+      error: {
+        kind: "server",
+        message: error.message,
+      },
+    };
+  }
+
+  if (!data) {
+    return {
+      ok: false,
+      error: {
+        kind: "validation",
+        message: "pallet_code が見つかりません。",
+      },
+    };
+  }
+
+  return {
+    ok: true,
+    data: {
+      ok: true,
+      pallet: data,
+    },
+  };
+}
+
 export async function postPalletMove(
   body: PalletMovePayload,
   options?: { signal?: AbortSignal; timeoutMs?: number }
@@ -1229,7 +1292,7 @@ export async function postPalletMove(
   | { ok: true; status: 200; data: PalletMoveSuccessBody }
   | { ok: false; error: ScanApiError }
 > {
-  const base = getScanApiBaseUrl();
+  const base = getSupabaseFunctionsBaseUrl();
   const timeoutMs = options?.timeoutMs ?? 10_000;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
@@ -1239,10 +1302,17 @@ export async function postPalletMove(
 
   let res: Response;
   try {
-    res = await fetch(`${base}/pallets/move`, {
+    res = await fetch(`${base}/pallets-move`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", ...(await scanAuthHeaders()) },
-      body: JSON.stringify(body),
+      headers: await edgeFunctionHeaders(true),
+      body: JSON.stringify({
+        pallet_code: body.pallet_code,
+        to_location_code: body.to_location_code,
+        from_location_code: body.from_location_code,
+        operator_name: body.operator_name,
+        remarks: body.remarks,
+        idempotency_key: body.idempotency_key,
+      }),
       signal: controller.signal,
     });
   } catch (e) {
