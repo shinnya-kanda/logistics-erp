@@ -1,7 +1,7 @@
 import { PalletOutApp } from "../PalletOutApp.js";
 import { PageShell } from "./PageShell.js";
 
-export function InventoryOutPage() {
+export function PalletOutPage() {
   return (
     <PageShell>
       <PalletOutApp />

@@ -29,8 +29,13 @@ const menuItems: {
     allowedRoles: ["worker", "chief", "admin"],
   },
   {
-    label: "出庫",
-    path: "/inventory/out",
+    label: "パレット出庫",
+    path: "/pallet/out",
+    allowedRoles: ["worker", "chief", "admin"],
+  },
+  {
+    label: "品番単位出庫",
+    path: "/pallet/items/out",
     allowedRoles: ["worker", "chief", "admin"],
   },
   {

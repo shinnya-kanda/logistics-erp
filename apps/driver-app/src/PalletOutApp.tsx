@@ -1,22 +1,22 @@
 import { useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import {
+  getPalletMoveLookup,
   getStoredWarehouseCode,
   postPalletOut,
   setStoredWarehouseCode,
+  type PalletMoveLookupSuccessBody,
   type PalletOutSuccessBody,
   type ScanApiError,
 } from "./scanApiClient.js";
 
 type PalletOutFields = {
   pallet_code: string;
-  project_no: string;
   operator_name: string;
   remarks: string;
 };
 
 const initialFields: PalletOutFields = {
   pallet_code: "",
-  project_no: "",
   operator_name: "",
   remarks: "",
 };
@@ -104,6 +104,26 @@ export function PalletOutApp() {
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<PalletOutSuccessBody | null>(null);
   const [error, setError] = useState<ScanApiError | null>(null);
+  const [palletLookup, setPalletLookup] = useState<PalletMoveLookupSuccessBody["pallet"] | null>(
+    null
+  );
+  const [palletLookupError, setPalletLookupError] = useState<string | null>(null);
+
+  async function loadPalletLookup(rawPalletCode: string) {
+    const palletCode = normalizeCode39(rawPalletCode);
+    setPalletLookup(null);
+    setPalletLookupError(null);
+    if (!palletCode || !isValidPalletCode(palletCode)) return null;
+
+    const lookup = await getPalletMoveLookup(palletCode);
+    if (lookup.ok) {
+      setPalletLookup(lookup.data.pallet);
+      return lookup.data.pallet;
+    }
+
+    setPalletLookupError(lookup.error.message);
+    return null;
+  }
 
   function applyReaderValue() {
     if (!readerValue.trim()) return;
@@ -118,6 +138,7 @@ export function PalletOutApp() {
     }
 
     setFields((f) => ({ ...f, pallet_code: palletCode }));
+    void loadPalletLookup(palletCode);
     setReaderMessage(`パレットコード ${palletCode} を反映しました。`);
     setReaderValue("");
     requestAnimationFrame(() => palletCodeInputRef.current?.focus());
@@ -133,8 +154,7 @@ export function PalletOutApp() {
     if (submitting) return;
 
     const palletCode = normalizeCode39(fields.pallet_code);
-    const warehouseCode = setStoredWarehouseCode(warehouseCodeDraft);
-    const projectNo = trimOrUndefined(fields.project_no);
+    setStoredWarehouseCode(warehouseCodeDraft);
 
     setResult(null);
     setError(null);
@@ -151,7 +171,6 @@ export function PalletOutApp() {
     setFields((f) => ({
       ...f,
       pallet_code: palletCode,
-      project_no: fields.project_no,
     }));
     setSubmitting(true);
 
@@ -159,8 +178,6 @@ export function PalletOutApp() {
       const res = await postPalletOut(
         {
           pallet_code: palletCode,
-          warehouse_code: warehouseCode,
-          project_no: projectNo,
           operator_name: trimOrUndefined(fields.operator_name),
           remarks: trimOrUndefined(fields.remarks),
           idempotency_key: createClientIdempotencyKey("pallet-out"),
@@ -173,9 +190,10 @@ export function PalletOutApp() {
         setResult(res.data);
         setFields((f) => ({
           ...initialFields,
-          project_no: f.project_no,
           operator_name: f.operator_name,
         }));
+        setPalletLookup(null);
+        setPalletLookupError(null);
         setReaderValue("");
         setReaderMessage(null);
         requestAnimationFrame(() => palletCodeInputRef.current?.focus());
@@ -242,12 +260,29 @@ export function PalletOutApp() {
             <input
               className="input large"
               value={fields.pallet_code}
-              onChange={(e) => setFields((f) => ({ ...f, pallet_code: e.target.value }))}
+              onChange={(e) => {
+                setPalletLookup(null);
+                setPalletLookupError(null);
+                setFields((f) => ({ ...f, pallet_code: e.target.value }));
+              }}
+              onBlur={(e) => void loadPalletLookup(e.target.value)}
               disabled={submitting}
               autoComplete="off"
               autoCapitalize="characters"
             />
           </label>
+
+          <div className="field">
+            <span className="label">パレット情報</span>
+            <div className="muted small">
+              project_no: {palletLookup?.project_no ?? "-"}
+              <br />
+              現在棚番: {palletLookup?.current_location_code ?? "-"}
+            </div>
+            {palletLookupError ? (
+              <p className="error-message small">{palletLookupError}</p>
+            ) : null}
+          </div>
 
           <label className="field">
             <span className="label">倉庫コード設定（固定）</span>
@@ -256,17 +291,6 @@ export function PalletOutApp() {
               value={warehouseCodeDraft}
               onChange={(e) => setWarehouseCodeDraft(e.target.value)}
               onBlur={(e) => setWarehouseCodeDraft(setStoredWarehouseCode(e.target.value))}
-              disabled={submitting}
-              autoComplete="off"
-            />
-          </label>
-
-          <label className="field">
-            <span className="label">project_no</span>
-            <input
-              className="input"
-              value={fields.project_no}
-              onChange={(e) => setFields((f) => ({ ...f, project_no: e.target.value }))}
               disabled={submitting}
               autoComplete="off"
             />

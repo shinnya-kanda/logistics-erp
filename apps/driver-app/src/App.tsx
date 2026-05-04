@@ -5,11 +5,12 @@ import { ProtectedRoute, type Role } from "./auth/ProtectedRoute.js";
 import { getSupabaseBrowserClient } from "./lib/supabaseClient.js";
 import { InventoryInPage } from "./pages/InventoryInPage.js";
 import { InventoryMovePage } from "./pages/InventoryMovePage.js";
-import { InventoryOutPage } from "./pages/InventoryOutPage.js";
 import { LoginPage } from "./pages/LoginPage.js";
 import { MenuPage } from "./pages/MenuPage.js";
 import { PalletItemAddPage } from "./pages/PalletItemAddPage.js";
+import { PalletItemOutPage } from "./pages/PalletItemOutPage.js";
 import { PalletMovePage } from "./pages/PalletMovePage.js";
+import { PalletOutPage } from "./pages/PalletOutPage.js";
 import { ScannerPage } from "./pages/ScannerPage.js";
 
 function SessionLoadingScreen() {
@@ -83,7 +84,7 @@ function AppRoutes() {
         path="/inventory/out"
         element={
           <ProtectedRoute allowedRoles={rolesField}>
-            <InventoryOutPage />
+            <Navigate replace to="/pallet/out" />
           </ProtectedRoute>
         }
       />
@@ -108,6 +109,22 @@ function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={rolesField}>
             <PalletMovePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pallet/out"
+        element={
+          <ProtectedRoute allowedRoles={rolesField}>
+            <PalletOutPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pallet/items/out"
+        element={
+          <ProtectedRoute allowedRoles={rolesField}>
+            <PalletItemOutPage />
           </ProtectedRoute>
         }
       />

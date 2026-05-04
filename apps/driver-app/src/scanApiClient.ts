@@ -214,9 +214,6 @@ export type PalletMoveSuccessBody = {
 
 export type PalletOutPayload = {
   pallet_code: string;
-  warehouse_code: string;
-  project_no?: string;
-  operator_id?: string;
   operator_name?: string;
   remarks?: string;
   idempotency_key: string;
@@ -1399,7 +1396,7 @@ export async function postPalletOut(
   | { ok: true; status: 200; data: PalletOutSuccessBody }
   | { ok: false; error: ScanApiError }
 > {
-  const base = getScanApiBaseUrl();
+  const base = getSupabaseFunctionsBaseUrl();
   const timeoutMs = options?.timeoutMs ?? 10_000;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
@@ -1409,10 +1406,15 @@ export async function postPalletOut(
 
   let res: Response;
   try {
-    res = await fetch(`${base}/pallets/out`, {
+    res = await fetch(`${base}/pallets-out`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", ...(await scanAuthHeaders()) },
-      body: JSON.stringify(body),
+      headers: await edgeFunctionHeaders(true),
+      body: JSON.stringify({
+        pallet_code: body.pallet_code,
+        operator_name: body.operator_name,
+        remarks: body.remarks,
+        idempotency_key: body.idempotency_key,
+      }),
       signal: controller.signal,
     });
   } catch (e) {
