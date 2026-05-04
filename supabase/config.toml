@@ -389,6 +389,9 @@ verify_jwt = true
 [functions.pallet-item-add]
 verify_jwt = true
 
+[functions.inventory-in]
+verify_jwt = true
+
 [analytics]
 enabled = true
 port = 54327
