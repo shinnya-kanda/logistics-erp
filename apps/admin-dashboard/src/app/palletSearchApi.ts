@@ -44,6 +44,10 @@ type WarehouseLocationSearchResponse =
   | { ok: true; locations: WarehouseLocationRow[] }
   | { ok: false; error: string };
 
+type EdgeLocationSearchResponse =
+  | { ok: true; items: unknown[] }
+  | { ok: false; error: string };
+
 type WarehouseLocationMutationResponse =
   | { ok: true; location: WarehouseLocationRow; created?: boolean }
   | { ok: false; error: string };
@@ -111,6 +115,9 @@ type PalletSearchParams = {
 };
 
 const API_BASE = "/api/scan";
+const FUNCTIONS_BASE =
+  process.env.NEXT_PUBLIC_SUPABASE_FUNCTIONS_URL?.replace(/\/$/, "") ??
+  "http://localhost:54321/functions/v1";
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return v !== null && typeof v === "object" && !Array.isArray(v);
@@ -218,22 +225,12 @@ export async function searchWarehouseLocations(params: {
   isActive?: "ALL" | "ACTIVE" | "INACTIVE";
 }): Promise<WarehouseLocationSearchResponse> {
   const searchParams = new URLSearchParams();
-  const warehouseCode = params.warehouseCode?.trim();
   const locationCode = params.locationCode?.trim();
-  if (warehouseCode) {
-    searchParams.set("warehouse_code", warehouseCode);
-  }
   if (locationCode) {
-    searchParams.set("location_code", locationCode);
-  }
-  if (params.isActive === "ACTIVE") {
-    searchParams.set("is_active", "true");
-  }
-  if (params.isActive === "INACTIVE") {
-    searchParams.set("is_active", "false");
+    searchParams.set("q", locationCode);
   }
 
-  const res = await fetch(`${API_BASE}/warehouse-locations/search?${searchParams.toString()}`, {
+  const res = await fetch(`${FUNCTIONS_BASE}/location-search?${searchParams.toString()}`, {
     headers: await adminApiHeaders(),
   });
   let json: unknown;
@@ -247,11 +244,24 @@ export async function searchWarehouseLocations(params: {
     return { ok: false, error: parseError(json) };
   }
 
-  if (!isRecord(json) || json.ok !== true || !Array.isArray(json.locations)) {
+  if (!isRecord(json) || json.ok !== true || !Array.isArray(json.items)) {
     return { ok: false, error: "棚番マスタ検索結果の形式が不正です。" };
   }
 
-  return { ok: true, locations: json.locations.filter(isWarehouseLocationRow) };
+  const edgeJson = json as EdgeLocationSearchResponse;
+  if (!edgeJson.ok) {
+    return { ok: false, error: edgeJson.error };
+  }
+
+  let locations = edgeJson.items.filter(isWarehouseLocationRow);
+  if (params.isActive === "ACTIVE") {
+    locations = locations.filter((row) => row.is_active);
+  }
+  if (params.isActive === "INACTIVE") {
+    locations = locations.filter((row) => !row.is_active);
+  }
+
+  return { ok: true, locations };
 }
 
 export async function createWarehouseLocation(params: {
