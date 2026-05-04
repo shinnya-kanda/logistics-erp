@@ -371,20 +371,15 @@ export async function getEmptyPallets(params: {
 }
 
 export async function searchPallets({
-  warehouseCode,
   projectNo,
   status = "ALL",
   partNo,
   palletCode,
 }: PalletSearchParams): Promise<PalletSearchResponse> {
   const params: string[] = [];
-  const trimmedWarehouseCode = warehouseCode?.trim();
   const trimmedProjectNo = projectNo?.trim();
   const trimmedPartNo = partNo?.trim();
   const trimmedPalletCode = palletCode?.trim();
-  if (trimmedWarehouseCode) {
-    params.push(`warehouse_code=${encodeURIComponent(trimmedWarehouseCode)}`);
-  }
   if (trimmedProjectNo) {
     params.push(`project_no=${encodeURIComponent(trimmedProjectNo)}`);
   }
@@ -398,8 +393,9 @@ export async function searchPallets({
     params.push(`pallet_code=${encodeURIComponent(trimmedPalletCode)}`);
   }
 
-  const res = await fetch(`${API_BASE}/pallets/search?${params.join("&")}`, {
-    headers: await adminApiHeaders(),
+  const query = params.length > 0 ? `?${params.join("&")}` : "";
+  const res = await fetch(`${FUNCTIONS_BASE}/pallet-search${query}`, {
+    headers: await edgeFunctionHeaders(),
   });
   let json: unknown;
   try {
