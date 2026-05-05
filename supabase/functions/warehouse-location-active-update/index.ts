@@ -99,39 +99,34 @@ serve(async (req) => {
       return jsonResponse({ ok: false, error: "internal_error" }, 500);
     }
 
-    const selectColumns =
-      "id, warehouse_code, location_code, is_active, remarks, updated_at";
+    const { data: result, error: rpcError } = await supabase.rpc(
+      "update_warehouse_location_active_with_history",
+      {
+        p_warehouse_code: guard.warehouseCode,
+        p_location_code: locationCode,
+        p_is_active: isActive,
+        p_operator_id: guard.user.id,
+        p_operator_role: guard.role,
+      }
+    );
 
-    const { data: existing, error: existingError } = await supabase
-      .from("warehouse_locations")
-      .select("id")
-      .eq("warehouse_code", guard.warehouseCode)
-      .eq("location_code", locationCode)
-      .maybeSingle<{ id: string }>();
-
-    if (existingError) {
-      return jsonResponse({ ok: false, error: "failed to update warehouse location active" }, 500);
-    }
-    if (!existing) {
-      return jsonResponse({ ok: false, error: "location_not_found" }, 404);
-    }
-
-    const { data: updated, error: updateError } = await supabase
-      .from("warehouse_locations")
-      .update({
-        is_active: isActive,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("warehouse_code", guard.warehouseCode)
-      .eq("location_code", locationCode)
-      .select(selectColumns)
-      .single<WarehouseLocationRow>();
-
-    if (updateError) {
+    if (rpcError || !isRecord(result)) {
       return jsonResponse({ ok: false, error: "failed to update warehouse location active" }, 500);
     }
 
-    return jsonResponse({ ok: true, location: updated });
+    if (result.ok !== true) {
+      const error = typeof result.error === "string"
+        ? result.error
+        : "failed to update warehouse location active";
+      const status = error === "location_not_found" ? 404 : 500;
+      return jsonResponse({ ok: false, error }, status);
+    }
+
+    if (!isRecord(result.location)) {
+      return jsonResponse({ ok: false, error: "failed to update warehouse location active" }, 500);
+    }
+
+    return jsonResponse({ ok: true, location: result.location as WarehouseLocationRow });
   } catch {
     return jsonResponse({ ok: false, error: "internal_error" }, 500);
   }
