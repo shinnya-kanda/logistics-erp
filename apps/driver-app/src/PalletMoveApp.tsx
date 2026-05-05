@@ -181,7 +181,7 @@ export function PalletMoveApp() {
 
     const palletCode = normalizeCode39(fields.pallet_code);
     const toLocationCode = normalizeCode39(fields.to_location_code);
-    const warehouseCode = setStoredWarehouseCode(warehouseCodeDraft);
+    setStoredWarehouseCode(warehouseCodeDraft);
 
     setResult(null);
     setError(null);
@@ -209,10 +209,9 @@ export function PalletMoveApp() {
     if (!confirmedUnregisteredLocation) {
       setUnregisteredLocationWarning(null);
       const locationCheck = await checkWarehouseLocation({
-        warehouseCode,
         locationCode: toLocationCode,
       });
-      if (locationCheck.ok && locationCheck.data.is_unregistered_location) {
+      if (locationCheck.ok && !locationCheck.data.exists) {
         setUnregisteredLocationWarning(toLocationCode);
         return;
       }

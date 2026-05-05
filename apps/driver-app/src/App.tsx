@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider, useAuth } from "./auth/AuthProvider.js";
 import { ProtectedRoute, type Role } from "./auth/ProtectedRoute.js";
 import { getSupabaseBrowserClient } from "./lib/supabaseClient.js";
+import { EmptyPalletSearchPage } from "./pages/EmptyPalletSearchPage.js";
 import { InventoryInPage } from "./pages/InventoryInPage.js";
 import { InventoryMovePage } from "./pages/InventoryMovePage.js";
 import { LoginPage } from "./pages/LoginPage.js";
@@ -11,6 +12,8 @@ import { PalletItemAddPage } from "./pages/PalletItemAddPage.js";
 import { PalletItemOutPage } from "./pages/PalletItemOutPage.js";
 import { PalletMovePage } from "./pages/PalletMovePage.js";
 import { PalletOutPage } from "./pages/PalletOutPage.js";
+import { PartLocationSearchPage } from "./pages/PartLocationSearchPage.js";
+import { ScannerMenuPage } from "./pages/ScannerMenuPage.js";
 import { ScannerPage } from "./pages/ScannerPage.js";
 
 function SessionLoadingScreen() {
@@ -125,6 +128,30 @@ function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={rolesField}>
             <PalletItemOutPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/scanner-menu"
+        element={
+          <ProtectedRoute allowedRoles={rolesScanner}>
+            <ScannerMenuPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/scanner/part-location"
+        element={
+          <ProtectedRoute allowedRoles={rolesScanner}>
+            <PartLocationSearchPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/scanner/empty-pallets"
+        element={
+          <ProtectedRoute allowedRoles={rolesScanner}>
+            <EmptyPalletSearchPage />
           </ProtectedRoute>
         }
       />

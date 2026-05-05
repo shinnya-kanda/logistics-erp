@@ -240,6 +240,7 @@ export type PalletSearchRow = {
   pallet_id: string;
   pallet_code: string;
   warehouse_code: string;
+  project_no?: string | null;
   current_location_code: string | null;
   current_status: string | null;
   part_no: string | null;
@@ -270,10 +271,9 @@ export type EmptyPalletsSuccessBody = {
 
 export type WarehouseLocationCheckSuccessBody = {
   ok: true;
-  warehouse_code: string;
+  exists: boolean;
   location_code: string;
-  is_registered_location: boolean;
-  is_unregistered_location: boolean;
+  active?: boolean;
 };
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -466,13 +466,13 @@ export async function getHealth(options?: {
 }
 
 export async function checkWarehouseLocation(
-  params: { warehouseCode: string; locationCode: string },
+  params: { locationCode: string },
   options?: { signal?: AbortSignal; timeoutMs?: number }
 ): Promise<
   | { ok: true; status: 200; data: WarehouseLocationCheckSuccessBody }
   | { ok: false; error: ScanApiError }
 > {
-  const base = getScanApiBaseUrl();
+  const base = getSupabaseFunctionsBaseUrl();
   const timeoutMs = options?.timeoutMs ?? 8_000;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
@@ -480,16 +480,13 @@ export async function checkWarehouseLocation(
     linkAbort(options.signal, controller);
   }
 
-  const query = new URLSearchParams({
-    warehouse_code: params.warehouseCode,
-    location_code: params.locationCode,
-  });
+  const query = new URLSearchParams({ location_code: params.locationCode });
 
   let res: Response;
   try {
-    res = await fetch(`${base}/warehouse-locations/check?${query.toString()}`, {
+    res = await fetch(`${base}/warehouse-location-check?${query.toString()}`, {
       method: "GET",
-      headers: { ...(await scanAuthHeaders()) },
+      headers: await edgeFunctionHeaders(),
       signal: controller.signal,
     });
   } catch (e) {
@@ -529,7 +526,14 @@ export async function checkWarehouseLocation(
 
   if (res.status === 200) {
     if (isWarehouseLocationCheckSuccessBody(json)) {
-      return { ok: true, status: 200, data: json };
+      return {
+        ok: true,
+        status: 200,
+        data: {
+          ...json,
+          location_code: json.location_code || params.locationCode,
+        },
+      };
     }
     return {
       ok: false,
@@ -555,10 +559,9 @@ function isWarehouseLocationCheckSuccessBody(v: unknown): v is WarehouseLocation
   if (!isRecord(v)) return false;
   return (
     v.ok === true &&
-    typeof v.warehouse_code === "string" &&
-    typeof v.location_code === "string" &&
-    typeof v.is_registered_location === "boolean" &&
-    typeof v.is_unregistered_location === "boolean"
+    typeof v.exists === "boolean" &&
+    (v.location_code === undefined || typeof v.location_code === "string") &&
+    (v.active === undefined || typeof v.active === "boolean")
   );
 }
 

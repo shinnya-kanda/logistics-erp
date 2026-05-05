@@ -92,6 +92,7 @@ export function PartLocationSearchApp() {
   const [searchedPartNo, setSearchedPartNo] = useState("");
   const [error, setError] = useState<ScanApiError | null>(null);
   const [readerMessage, setReaderMessage] = useState<string | null>(null);
+  const [candidateModalOpen, setCandidateModalOpen] = useState(false);
 
   function focusPartInput() {
     requestAnimationFrame(() => partInputRef.current?.focus());
@@ -143,18 +144,21 @@ export function PartLocationSearchApp() {
         playSuccessBeep();
         setRows(res.data.pallets);
         setSearchedPartNo(partNo);
+        setCandidateModalOpen(res.data.pallets.length > 1);
         focusPartInput();
         return;
       }
 
       vibrateOnError();
       setRows(null);
+      setCandidateModalOpen(false);
       setError(res.error);
       focusPartInput();
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
       vibrateOnError();
       setRows(null);
+      setCandidateModalOpen(false);
       setError({ kind: "unknown", message });
       focusPartInput();
     } finally {
@@ -278,6 +282,43 @@ export function PartLocationSearchApp() {
             </div>
           )}
         </section>
+      ) : null}
+
+      {candidateModalOpen && rows && rows.length > 1 ? (
+        <div className="candidate-modal-backdrop" role="presentation">
+          <section
+            className="candidate-modal scanner-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="part-location-candidate-title"
+          >
+            <h2 id="part-location-candidate-title" className="panel-title">
+              保管候補一覧
+            </h2>
+            <p className="muted small">同じ品番が複数の場所にあります。棚・PL・PJ・数量を確認してください。</p>
+            <div className="candidate-card-list">
+              {rows.map((row, index) => (
+                <article
+                  key={`${row.pallet_id}-${row.part_no ?? "part"}-${index}`}
+                  className="candidate-card"
+                >
+                  <span className="candidate-title">候補{index + 1}</span>
+                  <span>PL: {row.pallet_code}</span>
+                  <span>PJ: {displayValue(row.project_no)}</span>
+                  <span>棚: {displayValue(row.current_location_code)}</span>
+                  <span>数量: {displayValue(row.quantity)}</span>
+                </article>
+              ))}
+            </div>
+            <button
+              type="button"
+              className="btn secondary candidate-cancel"
+              onClick={() => setCandidateModalOpen(false)}
+            >
+              OK
+            </button>
+          </section>
+        </div>
       ) : null}
     </section>
   );

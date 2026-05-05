@@ -250,12 +250,12 @@ export function InventoryMoveApp() {
     if (!confirmedUnregisteredLocation) {
       setUnregisteredLocationWarning(null);
       const checks = await Promise.all([
-        checkWarehouseLocation({ warehouseCode, locationCode: fromLocation }),
-        checkWarehouseLocation({ warehouseCode, locationCode: toLocation }),
+        checkWarehouseLocation({ locationCode: fromLocation }),
+        checkWarehouseLocation({ locationCode: toLocation }),
       ]);
       const unregisteredLocationCodes = checks
-        .filter((check) => check.ok && check.data.is_unregistered_location)
-        .map((check) => (check.ok ? check.data.location_code : ""))
+        .filter((check) => check.ok && !check.data.exists)
+        .map((check) => (check.ok ? check.data.location_code ?? "" : ""))
         .filter(Boolean);
       if (unregisteredLocationCodes.length > 0) {
         setUnregisteredLocationWarning({ locationCodes: unregisteredLocationCodes });

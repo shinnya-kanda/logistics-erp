@@ -44,8 +44,8 @@ const menuItems: {
     allowedRoles: ["worker", "chief", "admin"],
   },
   {
-    label: "スキャン画面",
-    path: "/scanner",
+    label: "スキャンメニュー",
+    path: "/scanner-menu",
     allowedRoles: ["worker", "office", "chief", "admin"],
   },
 ];
