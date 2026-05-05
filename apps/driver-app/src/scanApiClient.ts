@@ -169,15 +169,21 @@ export type PalletItemAddSuccessBody = {
 };
 
 export type PalletItemOutPayload = {
-  pallet_code: string;
+  pallet_code?: string;
   part_no: string;
   quantity: number;
-  warehouse_code: string;
-  project_no?: string;
-  operator_id?: string;
+  selected_pallet_item_id?: string;
   operator_name?: string;
   remarks?: string;
   idempotency_key: string;
+};
+
+export type PalletItemOutCandidate = {
+  pallet_item_id: string;
+  pallet_code: string;
+  project_no: string | null;
+  location_code: string | null;
+  quantity: string | number;
 };
 
 export type PalletItemOutSuccessBody = {
@@ -187,6 +193,12 @@ export type PalletItemOutSuccessBody = {
   quantity_out?: string | number;
   remaining_quantity?: string | number;
   idempotency_hit?: boolean;
+};
+
+export type PalletItemOutSelectionBody = {
+  ok: false;
+  requires_selection: true;
+  candidates: PalletItemOutCandidate[];
 };
 
 export type PalletMovePayload = {
@@ -1131,9 +1143,10 @@ export async function postPalletItemOut(
   options?: { signal?: AbortSignal; timeoutMs?: number }
 ): Promise<
   | { ok: true; status: 200; data: PalletItemOutSuccessBody }
+  | { ok: false; requiresSelection: true; status: 200; data: PalletItemOutSelectionBody }
   | { ok: false; error: ScanApiError }
 > {
-  const base = getScanApiBaseUrl();
+  const base = getSupabaseFunctionsBaseUrl();
   const timeoutMs = options?.timeoutMs ?? 10_000;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
@@ -1143,10 +1156,18 @@ export async function postPalletItemOut(
 
   let res: Response;
   try {
-    res = await fetch(`${base}/pallets/items/out`, {
+    res = await fetch(`${base}/pallets-items-out`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", ...(await scanAuthHeaders()) },
-      body: JSON.stringify(body),
+      headers: await edgeFunctionHeaders(true),
+      body: JSON.stringify({
+        pallet_code: body.pallet_code,
+        part_no: body.part_no,
+        quantity: body.quantity,
+        selected_pallet_item_id: body.selected_pallet_item_id,
+        operator_name: body.operator_name,
+        remarks: body.remarks,
+        idempotency_key: body.idempotency_key,
+      }),
       signal: controller.signal,
     });
   } catch (e) {
@@ -1185,6 +1206,9 @@ export async function postPalletItemOut(
   }
 
   if (res.status === 200) {
+    if (isPalletItemOutSelectionBody(json)) {
+      return { ok: false, requiresSelection: true, status: 200, data: json };
+    }
     if (isPalletItemOutSuccessBody(json)) {
       return { ok: true, status: 200, data: json };
     }
@@ -1224,6 +1248,22 @@ function isPalletItemOutSuccessBody(v: unknown): v is PalletItemOutSuccessBody {
   if (v.ok !== true) return false;
   if (!isRecord(v.transaction)) return false;
   return true;
+}
+
+function isPalletItemOutSelectionBody(v: unknown): v is PalletItemOutSelectionBody {
+  if (!isRecord(v)) return false;
+  if (v.ok !== false) return false;
+  if (v.requires_selection !== true) return false;
+  if (!Array.isArray(v.candidates)) return false;
+  return v.candidates.every((candidate) => {
+    if (!isRecord(candidate)) return false;
+    if (typeof candidate.pallet_item_id !== "string") return false;
+    if (typeof candidate.pallet_code !== "string") return false;
+    if (candidate.project_no !== null && typeof candidate.project_no !== "string") return false;
+    if (candidate.location_code !== null && typeof candidate.location_code !== "string") return false;
+    if (typeof candidate.quantity !== "string" && typeof candidate.quantity !== "number") return false;
+    return true;
+  });
 }
 
 export async function getPalletMoveLookup(
