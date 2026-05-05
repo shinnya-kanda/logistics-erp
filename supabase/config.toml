@@ -383,6 +383,9 @@ verify_jwt = false
 [functions.warehouse-location-create]
 verify_jwt = true
 
+[functions.warehouse-location-active-update]
+verify_jwt = true
+
 [functions.pallet-create]
 verify_jwt = true
 

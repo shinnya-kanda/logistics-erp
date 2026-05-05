@@ -217,7 +217,7 @@ export function WarehouseLocationSection() {
     setMessage(null);
     try {
       const result = await updateWarehouseLocationActive({
-        id: row.id,
+        locationCode: row.location_code,
         isActive: !row.is_active,
       });
       if (!result.ok) {

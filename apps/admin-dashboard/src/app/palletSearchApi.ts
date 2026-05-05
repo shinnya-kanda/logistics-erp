@@ -328,14 +328,17 @@ export async function createWarehouseLocation(params: {
 }
 
 export async function updateWarehouseLocationActive(params: {
-  id: string;
+  locationCode: string;
   isActive: boolean;
 }): Promise<WarehouseLocationMutationResponse> {
-  const res = await fetch(`${API_BASE}/warehouse-locations/active/update`, {
+  const res = await fetch(`${FUNCTIONS_BASE}/warehouse-location-active-update`, {
     method: "POST",
-    headers: await adminApiHeaders(true),
+    headers: {
+      ...(await edgeFunctionHeaders()),
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify({
-      id: params.id,
+      location_code: params.locationCode,
       is_active: params.isActive,
     }),
   });
