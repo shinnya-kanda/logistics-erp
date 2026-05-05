@@ -410,6 +410,9 @@ verify_jwt = true
 [functions.warehouse-location-check]
 verify_jwt = true
 
+[functions.pallets-empty]
+verify_jwt = true
+
 [analytics]
 enabled = true
 port = 54327

@@ -1659,14 +1659,13 @@ function isPalletSearchRow(v: unknown): v is PalletSearchRow {
 }
 
 export async function getEmptyPallets(
-  warehouseCode: string,
   projectNo?: string,
   options?: { signal?: AbortSignal; timeoutMs?: number }
 ): Promise<
   | { ok: true; status: 200; data: EmptyPalletsSuccessBody }
   | { ok: false; error: ScanApiError }
 > {
-  const base = getScanApiBaseUrl();
+  const base = getSupabaseFunctionsBaseUrl();
   const timeoutMs = options?.timeoutMs ?? 10_000;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
@@ -1674,18 +1673,17 @@ export async function getEmptyPallets(
     linkAbort(options.signal, controller);
   }
 
-  const query = new URLSearchParams({
-    warehouse_code: warehouseCode,
-  });
+  const query = new URLSearchParams();
   if (projectNo?.trim()) {
     query.set("project_no", projectNo.trim());
   }
+  const queryString = query.toString();
 
   let res: Response;
   try {
-    res = await fetch(`${base}/pallets/empty?${query.toString()}`, {
+    res = await fetch(`${base}/pallets-empty${queryString ? `?${queryString}` : ""}`, {
       method: "GET",
-      headers: { ...(await scanAuthHeaders()) },
+      headers: await edgeFunctionHeaders(),
       signal: controller.signal,
     });
   } catch (e) {

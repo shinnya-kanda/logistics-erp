@@ -362,18 +362,14 @@ export async function getEmptyPallets(params: {
   projectNo?: string;
 }): Promise<EmptyPalletsResponse> {
   const searchParams = new URLSearchParams();
-  const warehouseCode = params.warehouseCode?.trim();
   const projectNo = params.projectNo?.trim();
-  if (warehouseCode) {
-    searchParams.set("warehouse_code", warehouseCode);
-  }
   if (projectNo) {
     searchParams.set("project_no", projectNo);
   }
 
   const query = searchParams.toString();
-  const res = await fetch(`${API_BASE}/pallets/empty${query ? `?${query}` : ""}`, {
-    headers: await adminApiHeaders(),
+  const res = await fetch(`${FUNCTIONS_BASE}/pallets-empty${query ? `?${query}` : ""}`, {
+    headers: await edgeFunctionHeaders(),
   });
   let json: unknown;
   try {

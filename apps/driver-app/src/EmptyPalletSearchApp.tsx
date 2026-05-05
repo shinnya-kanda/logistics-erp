@@ -65,7 +65,7 @@ export function EmptyPalletSearchApp() {
     setSubmitting(true);
 
     try {
-      const res = await getEmptyPallets(code, searchProjectNo, { timeoutMs: 10_000 });
+      const res = await getEmptyPallets(searchProjectNo, { timeoutMs: 10_000 });
       if (res.ok) {
         playSuccessBeep();
         setRows(res.data.pallets);
@@ -113,7 +113,7 @@ export function EmptyPalletSearchApp() {
           </label>
 
           <label className="field">
-            <span className="label">project_no</span>
+            <span className="label">project_no（任意）</span>
             <input
               className="input"
               value={projectNo}
@@ -121,6 +121,7 @@ export function EmptyPalletSearchApp() {
               disabled={submitting}
               autoComplete="off"
             />
+            <span className="muted small">※ 未入力でも検索可能</span>
           </label>
 
           <div className="actions">
