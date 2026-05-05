@@ -413,6 +413,9 @@ verify_jwt = true
 [functions.pallets-empty]
 verify_jwt = true
 
+[functions.pallets-detail]
+verify_jwt = true
+
 [analytics]
 enabled = true
 port = 54327

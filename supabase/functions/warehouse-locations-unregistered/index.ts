@@ -55,9 +55,6 @@ serve(async (req) => {
     if (!guard.ok) {
       return jsonResponse(guard.body, guard.status);
     }
-    if (guard.role !== "admin") {
-      return jsonResponse({ ok: false, error: "forbidden" }, 403);
-    }
 
     let supabase;
     try {

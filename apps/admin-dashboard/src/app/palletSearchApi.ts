@@ -527,10 +527,14 @@ export async function searchInventory({
 export async function getPalletDetail(
   palletCode: string
 ): Promise<PalletDetailResponse> {
-  const res = await fetch(
-    `${API_BASE}/pallets/detail?pallet_code=${encodeURIComponent(palletCode)}`,
-    { headers: await adminApiHeaders() }
-  );
+  const res = await fetch(`${FUNCTIONS_BASE}/pallets-detail`, {
+    method: "POST",
+    headers: {
+      ...(await edgeFunctionHeaders()),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ pallet_code: palletCode }),
+  });
   let json: unknown;
   try {
     json = await res.json();

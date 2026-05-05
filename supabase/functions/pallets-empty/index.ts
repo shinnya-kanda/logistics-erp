@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { requireFieldWriteRole } from "../_shared/fieldWriteGuard.ts";
+import { requireAdminRole as adminGuard } from "../_shared/adminGuard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -66,9 +66,9 @@ serve(async (req) => {
       return jsonResponse({ ok: false, error: "method_not_allowed" }, 405);
     }
 
-    const guard = await requireFieldWriteRole(req);
-    if (guard instanceof Response) {
-      return guard;
+    const guard = await adminGuard(req);
+    if (!guard.ok) {
+      return jsonResponse(guard.body, guard.status);
     }
 
     const url = new URL(req.url);

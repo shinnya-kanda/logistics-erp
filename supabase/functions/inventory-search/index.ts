@@ -67,9 +67,6 @@ serve(async (req) => {
     if (!guard.ok) {
       return jsonResponse(guard.body, guard.status);
     }
-    if (guard.role !== "admin") {
-      return jsonResponse({ ok: false, error: "forbidden" }, 403);
-    }
 
     const url = new URL(req.url);
     const projectNo = url.searchParams.get("project_no")?.trim() || null;
