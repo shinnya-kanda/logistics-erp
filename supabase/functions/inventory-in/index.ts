@@ -90,6 +90,8 @@ serve(async (req) => {
       return jsonResponse({ ok: false, error: "to_location_code is required" }, 400);
     }
 
+    const traceId = crypto.randomUUID();
+
     let supabase;
     try {
       supabase = createSupabaseClient();
@@ -112,6 +114,7 @@ serve(async (req) => {
       p_operator_id: guard.userId,
       p_operator_name: stringOrNull(body.operator_name),
       p_remarks: stringOrNull(body.remarks),
+      p_trace_id: traceId,
     });
 
     if (error) {
@@ -121,7 +124,13 @@ serve(async (req) => {
       );
     }
 
-    return jsonResponse({ ok: true, transaction: Array.isArray(rows) ? rows[0] ?? null : null });
+    const transaction = Array.isArray(rows) ? rows[0] ?? null : null;
+    const resultTraceId =
+      isRecord(transaction) && typeof transaction.trace_id === "string"
+        ? transaction.trace_id
+        : traceId;
+
+    return jsonResponse({ ok: true, transaction, trace_id: resultTraceId });
   } catch {
     return jsonResponse({ ok: false, error: "internal_error" }, 500);
   }
