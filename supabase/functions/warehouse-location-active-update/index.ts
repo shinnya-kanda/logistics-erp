@@ -92,6 +92,8 @@ serve(async (req) => {
       return jsonResponse({ ok: false, error: "is_active must be true or false" }, 400);
     }
 
+    const traceId = crypto.randomUUID();
+
     let supabase;
     try {
       supabase = createSupabaseClient();
@@ -107,6 +109,7 @@ serve(async (req) => {
         p_is_active: isActive,
         p_operator_id: guard.user.id,
         p_operator_role: guard.role,
+        p_trace_id: traceId,
       }
     );
 
@@ -126,7 +129,11 @@ serve(async (req) => {
       return jsonResponse({ ok: false, error: "failed to update warehouse location active" }, 500);
     }
 
-    return jsonResponse({ ok: true, location: result.location as WarehouseLocationRow });
+    return jsonResponse({
+      ok: true,
+      location: result.location as WarehouseLocationRow,
+      trace_id: traceId,
+    });
   } catch {
     return jsonResponse({ ok: false, error: "internal_error" }, 500);
   }
