@@ -12,6 +12,7 @@ const corsHeaders = {
 type MovePalletResult = {
   ok?: boolean;
   transaction?: Record<string, unknown>;
+  trace_id?: string;
   error?: string;
   message?: string;
   occupied_pallet_code?: string;
@@ -107,6 +108,8 @@ serve(async (req) => {
       return jsonResponse({ ok: false, error: "idempotency_key is required" }, 400);
     }
 
+    const traceId = crypto.randomUUID();
+
     let supabase;
     try {
       supabase = createSupabaseClient();
@@ -143,6 +146,7 @@ serve(async (req) => {
       p_remarks: stringOrNull(body.remarks),
       p_idempotency_key: idempotencyKey,
       p_project_no: pallet.project_no,
+      p_trace_id: traceId,
     });
 
     if (error) {
@@ -167,7 +171,10 @@ serve(async (req) => {
       );
     }
 
-    return jsonResponse(moveResult);
+    return jsonResponse({
+      ...moveResult,
+      trace_id: moveResult.trace_id ?? traceId,
+    });
   } catch {
     return jsonResponse({ ok: false, error: "internal_error" }, 500);
   }
