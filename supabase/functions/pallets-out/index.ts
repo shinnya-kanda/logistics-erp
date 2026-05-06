@@ -12,6 +12,7 @@ const corsHeaders = {
 type OutPalletResult = {
   ok?: boolean;
   transaction?: Record<string, unknown>;
+  trace_id?: string;
   error?: string;
 };
 
@@ -99,6 +100,8 @@ serve(async (req) => {
       return jsonResponse({ ok: false, error: "idempotency_key is required" }, 400);
     }
 
+    const traceId = crypto.randomUUID();
+
     let supabase;
     try {
       supabase = createSupabaseClient();
@@ -128,6 +131,7 @@ serve(async (req) => {
       p_remarks: stringOrNull(body.remarks),
       p_idempotency_key: idempotencyKey,
       p_project_no: pallet.project_no,
+      p_trace_id: traceId,
     });
 
     if (error) {
@@ -140,7 +144,10 @@ serve(async (req) => {
       return jsonResponse({ ok: false, error: errorCode }, errorStatus(outResult.error));
     }
 
-    return jsonResponse(outResult);
+    return jsonResponse({
+      ...outResult,
+      trace_id: outResult.trace_id ?? traceId,
+    });
   } catch {
     return jsonResponse({ ok: false, error: "internal_error" }, 500);
   }
