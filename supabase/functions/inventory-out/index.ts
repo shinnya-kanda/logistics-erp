@@ -94,6 +94,8 @@ serve(async (req) => {
       return jsonResponse({ ok: false, error: "idempotency_key is required" }, 400);
     }
 
+    const traceId = crypto.randomUUID();
+
     let supabase;
     try {
       supabase = createSupabaseClient();
@@ -115,6 +117,7 @@ serve(async (req) => {
       p_operator_id: guard.userId,
       p_operator_name: stringOrNull(body.operator_name),
       p_remarks: stringOrNull(body.remarks),
+      p_trace_id: traceId,
     });
 
     if (error) {
@@ -124,7 +127,12 @@ serve(async (req) => {
       );
     }
 
-    return jsonResponse({ ok: true, transactions: Array.isArray(rows) ? rows : [] });
+    const transactions = Array.isArray(rows) ? rows : [];
+    const firstTraceId = transactions
+      .map((row) => (isRecord(row) && typeof row.trace_id === "string" ? row.trace_id : null))
+      .find((v): v is string => v !== null);
+
+    return jsonResponse({ ok: true, transactions, trace_id: firstTraceId ?? traceId });
   } catch {
     return jsonResponse({ ok: false, error: "internal_error" }, 500);
   }
