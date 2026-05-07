@@ -101,6 +101,8 @@ serve(async (req) => {
       );
     }
 
+    const traceId = crypto.randomUUID();
+
     let supabase;
     try {
       supabase = createSupabaseClient();
@@ -123,6 +125,7 @@ serve(async (req) => {
       p_operator_id: guard.userId,
       p_operator_name: stringOrNull(body.operator_name),
       p_remarks: stringOrNull(body.remarks),
+      p_trace_id: traceId,
     });
 
     if (error) {
@@ -132,7 +135,11 @@ serve(async (req) => {
       );
     }
 
-    return jsonResponse(result ?? { ok: true, move: null });
+    const responseBody = isRecord(result) ? result : { ok: true, move: null };
+    const resultTraceId =
+      typeof responseBody.trace_id === "string" ? responseBody.trace_id : traceId;
+
+    return jsonResponse({ ...responseBody, trace_id: resultTraceId });
   } catch {
     return jsonResponse({ ok: false, error: "internal_error" }, 500);
   }
