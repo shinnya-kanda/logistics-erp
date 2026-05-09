@@ -69,6 +69,33 @@ type EdgeLocationSearchResponse =
   | { ok: true; items: unknown[] }
   | { ok: false; error: string };
 
+export type TraceEventRow = {
+  source: "inventory_transactions" | "pallet_transactions" | "warehouse_location_history";
+  event_type: string | null;
+  warehouse_code: string;
+  created_at: string | null;
+  trace_id: string | null;
+  id: string;
+  event_at?: string | null;
+  location_code?: string | null;
+  from_location_code?: string | null;
+  to_location_code?: string | null;
+  part_no?: string | null;
+  quantity?: string | number | null;
+  quantity_unit?: string | null;
+  pallet_id?: string | null;
+  pallet_code?: string | null;
+  operator_id?: string | null;
+  operator_name?: string | null;
+  operator_role?: string | null;
+  remarks?: string | null;
+  data?: Record<string, unknown>;
+};
+
+type TraceSearchResponse =
+  | { ok: true; trace_id: string; events: TraceEventRow[] }
+  | { ok: false; error: string };
+
 type WarehouseLocationMutationResponse =
   | { ok: true; location: WarehouseLocationRow; created?: boolean }
   | { ok: false; error: string };
@@ -195,6 +222,19 @@ function isUnregisteredWarehouseLocationRow(
   );
 }
 
+function isTraceEventRow(v: unknown): v is TraceEventRow {
+  if (!isRecord(v)) return false;
+  return (
+    (v.source === "inventory_transactions" ||
+      v.source === "pallet_transactions" ||
+      v.source === "warehouse_location_history") &&
+    (typeof v.event_type === "string" || v.event_type === null) &&
+    typeof v.warehouse_code === "string" &&
+    (typeof v.created_at === "string" || v.created_at === null) &&
+    typeof v.id === "string"
+  );
+}
+
 function parseError(json: unknown): string {
   if (isRecord(json) && typeof json.error === "string") return json.error;
   return "パレット検索に失敗しました。";
@@ -244,6 +284,43 @@ export async function getUnregisteredWarehouseLocations(): Promise<UnregisteredW
   return {
     ok: true,
     locations: json.locations.filter(isUnregisteredWarehouseLocationRow),
+  };
+}
+
+export async function searchTraceEvents(traceId: string): Promise<TraceSearchResponse> {
+  const trimmedTraceId = traceId.trim();
+  if (!trimmedTraceId) {
+    return { ok: false, error: "trace_idを入力してください。" };
+  }
+
+  const params = new URLSearchParams({ trace_id: trimmedTraceId });
+  const res = await fetch(`${FUNCTIONS_BASE}/trace-search?${params.toString()}`, {
+    headers: await edgeFunctionHeaders(),
+  });
+  let json: unknown;
+  try {
+    json = await res.json();
+  } catch {
+    return { ok: false, error: "APIからJSON以外の応答が返りました。" };
+  }
+
+  if (!res.ok) {
+    return { ok: false, error: parseError(json) };
+  }
+
+  if (
+    !isRecord(json) ||
+    json.ok !== true ||
+    typeof json.trace_id !== "string" ||
+    !Array.isArray(json.events)
+  ) {
+    return { ok: false, error: "trace検索結果の形式が不正です。" };
+  }
+
+  return {
+    ok: true,
+    trace_id: json.trace_id,
+    events: json.events.filter(isTraceEventRow),
   };
 }
 
