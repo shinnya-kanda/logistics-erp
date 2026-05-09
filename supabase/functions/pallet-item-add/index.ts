@@ -14,6 +14,8 @@ type AddPalletItemResult = {
   pallet_code?: string;
   part_no?: string;
   quantity_added?: number;
+  trace_id?: string;
+  request_id?: string;
   error?: string;
 };
 
@@ -100,6 +102,9 @@ serve(async (req) => {
       return jsonResponse({ ok: false, error: "quantity must be positive" }, 400);
     }
 
+    const requestId = crypto.randomUUID();
+    const traceId = requestId;
+
     let supabase;
     try {
       supabase = createSupabaseClient();
@@ -116,6 +121,8 @@ serve(async (req) => {
       p_created_by: guard.userId,
       p_remarks: stringOrNull(body.remarks),
       p_project_no: projectNo,
+      p_trace_id: traceId,
+      p_request_id: requestId,
     });
 
     if (error) {
@@ -130,7 +137,11 @@ serve(async (req) => {
       );
     }
 
-    return jsonResponse(addResult);
+    return jsonResponse({
+      ...addResult,
+      trace_id: addResult.trace_id ?? traceId,
+      request_id: addResult.request_id ?? requestId,
+    });
   } catch {
     return jsonResponse({ ok: false, error: "internal_error" }, 500);
   }

@@ -24,6 +24,8 @@ type OutPalletItemResult = {
   quantity_out?: string | number;
   remaining_quantity?: string | number;
   idempotency_hit?: boolean;
+  trace_id?: string;
+  request_id?: string;
   error?: string;
 };
 
@@ -125,6 +127,9 @@ serve(async (req) => {
       return jsonResponse({ ok: false, error: "idempotency_key is required" }, 400);
     }
 
+    const requestId = crypto.randomUUID();
+    const traceId = requestId;
+
     let supabase;
     try {
       supabase = createSupabaseClient();
@@ -191,6 +196,8 @@ serve(async (req) => {
       p_remarks: stringOrNull(body.remarks),
       p_idempotency_key: idempotencyKey,
       p_project_no: selected.project_no,
+      p_trace_id: traceId,
+      p_request_id: requestId,
     });
 
     if (error) {
@@ -210,7 +217,11 @@ serve(async (req) => {
       return jsonResponse({ ok: false, error: errorCode }, errorStatus(errorCode));
     }
 
-    return jsonResponse(outResult);
+    return jsonResponse({
+      ...outResult,
+      trace_id: outResult.trace_id ?? traceId,
+      request_id: outResult.request_id ?? requestId,
+    });
   } catch {
     return jsonResponse({ ok: false, error: "internal_error" }, 500);
   }

@@ -15,6 +15,7 @@ type CreatePalletResult = {
   pallet_code?: string;
   created?: boolean;
   trace_id?: string;
+  request_id?: string;
   error?: string;
 };
 
@@ -91,7 +92,8 @@ serve(async (req) => {
       return jsonResponse({ ok: false, error: "pallet_code is required" }, 400);
     }
 
-    const traceId = crypto.randomUUID();
+    const requestId = crypto.randomUUID();
+    const traceId = requestId;
 
     let supabase;
     try {
@@ -109,6 +111,7 @@ serve(async (req) => {
       p_project_no: projectNo,
       p_current_location_code: currentLocationCode,
       p_trace_id: traceId,
+      p_request_id: requestId,
     });
 
     if (error) {
@@ -150,7 +153,8 @@ serve(async (req) => {
       pallet_id: createResult.pallet_id ?? pallet.id,
       pallet_code: createResult.pallet_code ?? pallet.pallet_code,
       created: createResult.created === true,
-      trace_id: traceId,
+      trace_id: createResult.trace_id ?? traceId,
+      request_id: createResult.request_id ?? requestId,
     });
   } catch {
     return jsonResponse({ ok: false, error: "internal_error" }, 500);
