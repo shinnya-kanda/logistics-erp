@@ -36,6 +36,7 @@ type InventoryTransactionRow = {
 type PalletTransactionRow = {
   id: string;
   trace_id: string | null;
+  request_id: string | null;
   transaction_type: string | null;
   warehouse_code: string;
   pallet_id: string | null;
@@ -70,6 +71,7 @@ type TraceEvent = {
   warehouse_code: string;
   created_at: string | null;
   trace_id: string | null;
+  request_id?: string | null;
   id: string;
   event_at?: string | null;
   location_code?: string | null;
@@ -141,6 +143,7 @@ function toInventoryEvent(row: InventoryTransactionRow): TraceEvent {
     warehouse_code: row.warehouse_code,
     created_at: row.created_at,
     trace_id: row.trace_id,
+    request_id: row.request_id,
     id: row.id,
     event_at: row.event_at,
     location_code: row.location_code,
@@ -247,7 +250,7 @@ serve(async (req) => {
       supabase
         .from("pallet_transactions")
         .select(
-          "id, trace_id, transaction_type, warehouse_code, pallet_id, pallet_unit_id, pallet_code, from_location_code, to_location_code, idempotency_key, operator_id, operator_name, remarks, event_at, occurred_at, created_at"
+          "id, trace_id, request_id, transaction_type, warehouse_code, pallet_id, pallet_unit_id, pallet_code, from_location_code, to_location_code, idempotency_key, operator_id, operator_name, remarks, event_at, occurred_at, created_at"
         )
         .eq("trace_id", traceId)
         .eq("warehouse_code", guard.warehouseCode)

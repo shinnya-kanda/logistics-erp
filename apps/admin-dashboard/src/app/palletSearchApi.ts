@@ -75,6 +75,7 @@ export type TraceEventRow = {
   warehouse_code: string;
   created_at: string | null;
   trace_id: string | null;
+  request_id?: string | null;
   id: string;
   event_at?: string | null;
   location_code?: string | null;
