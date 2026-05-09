@@ -22,6 +22,14 @@ function eventLocation(event: TraceEventRow): string {
   return displayValue(event.location_code ?? from ?? to);
 }
 
+function eventRequestId(event: TraceEventRow): string | null {
+  if (event.source !== "pallet_transactions") return null;
+  if (event.request_id) return event.request_id;
+
+  const requestId = event.data?.request_id;
+  return typeof requestId === "string" && requestId.trim() ? requestId : null;
+}
+
 const styles = {
   panel: {
     marginTop: "2rem",
@@ -195,6 +203,7 @@ export function TraceSearchSection() {
                 <th style={styles.th}>event_type</th>
                 <th style={styles.th}>warehouse_code</th>
                 <th style={styles.th}>created_at</th>
+                <th style={styles.th}>request_id</th>
                 <th style={styles.th}>location</th>
                 <th style={styles.th}>part_no</th>
                 <th style={styles.th}>quantity</th>
@@ -210,6 +219,9 @@ export function TraceSearchSection() {
                   <td style={styles.td}>{displayValue(event.event_type)}</td>
                   <td style={styles.td}>{event.warehouse_code}</td>
                   <td style={styles.td}>{formatDateTime(event.created_at)}</td>
+                  <td style={{ ...styles.td, ...styles.traceText }}>
+                    {displayValue(eventRequestId(event))}
+                  </td>
                   <td style={styles.td}>{eventLocation(event)}</td>
                   <td style={styles.td}>{displayValue(event.part_no)}</td>
                   <td style={styles.td}>
