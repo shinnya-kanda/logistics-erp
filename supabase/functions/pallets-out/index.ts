@@ -13,6 +13,7 @@ type OutPalletResult = {
   ok?: boolean;
   transaction?: Record<string, unknown>;
   trace_id?: string;
+  request_id?: string;
   error?: string;
 };
 
@@ -100,7 +101,8 @@ serve(async (req) => {
       return jsonResponse({ ok: false, error: "idempotency_key is required" }, 400);
     }
 
-    const traceId = crypto.randomUUID();
+    const requestId = crypto.randomUUID();
+    const traceId = requestId;
 
     let supabase;
     try {
@@ -132,6 +134,7 @@ serve(async (req) => {
       p_idempotency_key: idempotencyKey,
       p_project_no: pallet.project_no,
       p_trace_id: traceId,
+      p_request_id: requestId,
     });
 
     if (error) {
@@ -147,6 +150,7 @@ serve(async (req) => {
     return jsonResponse({
       ...outResult,
       trace_id: outResult.trace_id ?? traceId,
+      request_id: outResult.request_id ?? requestId,
     });
   } catch {
     return jsonResponse({ ok: false, error: "internal_error" }, 500);
