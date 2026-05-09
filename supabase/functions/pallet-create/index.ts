@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { requireFieldWriteRole } from "../_shared/fieldWriteGuard.ts";
+import { createTraceContext } from "../_shared/traceContext.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -92,8 +93,7 @@ serve(async (req) => {
       return jsonResponse({ ok: false, error: "pallet_code is required" }, 400);
     }
 
-    const requestId = crypto.randomUUID();
-    const traceId = requestId;
+    const { requestId, traceId } = createTraceContext();
 
     let supabase;
     try {
