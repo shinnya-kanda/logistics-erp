@@ -3,6 +3,15 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { searchTraceEvents, type TraceEventRow } from "./palletSearchApi";
 
+type RequestEventGroup = {
+  requestId: string | null;
+  events: TraceEventRow[];
+  sources: TraceEventRow["source"][];
+  flowLabels: string[];
+  startedAt: string | null;
+  endedAt: string | null;
+};
+
 function displayValue(value: string | number | null | undefined): string {
   if (value === null || value === undefined || value === "") return "-";
   return String(value);
@@ -55,6 +64,13 @@ function sourceColor(source: TraceEventRow["source"]) {
   return { background: "#fff8e1", color: "#8a5a00", borderColor: "#ffe082" };
 }
 
+function eventFlowLabel(event: TraceEventRow): string {
+  const type = event.event_type?.trim() || "unknown";
+  if (event.source === "inventory_transactions") return `inventory:${type}`;
+  if (event.source === "pallet_transactions") return `pallet:${type}`;
+  return `location:${type}`;
+}
+
 function sortEventsByTime(events: TraceEventRow[]): TraceEventRow[] {
   return [...events].sort((a, b) => {
     const aTime = eventTimeValue(a);
@@ -66,6 +82,37 @@ function sortEventsByTime(events: TraceEventRow[]): TraceEventRow[] {
     if (Number.isNaN(aMs)) return 1;
     if (Number.isNaN(bMs)) return -1;
     return aMs - bMs;
+  });
+}
+
+function uniqueSources(events: TraceEventRow[]): TraceEventRow["source"][] {
+  return Array.from(new Set(events.map((event) => event.source)));
+}
+
+function groupEventsByRequest(events: TraceEventRow[]): RequestEventGroup[] {
+  const groupsByRequest = new Map<string, TraceEventRow[]>();
+
+  for (const event of events) {
+    const requestId = eventRequestId(event);
+    const key = requestId ?? "__no_request_id__";
+    const groupEvents = groupsByRequest.get(key) ?? [];
+    groupEvents.push(event);
+    groupsByRequest.set(key, groupEvents);
+  }
+
+  return Array.from(groupsByRequest.entries()).map(([key, groupEvents]) => {
+    const sortedGroupEvents = sortEventsByTime(groupEvents);
+    const firstEvent = sortedGroupEvents[0];
+    const lastEvent = sortedGroupEvents[sortedGroupEvents.length - 1];
+
+    return {
+      requestId: key === "__no_request_id__" ? null : key,
+      events: sortedGroupEvents,
+      sources: uniqueSources(sortedGroupEvents),
+      flowLabels: sortedGroupEvents.map(eventFlowLabel),
+      startedAt: firstEvent ? eventTimeValue(firstEvent) : null,
+      endedAt: lastEvent ? eventTimeValue(lastEvent) : null,
+    };
   });
 }
 
@@ -132,6 +179,51 @@ const styles = {
     background: "#f5f7fb",
     fontWeight: 700,
   },
+  relationSection: {
+    marginTop: "1rem",
+    padding: "1rem",
+    border: "1px solid #ddd",
+    borderRadius: "12px",
+    background: "#fafafa",
+  },
+  relationGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(18rem, 1fr))",
+    gap: "0.85rem",
+    marginTop: "0.75rem",
+  },
+  relationCard: {
+    padding: "0.85rem",
+    border: "1px solid #ddd",
+    borderRadius: "12px",
+    background: "#fff",
+  },
+  relationHeader: {
+    display: "flex",
+    flexWrap: "wrap" as const,
+    gap: "0.45rem 0.65rem",
+    alignItems: "center",
+    marginBottom: "0.6rem",
+  },
+  flowLine: {
+    display: "flex",
+    flexWrap: "wrap" as const,
+    gap: "0.35rem",
+    alignItems: "center",
+    marginTop: "0.5rem",
+  },
+  flowNode: {
+    display: "inline-block",
+    padding: "0.25rem 0.45rem",
+    borderRadius: "8px",
+    background: "#f5f7fb",
+    fontSize: "0.82rem",
+    fontWeight: 700,
+  },
+  flowArrow: {
+    color: "#777",
+    fontWeight: 800,
+  },
   timeline: {
     display: "flex",
     flexDirection: "column" as const,
@@ -190,6 +282,7 @@ export function TraceTimelineSection() {
   const [error, setError] = useState<string | null>(null);
 
   const sortedEvents = useMemo(() => sortEventsByTime(events), [events]);
+  const requestGroups = useMemo(() => groupEventsByRequest(sortedEvents), [sortedEvents]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -227,7 +320,8 @@ export function TraceTimelineSection() {
       </p>
       <div style={styles.notice}>
         timeline は参照専用であり、修正・再構築・自動同期は行いません。compare-only /
-        visibility 目的の画面です。
+        visibility 目的の画面です。relation grouping も参照専用で、correction / replay /
+        rebuild は行いません。
       </div>
 
       <form onSubmit={(event) => void handleSubmit(event)} style={styles.form}>
@@ -253,11 +347,67 @@ export function TraceTimelineSection() {
             trace_id: <span style={styles.mono}>{searchedTraceId}</span>
           </span>
           <span>イベント数: {sortedEvents.length}件</span>
+          <span>request group: {requestGroups.length}件</span>
         </div>
       ) : null}
 
       {searchedTraceId && sortedEvents.length === 0 && !error ? (
         <p style={{ color: "#555" }}>該当する timeline event はありません。</p>
+      ) : null}
+
+      {requestGroups.length > 0 ? (
+        <section style={styles.relationSection}>
+          <h3 style={{ marginTop: 0 }}>trace relation</h3>
+          <p style={{ color: "#555", marginTop: 0 }}>
+            request_id 単位で関連イベントをまとめ、inventory / pallet / warehouse location
+            history の出所と flow を確認します。
+          </p>
+          <div style={styles.relationGrid}>
+            {requestGroups.map((group, groupIndex) => (
+              <article
+                key={`${group.requestId ?? "no-request"}:${groupIndex}`}
+                style={styles.relationCard}
+              >
+                <div style={styles.relationHeader}>
+                  <strong>request</strong>
+                  <span style={styles.mono}>{displayValue(group.requestId)}</span>
+                  <span style={{ color: "#555" }}>{group.events.length} events</span>
+                </div>
+
+                <div style={{ marginBottom: "0.55rem" }}>
+                  {group.sources.map((source) => (
+                    <span
+                      key={source}
+                      style={{ ...styles.sourceBadge, ...sourceColor(source), marginRight: "0.35rem" }}
+                    >
+                      {sourceLabel(source)}
+                    </span>
+                  ))}
+                </div>
+
+                <div style={styles.metaGrid}>
+                  <div style={styles.metaItem}>
+                    <span style={styles.metaLabel}>started_at</span>
+                    <span>{formatDateTime(group.startedAt)}</span>
+                  </div>
+                  <div style={styles.metaItem}>
+                    <span style={styles.metaLabel}>ended_at</span>
+                    <span>{formatDateTime(group.endedAt)}</span>
+                  </div>
+                </div>
+
+                <div style={styles.flowLine} aria-label="event flow">
+                  {group.flowLabels.map((label, index) => (
+                    <span key={`${label}:${index}`} style={{ display: "inline-flex", gap: "0.35rem" }}>
+                      {index > 0 ? <span style={styles.flowArrow}>-&gt;</span> : null}
+                      <span style={styles.flowNode}>{label}</span>
+                    </span>
+                  ))}
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
       ) : null}
 
       {sortedEvents.length > 0 ? (
