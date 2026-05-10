@@ -96,10 +96,39 @@ const styles = {
     padding: "0.5rem",
     whiteSpace: "nowrap" as const,
   },
+  warningRow: {
+    background: "#fff8e1",
+  },
+  warningCell: {
+    color: "#b26a00",
+    fontWeight: 700,
+  },
 };
 
 function countPallets(locations: CurrentWarehouseLocation[]): number {
   return locations.reduce((sum, location) => sum + location.pallets.length, 0);
+}
+
+function countQuantityDiffs(locations: CurrentWarehouseLocation[]): number {
+  return locations.reduce(
+    (locationSum, location) =>
+      locationSum +
+      location.pallets.reduce(
+        (palletSum, pallet) =>
+          palletSum +
+          pallet.items.filter(
+            (item) => typeof item.quantity_diff === "number" && item.quantity_diff !== 0
+          ).length,
+        0
+      ),
+    0
+  );
+}
+
+function formatQuantityDiff(value: number | null | undefined): string {
+  if (value === null || value === undefined) return "-";
+  if (value > 0) return `+${value}`;
+  return String(value);
 }
 
 export function CurrentWarehouseViewSection() {
@@ -152,7 +181,10 @@ export function CurrentWarehouseViewSection() {
       </p>
       <p>
         source of truth は `inventory_transactions` です。`inventory_current` は部品現在庫
-        projection であり、この画面とは責務が異なります。
+        projection であり、source of truth ではありません。
+      </p>
+      <p>
+        数量差異がある場合は、この画面で修正せず `inventory_transactions` との照合が必要です。
       </p>
 
       <form onSubmit={(event) => void handleSubmit(event)} style={styles.form}>
@@ -201,7 +233,8 @@ export function CurrentWarehouseViewSection() {
 
       {searched ? (
         <div style={styles.summary}>
-          棚数: {locations.length} / PL数: {countPallets(locations)}
+          棚数: {locations.length} / PL数: {countPallets(locations)} / 数量差異:{" "}
+          {countQuantityDiffs(locations)}
         </div>
       ) : null}
 
@@ -234,22 +267,43 @@ export function CurrentWarehouseViewSection() {
                       <th style={styles.th}>part_name</th>
                       <th style={styles.th}>quantity</th>
                       <th style={styles.th}>unit</th>
+                      <th style={styles.th}>inventory_type</th>
                       <th style={styles.th}>project_no</th>
+                      <th style={styles.th}>現在保管状態</th>
+                      <th style={styles.th}>inventory_current</th>
+                      <th style={styles.th}>差異</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {pallet.items.map((item, index) => (
-                      <tr key={`${pallet.pallet_id}:${item.part_no ?? "empty"}:${index}`}>
-                        <td style={styles.td}>{displayValue(item.part_no)}</td>
-                        <td style={styles.td}>{displayValue(item.part_name)}</td>
-                        <td style={styles.td}>{displayValue(item.quantity)}</td>
-                        <td style={styles.td}>{displayValue(item.quantity_unit)}</td>
-                        <td style={styles.td}>{displayValue(item.project_no)}</td>
-                      </tr>
-                    ))}
+                    {pallet.items.map((item, index) => {
+                      const hasDiff =
+                        typeof item.quantity_diff === "number" && item.quantity_diff !== 0;
+                      const diffStyle = hasDiff
+                        ? { ...styles.td, ...styles.warningCell }
+                        : styles.td;
+
+                      return (
+                        <tr
+                          key={`${pallet.pallet_id}:${item.part_no ?? "empty"}:${index}`}
+                          style={hasDiff ? styles.warningRow : undefined}
+                        >
+                          <td style={styles.td}>{displayValue(item.part_no)}</td>
+                          <td style={styles.td}>{displayValue(item.part_name)}</td>
+                          <td style={styles.td}>{displayValue(item.quantity)}</td>
+                          <td style={styles.td}>{displayValue(item.quantity_unit)}</td>
+                          <td style={styles.td}>{displayValue(item.inventory_type)}</td>
+                          <td style={styles.td}>{displayValue(item.project_no)}</td>
+                          <td style={styles.td}>{displayValue(item.pallet_item_quantity)}</td>
+                          <td style={styles.td}>
+                            {displayValue(item.inventory_current_quantity)}
+                          </td>
+                          <td style={diffStyle}>{formatQuantityDiff(item.quantity_diff)}</td>
+                        </tr>
+                      );
+                    })}
                     {pallet.items.length === 0 ? (
                       <tr>
-                        <td style={styles.td} colSpan={5}>
+                        <td style={styles.td} colSpan={9}>
                           このPLに紐づく品番はありません。
                         </td>
                       </tr>

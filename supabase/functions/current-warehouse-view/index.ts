@@ -26,6 +26,7 @@ type PalletItemLinkRow = {
   part_name: string | null;
   quantity: string | number | null;
   quantity_unit: string | null;
+  inventory_type: string | null;
   project_no: string | null;
   updated_at: string | null;
 };
@@ -36,6 +37,10 @@ type CurrentWarehouseItem = {
   quantity: string | number | null;
   quantity_unit: string | null;
   project_no: string | null;
+  inventory_type: string | null;
+  pallet_item_quantity: number | null;
+  inventory_current_quantity: number | null;
+  quantity_diff: number | null;
   updated_at: string | null;
 };
 
@@ -51,6 +56,15 @@ type CurrentWarehousePallet = {
 type CurrentWarehouseLocation = {
   location_code: string | null;
   pallets: CurrentWarehousePallet[];
+};
+
+type InventoryCurrentRow = {
+  part_no: string;
+  warehouse_code: string;
+  location_code: string;
+  inventory_type: string;
+  project_no: string | null;
+  quantity_on_hand: string | number | null;
 };
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -78,6 +92,32 @@ function createSupabaseClient() {
 
 function locationSortKey(locationCode: string | null): string {
   return locationCode ?? "\uffff";
+}
+
+function numericValue(value: string | number | null): number | null {
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  if (typeof value === "string" && value.trim()) {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
+}
+
+function quantityKey(args: {
+  warehouseCode: string;
+  locationCode: string | null;
+  partNo: string | null;
+  inventoryType: string | null;
+  projectNo: string | null;
+}): string | null {
+  if (!args.locationCode || !args.partNo || !args.inventoryType) return null;
+  return [
+    args.warehouseCode,
+    args.locationCode,
+    args.partNo,
+    args.inventoryType,
+    args.projectNo ?? "",
+  ].join("\u001f");
 }
 
 serve(async (req) => {
@@ -142,7 +182,7 @@ serve(async (req) => {
 
     let linkQuery = supabase
       .from("pallet_item_links")
-      .select("pallet_id, part_no, part_name, quantity, quantity_unit, project_no, updated_at")
+      .select("pallet_id, part_no, part_name, quantity, quantity_unit, inventory_type, project_no, updated_at")
       .in(
         "pallet_id",
         pallets.map((row) => row.id)
@@ -167,6 +207,71 @@ serve(async (req) => {
       linksByPalletId.set(link.pallet_id, links);
     }
 
+    const partNos = Array.from(
+      new Set(
+        (linkRows ?? [])
+          .map((link) => link.part_no?.trim())
+          .filter((value): value is string => Boolean(value))
+      )
+    );
+    const locationCodes = Array.from(
+      new Set(
+        pallets
+          .map((pallet) => pallet.current_location_code?.trim())
+          .filter((value): value is string => Boolean(value))
+      )
+    );
+
+    const palletQuantityByKey = new Map<string, number>();
+    for (const pallet of pallets) {
+      const links = linksByPalletId.get(pallet.id) ?? [];
+      for (const link of links) {
+        const key = quantityKey({
+          warehouseCode: guard.warehouseCode,
+          locationCode: pallet.current_location_code,
+          partNo: link.part_no,
+          inventoryType: link.inventory_type,
+          projectNo: link.project_no ?? pallet.project_no,
+        });
+        const quantity = numericValue(link.quantity);
+        if (!key || quantity === null) continue;
+        palletQuantityByKey.set(key, (palletQuantityByKey.get(key) ?? 0) + quantity);
+      }
+    }
+
+    const inventoryQuantityByKey = new Map<string, number>();
+    if (partNos.length > 0 && locationCodes.length > 0) {
+      let currentQuery = supabase
+        .from("inventory_current")
+        .select("part_no, warehouse_code, location_code, inventory_type, project_no, quantity_on_hand")
+        .eq("warehouse_code", guard.warehouseCode)
+        .in("part_no", partNos)
+        .in("location_code", locationCodes);
+
+      if (projectNo) {
+        currentQuery = currentQuery.eq("project_no", projectNo);
+      }
+
+      const { data: currentRows, error: currentError } =
+        await currentQuery.returns<InventoryCurrentRow[]>();
+      if (currentError) {
+        return jsonResponse({ ok: false, error: "failed_to_cross_check_inventory_current" }, 500);
+      }
+
+      for (const row of currentRows ?? []) {
+        const key = quantityKey({
+          warehouseCode: row.warehouse_code,
+          locationCode: row.location_code,
+          partNo: row.part_no,
+          inventoryType: row.inventory_type,
+          projectNo: row.project_no,
+        });
+        const quantity = numericValue(row.quantity_on_hand);
+        if (!key || quantity === null) continue;
+        inventoryQuantityByKey.set(key, (inventoryQuantityByKey.get(key) ?? 0) + quantity);
+      }
+    }
+
     const locationsByCode = new Map<string, CurrentWarehouseLocation>();
     for (const pallet of pallets) {
       const links = linksByPalletId.get(pallet.id) ?? [];
@@ -186,14 +291,37 @@ serve(async (req) => {
         project_no: pallet.project_no,
         current_status: pallet.current_status,
         updated_at: pallet.updated_at ?? pallet.created_at,
-        items: links.map((link) => ({
-          part_no: link.part_no,
-          part_name: link.part_name,
-          quantity: link.quantity,
-          quantity_unit: link.quantity_unit,
-          project_no: link.project_no ?? pallet.project_no,
-          updated_at: link.updated_at ?? pallet.updated_at ?? pallet.created_at,
-        })),
+        items: links.map((link) => {
+          const itemProjectNo = link.project_no ?? pallet.project_no;
+          const key = quantityKey({
+            warehouseCode: guard.warehouseCode,
+            locationCode: pallet.current_location_code,
+            partNo: link.part_no,
+            inventoryType: link.inventory_type,
+            projectNo: itemProjectNo,
+          });
+          const palletItemQuantity = key ? palletQuantityByKey.get(key) ?? 0 : null;
+          const inventoryCurrentQuantity = key
+            ? inventoryQuantityByKey.get(key) ?? 0
+            : null;
+          const quantityDiff =
+            palletItemQuantity !== null && inventoryCurrentQuantity !== null
+              ? palletItemQuantity - inventoryCurrentQuantity
+              : null;
+
+          return {
+            part_no: link.part_no,
+            part_name: link.part_name,
+            quantity: link.quantity,
+            quantity_unit: link.quantity_unit,
+            project_no: itemProjectNo,
+            inventory_type: link.inventory_type,
+            pallet_item_quantity: palletItemQuantity,
+            inventory_current_quantity: inventoryCurrentQuantity,
+            quantity_diff: quantityDiff,
+            updated_at: link.updated_at ?? pallet.updated_at ?? pallet.created_at,
+          };
+        }),
       });
 
       locationsByCode.set(locationKey, location);
