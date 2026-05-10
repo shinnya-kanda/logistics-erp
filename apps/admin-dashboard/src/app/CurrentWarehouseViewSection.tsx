@@ -19,6 +19,7 @@ type CompareDashboardRow = {
 type AgingBucket = "today" | "1-3 days" | "4-7 days" | "over 7 days" | "unknown";
 type ReviewStatus = "pending" | "reviewing" | "on_hold" | "reviewed";
 type HotspotDimension = "location" | "project" | "part";
+type TrendDirection = "improving" | "stable" | "worsening";
 type HotspotRow = {
   key: string;
   total_count: number;
@@ -150,6 +151,12 @@ const styles = {
     background: "#ffebee",
   },
   observabilityCard: {
+    padding: "0.85rem",
+    border: "1px solid #ddd",
+    borderRadius: "12px",
+    background: "#fff",
+  },
+  trendCard: {
     padding: "0.85rem",
     border: "1px solid #ddd",
     borderRadius: "12px",
@@ -473,6 +480,41 @@ function topHotspotLabel(title: string, rows: HotspotRow[]): string {
   return `${title}: ${top.key} (${top.review_required_count})`;
 }
 
+function trendStyle(direction: TrendDirection) {
+  if (direction === "worsening") return { ...styles.badge, background: "#c62828", color: "#fff" };
+  if (direction === "stable") return { ...styles.badge, background: "#fff8e1", color: "#8a5a00" };
+  return { ...styles.badge, background: "#e8f5e9", color: "#2e7d32" };
+}
+
+function trendCardStyle(direction: TrendDirection) {
+  if (direction === "worsening") return { ...styles.trendCard, ...styles.healthCritical };
+  if (direction === "stable") return { ...styles.trendCard, ...styles.healthWarning };
+  return { ...styles.trendCard, ...styles.healthGood };
+}
+
+function backlogTrend(reviewBacklog: number, reviewedCount: number): TrendDirection {
+  if (reviewBacklog === 0) return "improving";
+  if (reviewedCount > 0 && reviewedCount >= reviewBacklog) return "stable";
+  return "worsening";
+}
+
+function countTrend(count: number): TrendDirection {
+  return count > 0 ? "worsening" : "improving";
+}
+
+function hotspotTrend(rows: HotspotRow[]): TrendDirection {
+  const top = rows[0];
+  if (!top) return "improving";
+  if (top.critical_count > 0 || top.review_required_count >= 3) return "worsening";
+  return "stable";
+}
+
+function healthTrend(health: "stable" | "watch" | "critical"): TrendDirection {
+  if (health === "critical") return "worsening";
+  if (health === "watch") return "stable";
+  return "improving";
+}
+
 function formatQuantityDiff(value: number | null | undefined): string {
   if (value === null || value === undefined) return "-";
   if (value > 0) return `+${value}`;
@@ -575,6 +617,18 @@ export function CurrentWarehouseViewSection() {
     reviewBacklog,
     unresolvedAging,
   });
+  const backlogTrendDirection = backlogTrend(
+    reviewBacklog,
+    countsByReviewStatus.reviewed
+  );
+  const criticalTrendDirection = countTrend(countsBySeverity.critical);
+  const unresolvedAgingTrendDirection = countTrend(unresolvedAging);
+  const hotspotTrendDirection = hotspotTrend([
+    ...locationHotspots,
+    ...projectHotspots,
+    ...partHotspots,
+  ]);
+  const healthTrendDirection = healthTrend(consistencyHealth);
   const reviewRows = compareRows
     .filter((row) => row.item.review_required)
     .sort(
@@ -711,6 +765,51 @@ export function CurrentWarehouseViewSection() {
               {topHotspotLabel("project", projectHotspots)} /{" "}
               {topHotspotLabel("part", partHotspots)}
             </div>
+          </div>
+
+          <h4>trend observability</h4>
+          <p style={styles.compareLead}>
+            現在の compare 結果と一時的な review status から、運用品質の trend direction を
+            temporary calculated trend として表示します。DB保存は行わず、read-only の visibility
+            です。
+          </p>
+          <div style={styles.severityGrid}>
+            {[
+              {
+                label: "backlog trend",
+                direction: backlogTrendDirection,
+                detail: `${reviewBacklog} unresolved`,
+              },
+              {
+                label: "critical trend",
+                direction: criticalTrendDirection,
+                detail: `${countsBySeverity.critical} critical`,
+              },
+              {
+                label: "unresolved aging trend",
+                direction: unresolvedAgingTrendDirection,
+                detail: `${unresolvedAging} aged`,
+              },
+              {
+                label: "hotspot trend",
+                direction: hotspotTrendDirection,
+                detail: topHotspotLabel("top", [...locationHotspots, ...projectHotspots, ...partHotspots]),
+              },
+              {
+                label: "health trend",
+                direction: healthTrendDirection,
+                detail: consistencyHealth,
+              },
+            ].map((trend) => (
+              <div key={trend.label} style={trendCardStyle(trend.direction)}>
+                <strong>{trend.label}</strong>
+                <span style={{ ...styles.severityCount, fontSize: "1.2rem" }}>
+                  {trend.direction}
+                </span>
+                <span style={trendStyle(trend.direction)}>{trend.direction}</span>
+                <div style={{ marginTop: "0.45rem" }}>{trend.detail}</div>
+              </div>
+            ))}
           </div>
 
           <h4>aging visibility</h4>
