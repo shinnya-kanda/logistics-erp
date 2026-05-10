@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { requireFieldWriteRole } from "../_shared/fieldWriteGuard.ts";
+import { createTraceContext } from "../_shared/traceContext.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -90,7 +91,7 @@ serve(async (req) => {
       return jsonResponse({ ok: false, error: "to_location_code is required" }, 400);
     }
 
-    const traceId = crypto.randomUUID();
+    const { requestId, traceId } = createTraceContext();
 
     let supabase;
     try {
@@ -115,6 +116,7 @@ serve(async (req) => {
       p_operator_name: stringOrNull(body.operator_name),
       p_remarks: stringOrNull(body.remarks),
       p_trace_id: traceId,
+      p_request_id: requestId,
     });
 
     if (error) {
@@ -130,7 +132,12 @@ serve(async (req) => {
         ? transaction.trace_id
         : traceId;
 
-    return jsonResponse({ ok: true, transaction, trace_id: resultTraceId });
+    return jsonResponse({
+      ok: true,
+      transaction,
+      trace_id: resultTraceId,
+      request_id: requestId,
+    });
   } catch {
     return jsonResponse({ ok: false, error: "internal_error" }, 500);
   }

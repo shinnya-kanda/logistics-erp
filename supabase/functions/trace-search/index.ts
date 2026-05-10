@@ -12,6 +12,7 @@ const corsHeaders = {
 type InventoryTransactionRow = {
   id: string;
   trace_id: string | null;
+  request_id: string | null;
   transaction_type: string | null;
   warehouse_code: string;
   location_code: string | null;
@@ -241,7 +242,7 @@ serve(async (req) => {
       supabase
         .from("inventory_transactions")
         .select(
-          "id, trace_id, transaction_type, warehouse_code, location_code, from_location_code, to_location_code, part_no, part_name, quantity, quantity_unit, inventory_type, project_no, mrp_key, pallet_id, idempotency_key, operator_id, operator_name, remarks, event_at, created_at"
+          "id, trace_id, request_id, transaction_type, warehouse_code, location_code, from_location_code, to_location_code, part_no, part_name, quantity, quantity_unit, inventory_type, project_no, mrp_key, pallet_id, idempotency_key, operator_id, operator_name, remarks, event_at, created_at"
         )
         .eq("trace_id", traceId)
         .eq("warehouse_code", guard.warehouseCode)
