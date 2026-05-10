@@ -17,9 +17,11 @@ type CompareDashboardRow = {
 };
 
 type AgingBucket = "today" | "1-3 days" | "4-7 days" | "over 7 days" | "unknown";
+type ReviewStatus = "pending" | "reviewing" | "on_hold" | "reviewed";
 
 const severityOrder: DifferenceSeverity[] = ["critical", "high", "warning", "info"];
 const agingOrder: AgingBucket[] = ["today", "1-3 days", "4-7 days", "over 7 days"];
+const reviewStatusOrder: ReviewStatus[] = ["pending", "reviewing", "on_hold", "reviewed"];
 
 function displayValue(value: string | number | null | undefined): string {
   if (value === null || value === undefined || value === "") return "-";
@@ -117,6 +119,19 @@ const styles = {
     borderColor: "#c62828",
     background: "#ffebee",
     color: "#b71c1c",
+  },
+  reviewWorkflowCard: {
+    padding: "0.75rem",
+    border: "1px solid #ddd",
+    borderRadius: "12px",
+    background: "#fff",
+  },
+  reviewSelect: {
+    padding: "0.4rem 0.5rem",
+    border: "1px solid #bbb",
+    borderRadius: "8px",
+    background: "#fff",
+    fontWeight: 700,
   },
   agingCard: {
     padding: "0.75rem",
@@ -281,6 +296,51 @@ function agingCounts(rows: CompareDashboardRow[]): Record<AgingBucket, number> {
   );
 }
 
+function compareRowKey(row: CompareDashboardRow): string {
+  return [
+    row.location_code ?? "",
+    row.pallet_code,
+    row.item.part_no ?? "",
+    row.item.inventory_type ?? "",
+    row.item.project_no ?? row.pallet_project_no ?? "",
+    row.item.updated_at ?? "",
+  ].join("\u001f");
+}
+
+function reviewStatusLabel(status: ReviewStatus): string {
+  if (status === "pending") return "pending";
+  if (status === "reviewing") return "reviewing";
+  if (status === "on_hold") return "on_hold";
+  return "reviewed";
+}
+
+function reviewStatusCounts(
+  rows: CompareDashboardRow[],
+  statuses: Record<string, ReviewStatus>
+): Record<ReviewStatus, number> {
+  return rows.reduce<Record<ReviewStatus, number>>(
+    (counts, row) => {
+      const status = statuses[compareRowKey(row)] ?? "pending";
+      counts[status] += 1;
+      return counts;
+    },
+    { pending: 0, reviewing: 0, on_hold: 0, reviewed: 0 }
+  );
+}
+
+function reviewStatusStyle(status: ReviewStatus) {
+  if (status === "pending") {
+    return { ...styles.badge, background: "#ffebee", color: "#b71c1c" };
+  }
+  if (status === "reviewing") {
+    return { ...styles.badge, background: "#e3f2fd", color: "#0d47a1" };
+  }
+  if (status === "on_hold") {
+    return { ...styles.badge, background: "#fff8e1", color: "#8a5a00" };
+  }
+  return { ...styles.badge, background: "#e8f5e9", color: "#2e7d32" };
+}
+
 function formatQuantityDiff(value: number | null | undefined): string {
   if (value === null || value === undefined) return "-";
   if (value > 0) return `+${value}`;
@@ -330,6 +390,7 @@ export function CurrentWarehouseViewSection() {
   const [partNo, setPartNo] = useState("");
   const [projectNo, setProjectNo] = useState("");
   const [locations, setLocations] = useState<CurrentWarehouseLocation[]>([]);
+  const [reviewStatuses, setReviewStatuses] = useState<Record<string, ReviewStatus>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searched, setSearched] = useState(false);
@@ -354,6 +415,7 @@ export function CurrentWarehouseViewSection() {
       }
 
       setLocations(result.locations);
+      setReviewStatuses({});
     } catch (err) {
       setLocations([]);
       setError(
@@ -370,6 +432,7 @@ export function CurrentWarehouseViewSection() {
   const countsBySeverity = severityCounts(compareRows);
   const reviewRowsBase = compareRows.filter((row) => row.item.review_required);
   const countsByAging = agingCounts(reviewRowsBase);
+  const countsByReviewStatus = reviewStatusCounts(reviewRowsBase, reviewStatuses);
   const reviewRows = compareRows
     .filter((row) => row.item.review_required)
     .sort(
@@ -379,6 +442,11 @@ export function CurrentWarehouseViewSection() {
         agingSortValue(agingBucket(a.item.updated_at)) -
           agingSortValue(agingBucket(b.item.updated_at))
     );
+
+  function updateReviewStatus(row: CompareDashboardRow, status: ReviewStatus) {
+    const key = compareRowKey(row);
+    setReviewStatuses((current) => ({ ...current, [key]: status }));
+  }
 
   return (
     <section style={styles.panel}>
@@ -455,7 +523,7 @@ export function CurrentWarehouseViewSection() {
           <p style={styles.compareLead}>
             `inventory_current` と `pallet_units + pallet_item_links` の compare-only 結果です。
             この画面は visibility / read-only 用途であり、自動修正・correction・rebuild・replay
-            は行いません。
+            は行いません。review status は一時的な UI 表示であり、DB保存はまだ行いません。
           </p>
 
           <div style={styles.severityGrid}>
@@ -493,6 +561,20 @@ export function CurrentWarehouseViewSection() {
             ))}
           </div>
 
+          <h4>review workflow visibility</h4>
+          <p style={styles.compareLead}>
+            差異の確認状況を、pending / reviewing / on_hold / reviewed として一時的に整理します。
+            これは確認状態の visibility であり、補正・再構築・自動同期の実行状態ではありません。
+          </p>
+          <div style={styles.severityGrid}>
+            {reviewStatusOrder.map((status) => (
+              <div key={status} style={styles.reviewWorkflowCard}>
+                <span style={reviewStatusStyle(status)}>{reviewStatusLabel(status)}</span>
+                <span style={styles.severityCount}>{countsByReviewStatus[status]}</span>
+              </div>
+            ))}
+          </div>
+
           <h4>確認すべき差異一覧</h4>
           {reviewRows.length === 0 ? (
             <p style={{ color: "#555" }}>
@@ -513,52 +595,69 @@ export function CurrentWarehouseViewSection() {
                     <th style={styles.th}>quantity_diff</th>
                     <th style={styles.th}>updated_at</th>
                     <th style={styles.th}>aging</th>
+                    <th style={styles.th}>review status</th>
                     <th style={styles.th}>reason code</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {reviewRows.map((row, index) => (
-                    <tr
-                      key={`${row.location_code ?? "no-location"}:${row.pallet_code}:${
-                        row.item.part_no ?? "no-part"
-                      }:${index}`}
-                      style={reviewRowStyle(row.item)}
-                    >
-                      <td style={styles.td}>
-                        <span style={severityStyle(row.item.difference_severity)}>
-                          {severityLabel(row.item.difference_severity)}
-                        </span>
-                      </td>
-                      <td style={styles.td}>{displayValue(row.location_code)}</td>
-                      <td style={styles.td}>{row.pallet_code}</td>
-                      <td style={styles.td}>{displayValue(row.item.part_no)}</td>
-                      <td style={styles.td}>
-                        {displayValue(row.item.project_no ?? row.pallet_project_no)}
-                      </td>
-                      <td style={styles.td}>{displayValue(row.item.pallet_item_quantity)}</td>
-                      <td style={styles.td}>
-                        {displayValue(row.item.inventory_current_quantity)}
-                      </td>
-                      <td style={{ ...styles.td, ...styles.warningCell }}>
-                        {formatQuantityDiff(row.item.quantity_diff)}
-                      </td>
-                      <td style={styles.td}>{formatDateTime(row.item.updated_at)}</td>
-                      <td
-                        style={
-                          agingBucket(row.item.updated_at) === "over 7 days"
-                            ? { ...styles.td, ...styles.warningCell }
-                            : styles.td
-                        }
-                      >
-                        {agingBucket(row.item.updated_at)}
-                      </td>
-                      <td style={styles.td}>
-                        {row.item.difference_reason_codes.length > 0
-                          ? row.item.difference_reason_codes.join(", ")
-                          : "-"}
-                      </td>
-                    </tr>
-                  ))}
+                  {reviewRows.map((row, index) => {
+                    const rowKey = compareRowKey(row);
+                    const reviewStatus = reviewStatuses[rowKey] ?? "pending";
+
+                    return (
+                      <tr key={`${rowKey}:${index}`} style={reviewRowStyle(row.item)}>
+                          <td style={styles.td}>
+                            <span style={severityStyle(row.item.difference_severity)}>
+                              {severityLabel(row.item.difference_severity)}
+                            </span>
+                          </td>
+                          <td style={styles.td}>{displayValue(row.location_code)}</td>
+                          <td style={styles.td}>{row.pallet_code}</td>
+                          <td style={styles.td}>{displayValue(row.item.part_no)}</td>
+                          <td style={styles.td}>
+                            {displayValue(row.item.project_no ?? row.pallet_project_no)}
+                          </td>
+                          <td style={styles.td}>{displayValue(row.item.pallet_item_quantity)}</td>
+                          <td style={styles.td}>
+                            {displayValue(row.item.inventory_current_quantity)}
+                          </td>
+                          <td style={{ ...styles.td, ...styles.warningCell }}>
+                            {formatQuantityDiff(row.item.quantity_diff)}
+                          </td>
+                          <td style={styles.td}>{formatDateTime(row.item.updated_at)}</td>
+                          <td
+                            style={
+                              agingBucket(row.item.updated_at) === "over 7 days"
+                                ? { ...styles.td, ...styles.warningCell }
+                                : styles.td
+                            }
+                          >
+                            {agingBucket(row.item.updated_at)}
+                          </td>
+                          <td style={styles.td}>
+                            <select
+                              value={reviewStatus}
+                              onChange={(event) =>
+                                updateReviewStatus(row, event.target.value as ReviewStatus)
+                              }
+                              style={styles.reviewSelect}
+                              aria-label="review status"
+                            >
+                              {reviewStatusOrder.map((status) => (
+                                <option key={status} value={status}>
+                                  {reviewStatusLabel(status)}
+                                </option>
+                              ))}
+                            </select>
+                          </td>
+                          <td style={styles.td}>
+                            {row.item.difference_reason_codes.length > 0
+                              ? row.item.difference_reason_codes.join(", ")
+                              : "-"}
+                          </td>
+                        </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
