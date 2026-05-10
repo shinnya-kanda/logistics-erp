@@ -23,7 +23,12 @@ function eventLocation(event: TraceEventRow): string {
 }
 
 function eventRequestId(event: TraceEventRow): string | null {
-  if (event.source !== "pallet_transactions") return null;
+  if (
+    event.source !== "inventory_transactions" &&
+    event.source !== "pallet_transactions"
+  ) {
+    return null;
+  }
   if (event.request_id) return event.request_id;
 
   const requestId = event.data?.request_id;

@@ -168,6 +168,7 @@ function toPalletEvent(row: PalletTransactionRow): TraceEvent {
     warehouse_code: row.warehouse_code,
     created_at: row.created_at,
     trace_id: row.trace_id,
+    request_id: row.request_id,
     id: row.id,
     event_at: row.event_at ?? row.occurred_at,
     from_location_code: row.from_location_code,
