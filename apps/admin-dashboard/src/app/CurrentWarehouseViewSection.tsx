@@ -7,6 +7,17 @@ import {
   type CurrentWarehouseLocation,
 } from "./palletSearchApi";
 
+type DifferenceSeverity = CurrentWarehouseItem["difference_severity"];
+
+type CompareDashboardRow = {
+  location_code: string | null;
+  pallet_code: string;
+  pallet_project_no: string | null;
+  item: CurrentWarehouseItem;
+};
+
+const severityOrder: DifferenceSeverity[] = ["critical", "high", "warning", "info"];
+
 function displayValue(value: string | number | null | undefined): string {
   if (value === null || value === undefined || value === "") return "-";
   return String(value);
@@ -62,6 +73,40 @@ const styles = {
     borderRadius: "10px",
     background: "#f5f7fb",
     fontWeight: 700,
+  },
+  comparePanel: {
+    marginTop: "1rem",
+    padding: "1rem",
+    border: "1px solid #ddd",
+    borderRadius: "12px",
+    background: "#fafafa",
+  },
+  compareLead: {
+    color: "#555",
+    lineHeight: 1.6,
+  },
+  severityGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(9rem, 1fr))",
+    gap: "0.75rem",
+    marginTop: "0.8rem",
+  },
+  severityCard: {
+    padding: "0.8rem",
+    border: "1px solid #ddd",
+    borderRadius: "12px",
+    background: "#fff",
+  },
+  severityCount: {
+    display: "block",
+    marginTop: "0.35rem",
+    fontSize: "1.6rem",
+    fontWeight: 900,
+  },
+  reviewCard: {
+    borderColor: "#c62828",
+    background: "#ffebee",
+    color: "#b71c1c",
   },
   locationCard: {
     marginTop: "1rem",
@@ -156,6 +201,36 @@ function countReviewRequired(locations: CurrentWarehouseLocation[]): number {
   );
 }
 
+function collectCompareRows(locations: CurrentWarehouseLocation[]): CompareDashboardRow[] {
+  return locations.flatMap((location) =>
+    location.pallets.flatMap((pallet) =>
+      pallet.items.map((item) => ({
+        location_code: location.location_code,
+        pallet_code: pallet.pallet_code,
+        pallet_project_no: pallet.project_no,
+        item,
+      }))
+    )
+  );
+}
+
+function severityCounts(rows: CompareDashboardRow[]): Record<DifferenceSeverity, number> {
+  return rows.reduce<Record<DifferenceSeverity, number>>(
+    (counts, row) => {
+      counts[row.item.difference_severity] += 1;
+      return counts;
+    },
+    { info: 0, warning: 0, high: 0, critical: 0 }
+  );
+}
+
+function severitySortValue(severity: DifferenceSeverity): number {
+  if (severity === "critical") return 0;
+  if (severity === "high") return 1;
+  if (severity === "warning") return 2;
+  return 3;
+}
+
 function formatQuantityDiff(value: number | null | undefined): string {
   if (value === null || value === undefined) return "-";
   if (value > 0) return `+${value}`;
@@ -177,6 +252,19 @@ function severityStyle(severity: CurrentWarehouseItem["difference_severity"]) {
     return { ...styles.badge, background: "#fff8e1", color: "#8a5a00" };
   }
   return { ...styles.badge, background: "#e8f5e9", color: "#2e7d32" };
+}
+
+function severityCardStyle(severity: DifferenceSeverity) {
+  if (severity === "critical") {
+    return { ...styles.severityCard, borderColor: "#c62828", background: "#ffebee" };
+  }
+  if (severity === "high") {
+    return { ...styles.severityCard, borderColor: "#ef6c00", background: "#fff3e0" };
+  }
+  if (severity === "warning") {
+    return { ...styles.severityCard, borderColor: "#f9a825", background: "#fffde7" };
+  }
+  return styles.severityCard;
 }
 
 function reviewRowStyle(item: CurrentWarehouseItem) {
@@ -227,6 +315,16 @@ export function CurrentWarehouseViewSection() {
       setLoading(false);
     }
   }
+
+  const compareRows = collectCompareRows(locations);
+  const countsBySeverity = severityCounts(compareRows);
+  const reviewRows = compareRows
+    .filter((row) => row.item.review_required)
+    .sort(
+      (a, b) =>
+        severitySortValue(a.item.difference_severity) -
+        severitySortValue(b.item.difference_severity)
+    );
 
   return (
     <section style={styles.panel}>
@@ -295,6 +393,89 @@ export function CurrentWarehouseViewSection() {
           棚数: {locations.length} / PL数: {countPallets(locations)} / 数量差異:{" "}
           {countQuantityDiffs(locations)} / 要確認: {countReviewRequired(locations)}
         </div>
+      ) : null}
+
+      {searched && compareRows.length > 0 ? (
+        <section style={styles.comparePanel}>
+          <h3 style={{ marginTop: 0 }}>compare dashboard（差異確認）</h3>
+          <p style={styles.compareLead}>
+            `inventory_current` と `pallet_units + pallet_item_links` の compare-only 結果です。
+            この画面は visibility / read-only 用途であり、自動修正・correction・rebuild・replay
+            は行いません。
+          </p>
+
+          <div style={styles.severityGrid}>
+            {severityOrder.map((severity) => (
+              <div key={severity} style={severityCardStyle(severity)}>
+                <span style={severityStyle(severity)}>{severityLabel(severity)}</span>
+                <span style={styles.severityCount}>{countsBySeverity[severity]}</span>
+              </div>
+            ))}
+            <div style={{ ...styles.severityCard, ...styles.reviewCard }}>
+              <strong>REVIEW REQUIRED</strong>
+              <span style={styles.severityCount}>{reviewRows.length}</span>
+            </div>
+          </div>
+
+          <h4>確認すべき差異一覧</h4>
+          {reviewRows.length === 0 ? (
+            <p style={{ color: "#555" }}>
+              review_required の差異はありません。差異なしまたは info のみです。
+            </p>
+          ) : (
+            <div style={styles.tableWrap}>
+              <table style={styles.table}>
+                <thead>
+                  <tr>
+                    <th style={styles.th}>severity</th>
+                    <th style={styles.th}>location_code</th>
+                    <th style={styles.th}>pallet_code</th>
+                    <th style={styles.th}>part_no</th>
+                    <th style={styles.th}>project_no</th>
+                    <th style={styles.th}>pallet qty</th>
+                    <th style={styles.th}>inventory_current</th>
+                    <th style={styles.th}>quantity_diff</th>
+                    <th style={styles.th}>reason code</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reviewRows.map((row, index) => (
+                    <tr
+                      key={`${row.location_code ?? "no-location"}:${row.pallet_code}:${
+                        row.item.part_no ?? "no-part"
+                      }:${index}`}
+                      style={reviewRowStyle(row.item)}
+                    >
+                      <td style={styles.td}>
+                        <span style={severityStyle(row.item.difference_severity)}>
+                          {severityLabel(row.item.difference_severity)}
+                        </span>
+                      </td>
+                      <td style={styles.td}>{displayValue(row.location_code)}</td>
+                      <td style={styles.td}>{row.pallet_code}</td>
+                      <td style={styles.td}>{displayValue(row.item.part_no)}</td>
+                      <td style={styles.td}>
+                        {displayValue(row.item.project_no ?? row.pallet_project_no)}
+                      </td>
+                      <td style={styles.td}>{displayValue(row.item.pallet_item_quantity)}</td>
+                      <td style={styles.td}>
+                        {displayValue(row.item.inventory_current_quantity)}
+                      </td>
+                      <td style={{ ...styles.td, ...styles.warningCell }}>
+                        {formatQuantityDiff(row.item.quantity_diff)}
+                      </td>
+                      <td style={styles.td}>
+                        {row.item.difference_reason_codes.length > 0
+                          ? row.item.difference_reason_codes.join(", ")
+                          : "-"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
       ) : null}
 
       {searched && locations.length === 0 && !error ? (
