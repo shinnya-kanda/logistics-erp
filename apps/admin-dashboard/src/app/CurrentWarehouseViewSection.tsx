@@ -18,6 +18,14 @@ type CompareDashboardRow = {
 
 type AgingBucket = "today" | "1-3 days" | "4-7 days" | "over 7 days" | "unknown";
 type ReviewStatus = "pending" | "reviewing" | "on_hold" | "reviewed";
+type HotspotDimension = "location" | "project" | "part";
+type HotspotRow = {
+  key: string;
+  total_count: number;
+  critical_count: number;
+  high_count: number;
+  review_required_count: number;
+};
 
 const severityOrder: DifferenceSeverity[] = ["critical", "high", "warning", "info"];
 const agingOrder: AgingBucket[] = ["today", "1-3 days", "4-7 days", "over 7 days"];
@@ -125,6 +133,21 @@ const styles = {
     border: "1px solid #ddd",
     borderRadius: "12px",
     background: "#fff",
+  },
+  hotspotGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(18rem, 1fr))",
+    gap: "0.85rem",
+    marginTop: "0.8rem",
+  },
+  hotspotCard: {
+    padding: "0.85rem",
+    border: "1px solid #ddd",
+    borderRadius: "12px",
+    background: "#fff",
+  },
+  hotspotCriticalRow: {
+    background: "#ffebee",
   },
   reviewSelect: {
     padding: "0.4rem 0.5rem",
@@ -341,6 +364,51 @@ function reviewStatusStyle(status: ReviewStatus) {
   return { ...styles.badge, background: "#e8f5e9", color: "#2e7d32" };
 }
 
+function hotspotKey(row: CompareDashboardRow, dimension: HotspotDimension): string {
+  if (dimension === "location") return row.location_code || "location未設定";
+  if (dimension === "project") {
+    return row.item.project_no || row.pallet_project_no || "project_no未設定";
+  }
+  return row.item.part_no || "part_no未設定";
+}
+
+function buildHotspots(
+  rows: CompareDashboardRow[],
+  dimension: HotspotDimension
+): HotspotRow[] {
+  const hotspots = new Map<string, HotspotRow>();
+
+  for (const row of rows) {
+    const key = hotspotKey(row, dimension);
+    const current =
+      hotspots.get(key) ??
+      {
+        key,
+        total_count: 0,
+        critical_count: 0,
+        high_count: 0,
+        review_required_count: 0,
+      };
+
+    current.total_count += 1;
+    if (row.item.difference_severity === "critical") current.critical_count += 1;
+    if (row.item.difference_severity === "high") current.high_count += 1;
+    if (row.item.review_required) current.review_required_count += 1;
+    hotspots.set(key, current);
+  }
+
+  return Array.from(hotspots.values())
+    .sort(
+      (a, b) =>
+        b.critical_count - a.critical_count ||
+        b.review_required_count - a.review_required_count ||
+        b.high_count - a.high_count ||
+        b.total_count - a.total_count ||
+        a.key.localeCompare(b.key, "ja")
+    )
+    .slice(0, 5);
+}
+
 function formatQuantityDiff(value: number | null | undefined): string {
   if (value === null || value === undefined) return "-";
   if (value > 0) return `+${value}`;
@@ -433,6 +501,9 @@ export function CurrentWarehouseViewSection() {
   const reviewRowsBase = compareRows.filter((row) => row.item.review_required);
   const countsByAging = agingCounts(reviewRowsBase);
   const countsByReviewStatus = reviewStatusCounts(reviewRowsBase, reviewStatuses);
+  const locationHotspots = buildHotspots(reviewRowsBase, "location");
+  const projectHotspots = buildHotspots(reviewRowsBase, "project");
+  const partHotspots = buildHotspots(reviewRowsBase, "part");
   const reviewRows = compareRows
     .filter((row) => row.item.review_required)
     .sort(
@@ -572,6 +643,62 @@ export function CurrentWarehouseViewSection() {
                 <span style={reviewStatusStyle(status)}>{reviewStatusLabel(status)}</span>
                 <span style={styles.severityCount}>{countsByReviewStatus[status]}</span>
               </div>
+            ))}
+          </div>
+
+          <h4>hotspot analytics</h4>
+          <p style={styles.compareLead}>
+            review_required の差異を location_code / project_no / part_no 別に集計します。
+            analytics は read-only 集計表示のみで、correction・rebuild・replay には進みません。
+          </p>
+          <div style={styles.hotspotGrid}>
+            {[
+              { title: "location_code hotspot", rows: locationHotspots },
+              { title: "project_no hotspot", rows: projectHotspots },
+              { title: "part_no hotspot", rows: partHotspots },
+            ].map((hotspot) => (
+              <section key={hotspot.title} style={styles.hotspotCard}>
+                <h5 style={{ margin: "0 0 0.5rem" }}>{hotspot.title}</h5>
+                {hotspot.rows.length === 0 ? (
+                  <p style={{ color: "#555" }}>review_required の差異はありません。</p>
+                ) : (
+                  <div style={styles.tableWrap}>
+                    <table style={styles.table}>
+                      <thead>
+                        <tr>
+                          <th style={styles.th}>key</th>
+                          <th style={styles.th}>total</th>
+                          <th style={styles.th}>critical</th>
+                          <th style={styles.th}>high</th>
+                          <th style={styles.th}>review</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {hotspot.rows.map((row) => (
+                          <tr
+                            key={`${hotspot.title}:${row.key}`}
+                            style={row.critical_count > 0 ? styles.hotspotCriticalRow : undefined}
+                          >
+                            <td style={styles.td}>{row.key}</td>
+                            <td style={styles.td}>{row.total_count}</td>
+                            <td
+                              style={
+                                row.critical_count > 0
+                                  ? { ...styles.td, ...styles.reviewCell }
+                                  : styles.td
+                              }
+                            >
+                              {row.critical_count}
+                            </td>
+                            <td style={styles.td}>{row.high_count}</td>
+                            <td style={styles.td}>{row.review_required_count}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
             ))}
           </div>
 
