@@ -39,6 +39,32 @@ type InventorySearchParams = {
   status?: PalletSearchStatus;
 };
 
+export type InventoryCurrentRow = {
+  id: string;
+  part_no: string;
+  part_name: string | null;
+  warehouse_code: string;
+  location_code: string;
+  inventory_type: string;
+  project_no: string | null;
+  mrp_key: string | null;
+  pallet_id: string | null;
+  quantity_on_hand: string | number;
+  quantity_unit: string;
+  updated_at: string | null;
+};
+
+type InventoryCurrentSearchParams = {
+  partNo?: string;
+  locationCode?: string;
+  projectNo?: string;
+  inventoryType?: string;
+};
+
+type InventoryCurrentSearchResponse =
+  | { ok: true; items: InventoryCurrentRow[] }
+  | { ok: false; error: string };
+
 export type EmptyPalletRow = {
   pallet_id: string;
   pallet_code: string;
@@ -178,6 +204,17 @@ function isPalletSearchRow(v: unknown): v is PalletSearchRow {
     typeof v.pallet_id === "string" &&
     typeof v.pallet_code === "string" &&
     typeof v.warehouse_code === "string"
+  );
+}
+
+function isInventoryCurrentRow(v: unknown): v is InventoryCurrentRow {
+  if (!isRecord(v)) return false;
+  return (
+    typeof v.id === "string" &&
+    typeof v.part_no === "string" &&
+    typeof v.warehouse_code === "string" &&
+    typeof v.location_code === "string" &&
+    typeof v.inventory_type === "string"
   );
 }
 
@@ -603,6 +640,56 @@ export async function searchInventory({
   }
 
   return { ok: true, pallets: json.pallets.filter(isPalletSearchRow) };
+}
+
+export async function searchInventoryCurrent({
+  partNo,
+  locationCode,
+  projectNo,
+  inventoryType,
+}: InventoryCurrentSearchParams): Promise<InventoryCurrentSearchResponse> {
+  const params = new URLSearchParams();
+  const trimmedPartNo = partNo?.trim();
+  const trimmedLocationCode = locationCode?.trim();
+  const trimmedProjectNo = projectNo?.trim();
+  const trimmedInventoryType = inventoryType?.trim();
+
+  if (trimmedPartNo) {
+    params.set("part_no", trimmedPartNo);
+  }
+  if (trimmedLocationCode) {
+    params.set("location_code", trimmedLocationCode);
+  }
+  if (trimmedProjectNo) {
+    params.set("project_no", trimmedProjectNo);
+  }
+  if (trimmedInventoryType) {
+    params.set("inventory_type", trimmedInventoryType);
+  }
+
+  const query = params.toString();
+  const res = await fetch(
+    `${FUNCTIONS_BASE}/inventory-current-search${query ? `?${query}` : ""}`,
+    {
+      headers: await edgeFunctionHeaders(),
+    }
+  );
+  let json: unknown;
+  try {
+    json = await res.json();
+  } catch {
+    return { ok: false, error: "APIからJSON以外の応答が返りました。" };
+  }
+
+  if (!res.ok) {
+    return { ok: false, error: parseError(json) };
+  }
+
+  if (!isRecord(json) || json.ok !== true || !Array.isArray(json.items)) {
+    return { ok: false, error: "部品現在庫検索結果の形式が不正です。" };
+  }
+
+  return { ok: true, items: json.items.filter(isInventoryCurrentRow) };
 }
 
 export async function getPalletDetail(
