@@ -149,6 +149,27 @@ const styles = {
   hotspotCriticalRow: {
     background: "#ffebee",
   },
+  observabilityCard: {
+    padding: "0.85rem",
+    border: "1px solid #ddd",
+    borderRadius: "12px",
+    background: "#fff",
+  },
+  healthGood: {
+    borderColor: "#2e7d32",
+    background: "#e8f5e9",
+    color: "#1b5e20",
+  },
+  healthWarning: {
+    borderColor: "#ef6c00",
+    background: "#fff3e0",
+    color: "#8a3f00",
+  },
+  healthCritical: {
+    borderColor: "#c62828",
+    background: "#ffebee",
+    color: "#b71c1c",
+  },
   reviewSelect: {
     padding: "0.4rem 0.5rem",
     border: "1px solid #bbb",
@@ -409,6 +430,49 @@ function buildHotspots(
     .slice(0, 5);
 }
 
+function isUnresolved(row: CompareDashboardRow, statuses: Record<string, ReviewStatus>): boolean {
+  return (statuses[compareRowKey(row)] ?? "pending") !== "reviewed";
+}
+
+function unresolvedBacklogCount(
+  rows: CompareDashboardRow[],
+  statuses: Record<string, ReviewStatus>
+): number {
+  return rows.filter((row) => isUnresolved(row, statuses)).length;
+}
+
+function unresolvedAgingCount(
+  rows: CompareDashboardRow[],
+  statuses: Record<string, ReviewStatus>
+): number {
+  return rows.filter((row) => {
+    const bucket = agingBucket(row.item.updated_at);
+    return isUnresolved(row, statuses) && (bucket === "4-7 days" || bucket === "over 7 days");
+  }).length;
+}
+
+function consistencyHealthLabel(args: {
+  criticalCount: number;
+  reviewBacklog: number;
+  unresolvedAging: number;
+}): "stable" | "watch" | "critical" {
+  if (args.criticalCount > 0 || args.unresolvedAging > 0) return "critical";
+  if (args.reviewBacklog > 0) return "watch";
+  return "stable";
+}
+
+function healthCardStyle(health: "stable" | "watch" | "critical") {
+  if (health === "critical") return { ...styles.observabilityCard, ...styles.healthCritical };
+  if (health === "watch") return { ...styles.observabilityCard, ...styles.healthWarning };
+  return { ...styles.observabilityCard, ...styles.healthGood };
+}
+
+function topHotspotLabel(title: string, rows: HotspotRow[]): string {
+  const top = rows[0];
+  if (!top) return `${title}: -`;
+  return `${title}: ${top.key} (${top.review_required_count})`;
+}
+
 function formatQuantityDiff(value: number | null | undefined): string {
   if (value === null || value === undefined) return "-";
   if (value > 0) return `+${value}`;
@@ -504,6 +568,13 @@ export function CurrentWarehouseViewSection() {
   const locationHotspots = buildHotspots(reviewRowsBase, "location");
   const projectHotspots = buildHotspots(reviewRowsBase, "project");
   const partHotspots = buildHotspots(reviewRowsBase, "part");
+  const reviewBacklog = unresolvedBacklogCount(reviewRowsBase, reviewStatuses);
+  const unresolvedAging = unresolvedAgingCount(reviewRowsBase, reviewStatuses);
+  const consistencyHealth = consistencyHealthLabel({
+    criticalCount: countsBySeverity.critical,
+    reviewBacklog,
+    unresolvedAging,
+  });
   const reviewRows = compareRows
     .filter((row) => row.item.review_required)
     .sort(
@@ -607,6 +678,38 @@ export function CurrentWarehouseViewSection() {
             <div style={{ ...styles.severityCard, ...styles.reviewCard }}>
               <strong>REVIEW REQUIRED</strong>
               <span style={styles.severityCount}>{reviewRows.length}</span>
+            </div>
+          </div>
+
+          <h4>operational observability</h4>
+          <p style={styles.compareLead}>
+            inventory / pallet consistency の現在の運用品質状態を read-only metrics として表示します。
+            監視・説明用の summary であり、correction・rebuild・replay・自動同期は行いません。
+          </p>
+          <div style={styles.severityGrid}>
+            <div style={healthCardStyle(consistencyHealth)}>
+              <strong>consistency health</strong>
+              <span style={styles.severityCount}>{consistencyHealth}</span>
+            </div>
+            <div style={styles.observabilityCard}>
+              <strong>review backlog</strong>
+              <span style={styles.severityCount}>{reviewBacklog}</span>
+            </div>
+            <div style={{ ...styles.observabilityCard, ...styles.healthCritical }}>
+              <strong>critical differences</strong>
+              <span style={styles.severityCount}>{countsBySeverity.critical}</span>
+            </div>
+            <div style={{ ...styles.observabilityCard, ...styles.healthWarning }}>
+              <strong>unresolved aging</strong>
+              <span style={styles.severityCount}>{unresolvedAging}</span>
+            </div>
+          </div>
+          <div style={{ ...styles.observabilityCard, marginTop: "0.8rem" }}>
+            <strong>hotspot top summary</strong>
+            <div style={{ marginTop: "0.45rem", color: "#555" }}>
+              {topHotspotLabel("location", locationHotspots)} /{" "}
+              {topHotspotLabel("project", projectHotspots)} /{" "}
+              {topHotspotLabel("part", partHotspots)}
             </div>
           </div>
 
