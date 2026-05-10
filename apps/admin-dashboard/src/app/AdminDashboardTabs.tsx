@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { BillingCheckSection } from "./BillingCheckSection";
+import { CurrentWarehouseViewSection } from "./CurrentWarehouseViewSection";
 import { CustomerExportSection } from "./CustomerExportSection";
 import { EmptyPalletSearchSection } from "./EmptyPalletSearchSection";
 import { InboundLabelPrintSection } from "./InboundLabelPrintSection";
@@ -18,6 +19,7 @@ type AdminTab =
   | "project-no-correction"
   | "locations"
   | "billing-check"
+  | "current-warehouse-view"
   | "inventory-current"
   | "inventory-ledger"
   | "trace-search"
@@ -30,6 +32,7 @@ const tabs: Array<{ id: AdminTab; label: string }> = [
   { id: "project-no-correction", label: "project_no補正" },
   { id: "locations", label: "棚番マスタ" },
   { id: "billing-check", label: "請求確認" },
+  { id: "current-warehouse-view", label: "現在保管状態" },
   { id: "inventory-current", label: "部品現在庫" },
   { id: "inventory-ledger", label: "パレット在庫台帳" },
   { id: "trace-search", label: "trace検索" },
@@ -92,6 +95,7 @@ export function AdminDashboardTabs() {
       {activeTab === "project-no-correction" ? <ProjectNoCorrectionSection /> : null}
       {activeTab === "locations" ? <WarehouseLocationSection /> : null}
       {activeTab === "billing-check" ? <BillingCheckSection /> : null}
+      {activeTab === "current-warehouse-view" ? <CurrentWarehouseViewSection /> : null}
       {activeTab === "inventory-current" ? <InventoryCurrentSection /> : null}
       {activeTab === "inventory-ledger" ? <InventoryLedgerSection /> : null}
       {activeTab === "trace-search" ? <TraceSearchSection /> : null}

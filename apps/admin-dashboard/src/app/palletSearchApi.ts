@@ -65,6 +65,40 @@ type InventoryCurrentSearchResponse =
   | { ok: true; items: InventoryCurrentRow[] }
   | { ok: false; error: string };
 
+export type CurrentWarehouseItem = {
+  part_no: string | null;
+  part_name: string | null;
+  quantity: string | number | null;
+  quantity_unit: string | null;
+  project_no: string | null;
+  updated_at: string | null;
+};
+
+export type CurrentWarehousePallet = {
+  pallet_id: string;
+  pallet_code: string;
+  project_no: string | null;
+  current_status: string | null;
+  updated_at: string | null;
+  items: CurrentWarehouseItem[];
+};
+
+export type CurrentWarehouseLocation = {
+  location_code: string | null;
+  pallets: CurrentWarehousePallet[];
+};
+
+type CurrentWarehouseViewParams = {
+  locationCode?: string;
+  palletCode?: string;
+  partNo?: string;
+  projectNo?: string;
+};
+
+type CurrentWarehouseViewResponse =
+  | { ok: true; locations: CurrentWarehouseLocation[] }
+  | { ok: false; error: string };
+
 export type EmptyPalletRow = {
   pallet_id: string;
   pallet_code: string;
@@ -215,6 +249,35 @@ function isInventoryCurrentRow(v: unknown): v is InventoryCurrentRow {
     typeof v.warehouse_code === "string" &&
     typeof v.location_code === "string" &&
     typeof v.inventory_type === "string"
+  );
+}
+
+function isCurrentWarehouseItem(v: unknown): v is CurrentWarehouseItem {
+  if (!isRecord(v)) return false;
+  return (
+    (typeof v.part_no === "string" || v.part_no === null) &&
+    (typeof v.quantity === "string" ||
+      typeof v.quantity === "number" ||
+      v.quantity === null)
+  );
+}
+
+function isCurrentWarehousePallet(v: unknown): v is CurrentWarehousePallet {
+  if (!isRecord(v)) return false;
+  return (
+    typeof v.pallet_id === "string" &&
+    typeof v.pallet_code === "string" &&
+    Array.isArray(v.items) &&
+    v.items.every(isCurrentWarehouseItem)
+  );
+}
+
+function isCurrentWarehouseLocation(v: unknown): v is CurrentWarehouseLocation {
+  if (!isRecord(v)) return false;
+  return (
+    (typeof v.location_code === "string" || v.location_code === null) &&
+    Array.isArray(v.pallets) &&
+    v.pallets.every(isCurrentWarehousePallet)
   );
 }
 
@@ -690,6 +753,56 @@ export async function searchInventoryCurrent({
   }
 
   return { ok: true, items: json.items.filter(isInventoryCurrentRow) };
+}
+
+export async function getCurrentWarehouseView({
+  locationCode,
+  palletCode,
+  partNo,
+  projectNo,
+}: CurrentWarehouseViewParams): Promise<CurrentWarehouseViewResponse> {
+  const params = new URLSearchParams();
+  const trimmedLocationCode = locationCode?.trim();
+  const trimmedPalletCode = palletCode?.trim();
+  const trimmedPartNo = partNo?.trim();
+  const trimmedProjectNo = projectNo?.trim();
+
+  if (trimmedLocationCode) {
+    params.set("location_code", trimmedLocationCode);
+  }
+  if (trimmedPalletCode) {
+    params.set("pallet_code", trimmedPalletCode);
+  }
+  if (trimmedPartNo) {
+    params.set("part_no", trimmedPartNo);
+  }
+  if (trimmedProjectNo) {
+    params.set("project_no", trimmedProjectNo);
+  }
+
+  const query = params.toString();
+  const res = await fetch(
+    `${FUNCTIONS_BASE}/current-warehouse-view${query ? `?${query}` : ""}`,
+    {
+      headers: await edgeFunctionHeaders(),
+    }
+  );
+  let json: unknown;
+  try {
+    json = await res.json();
+  } catch {
+    return { ok: false, error: "APIからJSON以外の応答が返りました。" };
+  }
+
+  if (!res.ok) {
+    return { ok: false, error: parseError(json) };
+  }
+
+  if (!isRecord(json) || json.ok !== true || !Array.isArray(json.locations)) {
+    return { ok: false, error: "現在保管状態の形式が不正です。" };
+  }
+
+  return { ok: true, locations: json.locations.filter(isCurrentWarehouseLocation) };
 }
 
 export async function getPalletDetail(
