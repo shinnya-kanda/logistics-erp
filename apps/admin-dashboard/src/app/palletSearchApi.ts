@@ -70,7 +70,11 @@ export type CurrentWarehouseItem = {
   part_name: string | null;
   quantity: string | number | null;
   quantity_unit: string | null;
+  inventory_type: string | null;
   project_no: string | null;
+  pallet_item_quantity: number | null;
+  inventory_current_quantity: number | null;
+  quantity_diff: number | null;
   updated_at: string | null;
 };
 
@@ -258,7 +262,12 @@ function isCurrentWarehouseItem(v: unknown): v is CurrentWarehouseItem {
     (typeof v.part_no === "string" || v.part_no === null) &&
     (typeof v.quantity === "string" ||
       typeof v.quantity === "number" ||
-      v.quantity === null)
+      v.quantity === null) &&
+    (typeof v.inventory_type === "string" || v.inventory_type === null) &&
+    (typeof v.pallet_item_quantity === "number" || v.pallet_item_quantity === null) &&
+    (typeof v.inventory_current_quantity === "number" ||
+      v.inventory_current_quantity === null) &&
+    (typeof v.quantity_diff === "number" || v.quantity_diff === null)
   );
 }
 
