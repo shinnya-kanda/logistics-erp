@@ -75,6 +75,9 @@ export type CurrentWarehouseItem = {
   pallet_item_quantity: number | null;
   inventory_current_quantity: number | null;
   quantity_diff: number | null;
+  difference_severity: "info" | "warning" | "high" | "critical";
+  difference_reason_codes: string[];
+  review_required: boolean;
   updated_at: string | null;
 };
 
@@ -267,7 +270,14 @@ function isCurrentWarehouseItem(v: unknown): v is CurrentWarehouseItem {
     (typeof v.pallet_item_quantity === "number" || v.pallet_item_quantity === null) &&
     (typeof v.inventory_current_quantity === "number" ||
       v.inventory_current_quantity === null) &&
-    (typeof v.quantity_diff === "number" || v.quantity_diff === null)
+    (typeof v.quantity_diff === "number" || v.quantity_diff === null) &&
+    (v.difference_severity === "info" ||
+      v.difference_severity === "warning" ||
+      v.difference_severity === "high" ||
+      v.difference_severity === "critical") &&
+    Array.isArray(v.difference_reason_codes) &&
+    v.difference_reason_codes.every((reason) => typeof reason === "string") &&
+    typeof v.review_required === "boolean"
   );
 }
 

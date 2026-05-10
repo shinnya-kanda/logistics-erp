@@ -9,6 +9,8 @@ const corsHeaders = {
   "Access-Control-Allow-Credentials": "true",
 };
 
+type DifferenceSeverity = "info" | "warning" | "high" | "critical";
+
 type PalletUnitRow = {
   id: string;
   pallet_code: string;
@@ -41,6 +43,9 @@ type CurrentWarehouseItem = {
   pallet_item_quantity: number | null;
   inventory_current_quantity: number | null;
   quantity_diff: number | null;
+  difference_severity: DifferenceSeverity;
+  difference_reason_codes: string[];
+  review_required: boolean;
   updated_at: string | null;
 };
 
@@ -66,6 +71,14 @@ type InventoryCurrentRow = {
   project_no: string | null;
   quantity_on_hand: string | number | null;
 };
+
+type DifferenceClassification = {
+  difference_severity: DifferenceSeverity;
+  difference_reason_codes: string[];
+  review_required: boolean;
+};
+
+const EXTREME_QUANTITY_DIFF_THRESHOLD = 1000;
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -118,6 +131,142 @@ function quantityKey(args: {
     args.inventoryType,
     args.projectNo ?? "",
   ].join("\u001f");
+}
+
+function sameNullableValue(a: string | null, b: string | null): boolean {
+  return (a ?? "") === (b ?? "");
+}
+
+function addReason(reasons: string[], reason: string): void {
+  if (!reasons.includes(reason)) reasons.push(reason);
+}
+
+function severityRank(severity: DifferenceSeverity): number {
+  switch (severity) {
+    case "critical":
+      return 3;
+    case "high":
+      return 2;
+    case "warning":
+      return 1;
+    case "info":
+      return 0;
+  }
+}
+
+function maxSeverity(...severities: DifferenceSeverity[]): DifferenceSeverity {
+  return severities.reduce<DifferenceSeverity>(
+    (current, next) => (severityRank(next) > severityRank(current) ? next : current),
+    "info"
+  );
+}
+
+function classifyDifference(args: {
+  warehouseCode: string;
+  palletWarehouseCode: string;
+  locationCode: string | null;
+  partNo: string | null;
+  inventoryType: string | null;
+  projectNo: string | null;
+  palletItemQuantity: number | null;
+  inventoryCurrentQuantity: number | null;
+  quantityDiff: number | null;
+  exactCurrentRowExists: boolean;
+  currentRowsForPart: InventoryCurrentRow[];
+}): DifferenceClassification {
+  const reasons: string[] = [];
+  let severity: DifferenceSeverity = "info";
+
+  if (args.palletWarehouseCode !== args.warehouseCode) {
+    addReason(reasons, "warehouse_boundary_mismatch");
+    severity = maxSeverity(severity, "critical");
+  }
+
+  if (
+    !args.locationCode ||
+    !args.partNo ||
+    !args.inventoryType ||
+    args.palletItemQuantity === null ||
+    (args.exactCurrentRowExists && args.inventoryCurrentQuantity === null)
+  ) {
+    addReason(reasons, "incomplete_data");
+    severity = maxSeverity(severity, "warning");
+  }
+
+  if (!args.exactCurrentRowExists && args.palletItemQuantity !== null) {
+    addReason(reasons, "missing_inventory_current");
+    severity = maxSeverity(severity, "critical");
+  }
+
+  for (const row of args.currentRowsForPart) {
+    if (row.warehouse_code !== args.warehouseCode) {
+      addReason(reasons, "warehouse_boundary_mismatch");
+      severity = maxSeverity(severity, "critical");
+    }
+  }
+
+  const comparableRows = args.currentRowsForPart.filter(
+    (row) => row.warehouse_code === args.warehouseCode
+  );
+
+  if (
+    args.locationCode &&
+    comparableRows.some(
+      (row) =>
+        row.location_code !== args.locationCode &&
+        row.inventory_type === args.inventoryType &&
+        sameNullableValue(row.project_no, args.projectNo)
+    )
+  ) {
+    addReason(reasons, "location_mismatch");
+    severity = maxSeverity(severity, "high");
+  }
+
+  if (
+    args.locationCode &&
+    comparableRows.some(
+      (row) =>
+        row.location_code === args.locationCode &&
+        row.inventory_type === args.inventoryType &&
+        !sameNullableValue(row.project_no, args.projectNo)
+    )
+  ) {
+    addReason(reasons, "project_no_mismatch");
+    severity = maxSeverity(severity, "high");
+  }
+
+  if (
+    args.locationCode &&
+    comparableRows.some(
+      (row) =>
+        row.location_code === args.locationCode &&
+        row.inventory_type !== args.inventoryType &&
+        sameNullableValue(row.project_no, args.projectNo)
+    )
+  ) {
+    addReason(reasons, "inventory_type_mismatch");
+    severity = maxSeverity(severity, "high");
+  }
+
+  if (typeof args.quantityDiff === "number" && args.quantityDiff !== 0) {
+    addReason(reasons, "quantity_mismatch");
+    severity = maxSeverity(severity, "high");
+
+    if (Math.abs(args.quantityDiff) >= EXTREME_QUANTITY_DIFF_THRESHOLD) {
+      addReason(reasons, "quantity_diff_extreme");
+      severity = maxSeverity(severity, "critical");
+    }
+  }
+
+  if (reasons.length === 0) {
+    addReason(reasons, "no_difference");
+  }
+
+  return {
+    difference_severity: severity,
+    difference_reason_codes: reasons,
+    review_required: severity !== "info",
+  };
 }
 
 serve(async (req) => {
@@ -214,14 +363,6 @@ serve(async (req) => {
           .filter((value): value is string => Boolean(value))
       )
     );
-    const locationCodes = Array.from(
-      new Set(
-        pallets
-          .map((pallet) => pallet.current_location_code?.trim())
-          .filter((value): value is string => Boolean(value))
-      )
-    );
-
     const palletQuantityByKey = new Map<string, number>();
     for (const pallet of pallets) {
       const links = linksByPalletId.get(pallet.id) ?? [];
@@ -240,17 +381,14 @@ serve(async (req) => {
     }
 
     const inventoryQuantityByKey = new Map<string, number>();
-    if (partNos.length > 0 && locationCodes.length > 0) {
-      let currentQuery = supabase
+    const inventoryCurrentKeys = new Set<string>();
+    const inventoryRowsByPartNo = new Map<string, InventoryCurrentRow[]>();
+    if (partNos.length > 0) {
+      const currentQuery = supabase
         .from("inventory_current")
         .select("part_no, warehouse_code, location_code, inventory_type, project_no, quantity_on_hand")
         .eq("warehouse_code", guard.warehouseCode)
-        .in("part_no", partNos)
-        .in("location_code", locationCodes);
-
-      if (projectNo) {
-        currentQuery = currentQuery.eq("project_no", projectNo);
-      }
+        .in("part_no", partNos);
 
       const { data: currentRows, error: currentError } =
         await currentQuery.returns<InventoryCurrentRow[]>();
@@ -266,6 +404,14 @@ serve(async (req) => {
           inventoryType: row.inventory_type,
           projectNo: row.project_no,
         });
+        const rows = inventoryRowsByPartNo.get(row.part_no) ?? [];
+        rows.push(row);
+        inventoryRowsByPartNo.set(row.part_no, rows);
+
+        if (key) {
+          inventoryCurrentKeys.add(key);
+        }
+
         const quantity = numericValue(row.quantity_on_hand);
         if (!key || quantity === null) continue;
         inventoryQuantityByKey.set(key, (inventoryQuantityByKey.get(key) ?? 0) + quantity);
@@ -301,13 +447,28 @@ serve(async (req) => {
             projectNo: itemProjectNo,
           });
           const palletItemQuantity = key ? palletQuantityByKey.get(key) ?? 0 : null;
-          const inventoryCurrentQuantity = key
-            ? inventoryQuantityByKey.get(key) ?? 0
-            : null;
+          const exactCurrentRowExists = key ? inventoryCurrentKeys.has(key) : false;
+          const inventoryCurrentQuantity =
+            key && exactCurrentRowExists ? inventoryQuantityByKey.get(key) ?? 0 : null;
           const quantityDiff =
-            palletItemQuantity !== null && inventoryCurrentQuantity !== null
-              ? palletItemQuantity - inventoryCurrentQuantity
+            palletItemQuantity !== null
+              ? palletItemQuantity - (inventoryCurrentQuantity ?? 0)
               : null;
+          const classification = classifyDifference({
+            warehouseCode: guard.warehouseCode,
+            palletWarehouseCode: pallet.warehouse_code,
+            locationCode: pallet.current_location_code,
+            partNo: link.part_no,
+            inventoryType: link.inventory_type,
+            projectNo: itemProjectNo,
+            palletItemQuantity,
+            inventoryCurrentQuantity,
+            quantityDiff,
+            exactCurrentRowExists,
+            currentRowsForPart: link.part_no
+              ? inventoryRowsByPartNo.get(link.part_no) ?? []
+              : [],
+          });
 
           return {
             part_no: link.part_no,
@@ -319,6 +480,9 @@ serve(async (req) => {
             pallet_item_quantity: palletItemQuantity,
             inventory_current_quantity: inventoryCurrentQuantity,
             quantity_diff: quantityDiff,
+            difference_severity: classification.difference_severity,
+            difference_reason_codes: classification.difference_reason_codes,
+            review_required: classification.review_required,
             updated_at: link.updated_at ?? pallet.updated_at ?? pallet.created_at,
           };
         }),
