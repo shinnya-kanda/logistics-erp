@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import {
   getCurrentWarehouseView,
+  type CurrentWarehouseItem,
   type CurrentWarehouseLocation,
 } from "./palletSearchApi";
 
@@ -99,9 +100,26 @@ const styles = {
   warningRow: {
     background: "#fff8e1",
   },
+  highRow: {
+    background: "#fff3e0",
+  },
+  criticalRow: {
+    background: "#ffebee",
+  },
   warningCell: {
     color: "#b26a00",
     fontWeight: 700,
+  },
+  reviewCell: {
+    color: "#b71c1c",
+    fontWeight: 800,
+  },
+  badge: {
+    display: "inline-block",
+    padding: "0.2rem 0.45rem",
+    borderRadius: "999px",
+    fontSize: "0.78rem",
+    fontWeight: 800,
   },
 };
 
@@ -125,10 +143,47 @@ function countQuantityDiffs(locations: CurrentWarehouseLocation[]): number {
   );
 }
 
+function countReviewRequired(locations: CurrentWarehouseLocation[]): number {
+  return locations.reduce(
+    (locationSum, location) =>
+      locationSum +
+      location.pallets.reduce(
+        (palletSum, pallet) =>
+          palletSum + pallet.items.filter((item) => item.review_required).length,
+        0
+      ),
+    0
+  );
+}
+
 function formatQuantityDiff(value: number | null | undefined): string {
   if (value === null || value === undefined) return "-";
   if (value > 0) return `+${value}`;
   return String(value);
+}
+
+function severityLabel(severity: CurrentWarehouseItem["difference_severity"]): string {
+  return `[${severity.toUpperCase()}]`;
+}
+
+function severityStyle(severity: CurrentWarehouseItem["difference_severity"]) {
+  if (severity === "critical") {
+    return { ...styles.badge, background: "#c62828", color: "#fff" };
+  }
+  if (severity === "high") {
+    return { ...styles.badge, background: "#ef6c00", color: "#fff" };
+  }
+  if (severity === "warning") {
+    return { ...styles.badge, background: "#fff8e1", color: "#8a5a00" };
+  }
+  return { ...styles.badge, background: "#e8f5e9", color: "#2e7d32" };
+}
+
+function reviewRowStyle(item: CurrentWarehouseItem) {
+  if (item.difference_severity === "critical") return styles.criticalRow;
+  if (item.difference_severity === "high") return styles.highRow;
+  if (item.difference_severity === "warning") return styles.warningRow;
+  return undefined;
 }
 
 export function CurrentWarehouseViewSection() {
@@ -186,6 +241,10 @@ export function CurrentWarehouseViewSection() {
       <p>
         数量差異がある場合は、この画面で修正せず `inventory_transactions` との照合が必要です。
       </p>
+      <p>
+        severity は compare-only 判定です。correction / recovery は自動実行せず、source of
+        truth の確認が必要です。
+      </p>
 
       <form onSubmit={(event) => void handleSubmit(event)} style={styles.form}>
         <label style={styles.field}>
@@ -234,7 +293,7 @@ export function CurrentWarehouseViewSection() {
       {searched ? (
         <div style={styles.summary}>
           棚数: {locations.length} / PL数: {countPallets(locations)} / 数量差異:{" "}
-          {countQuantityDiffs(locations)}
+          {countQuantityDiffs(locations)} / 要確認: {countReviewRequired(locations)}
         </div>
       ) : null}
 
@@ -272,6 +331,9 @@ export function CurrentWarehouseViewSection() {
                       <th style={styles.th}>現在保管状態</th>
                       <th style={styles.th}>inventory_current</th>
                       <th style={styles.th}>差異</th>
+                      <th style={styles.th}>severity</th>
+                      <th style={styles.th}>reason</th>
+                      <th style={styles.th}>review</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -281,11 +343,14 @@ export function CurrentWarehouseViewSection() {
                       const diffStyle = hasDiff
                         ? { ...styles.td, ...styles.warningCell }
                         : styles.td;
+                      const reviewStyle = item.review_required
+                        ? { ...styles.td, ...styles.reviewCell }
+                        : styles.td;
 
                       return (
                         <tr
                           key={`${pallet.pallet_id}:${item.part_no ?? "empty"}:${index}`}
-                          style={hasDiff ? styles.warningRow : undefined}
+                          style={reviewRowStyle(item)}
                         >
                           <td style={styles.td}>{displayValue(item.part_no)}</td>
                           <td style={styles.td}>{displayValue(item.part_name)}</td>
@@ -298,12 +363,25 @@ export function CurrentWarehouseViewSection() {
                             {displayValue(item.inventory_current_quantity)}
                           </td>
                           <td style={diffStyle}>{formatQuantityDiff(item.quantity_diff)}</td>
+                          <td style={styles.td}>
+                            <span style={severityStyle(item.difference_severity)}>
+                              {severityLabel(item.difference_severity)}
+                            </span>
+                          </td>
+                          <td style={styles.td}>
+                            {item.difference_reason_codes.length > 0
+                              ? item.difference_reason_codes.join(", ")
+                              : "-"}
+                          </td>
+                          <td style={reviewStyle}>
+                            {item.review_required ? "要確認" : "通常"}
+                          </td>
                         </tr>
                       );
                     })}
                     {pallet.items.length === 0 ? (
                       <tr>
-                        <td style={styles.td} colSpan={9}>
+                        <td style={styles.td} colSpan={12}>
                           このPLに紐づく品番はありません。
                         </td>
                       </tr>
