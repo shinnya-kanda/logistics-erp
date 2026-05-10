@@ -49,9 +49,9 @@ function eventRequestId(event: TraceEventRow): string | null {
 }
 
 function sourceLabel(source: TraceEventRow["source"]): string {
-  if (source === "inventory_transactions") return "inventory";
-  if (source === "pallet_transactions") return "pallet";
-  return "warehouse location";
+  if (source === "inventory_transactions") return "Inventory transaction";
+  if (source === "pallet_transactions") return "Pallet transaction";
+  return "Warehouse location history";
 }
 
 function sourceColor(source: TraceEventRow["source"]) {
@@ -69,6 +69,23 @@ function eventFlowLabel(event: TraceEventRow): string {
   if (event.source === "inventory_transactions") return `inventory:${type}`;
   if (event.source === "pallet_transactions") return `pallet:${type}`;
   return `location:${type}`;
+}
+
+function eventActionLabel(event: TraceEventRow): string {
+  const type = event.event_type?.toUpperCase() ?? "";
+  if (type.includes("IN")) return "IN";
+  if (type.includes("OUT")) return "OUT";
+  if (type.includes("MOVE")) return "MOVE";
+  if (event.source === "warehouse_location_history") return "LOCATION";
+  return type || "EVENT";
+}
+
+function eventActionStyle(event: TraceEventRow) {
+  const action = eventActionLabel(event);
+  if (action === "IN") return { background: "#e8f5e9", color: "#1b5e20" };
+  if (action === "OUT") return { background: "#ffebee", color: "#b71c1c" };
+  if (action === "MOVE") return { background: "#e3f2fd", color: "#0d47a1" };
+  return { background: "#fff8e1", color: "#8a5a00" };
 }
 
 function sortEventsByTime(events: TraceEventRow[]): TraceEventRow[] {
@@ -168,6 +185,14 @@ const styles = {
     background: "#f5f7fb",
     color: "#333",
   },
+  emptyState: {
+    marginTop: "1rem",
+    padding: "1rem",
+    border: "1px dashed #bbb",
+    borderRadius: "12px",
+    background: "#fafafa",
+    color: "#555",
+  },
   summary: {
     display: "flex",
     flexWrap: "wrap" as const,
@@ -178,6 +203,11 @@ const styles = {
     borderRadius: "10px",
     background: "#f5f7fb",
     fontWeight: 700,
+  },
+  sectionLead: {
+    color: "#555",
+    marginTop: 0,
+    lineHeight: 1.6,
   },
   relationSection: {
     marginTop: "1rem",
@@ -214,9 +244,9 @@ const styles = {
   },
   flowNode: {
     display: "inline-block",
-    padding: "0.25rem 0.45rem",
-    borderRadius: "8px",
-    background: "#f5f7fb",
+    padding: "0.32rem 0.5rem",
+    border: "1px solid #ddd",
+    borderRadius: "10px",
     fontSize: "0.82rem",
     fontWeight: 700,
   },
@@ -252,6 +282,13 @@ const styles = {
     fontWeight: 800,
   },
   eventType: {
+    fontWeight: 800,
+  },
+  actionBadge: {
+    display: "inline-block",
+    padding: "0.22rem 0.45rem",
+    borderRadius: "8px",
+    fontSize: "0.78rem",
     fontWeight: 800,
   },
   metaGrid: {
@@ -314,14 +351,14 @@ export function TraceTimelineSection() {
 
   return (
     <section style={styles.panel}>
-      <h2 style={{ marginTop: 0 }}>trace timeline</h2>
-      <p>
-        trace_id 単位で、inventory / pallet / warehouse location history の履歴を時系列に確認します。
+      <h2 style={{ marginTop: 0 }}>trace timeline（監査・原因確認）</h2>
+      <p style={styles.sectionLead}>
+        trace_id 単位で、在庫履歴、パレット履歴、棚番履歴を同じ時系列で確認します。
+        「どの request で、どの source が、どの順番で動いたか」を見るための監査 UI です。
       </p>
       <div style={styles.notice}>
-        timeline は参照専用であり、修正・再構築・自動同期は行いません。compare-only /
-        visibility 目的の画面です。relation grouping も参照専用で、correction / replay /
-        rebuild は行いません。
+        この画面は compare-only / visibility 目的の参照専用 UI です。修正・再構築・自動同期・
+        correction / replay / rebuild は行いません。原因確認が必要な場合は source of truth の履歴を確認してください。
       </div>
 
       <form onSubmit={(event) => void handleSubmit(event)} style={styles.form}>
@@ -352,15 +389,21 @@ export function TraceTimelineSection() {
       ) : null}
 
       {searchedTraceId && sortedEvents.length === 0 && !error ? (
-        <p style={{ color: "#555" }}>該当する timeline event はありません。</p>
+        <div style={styles.emptyState}>
+          <strong>timeline event は見つかりませんでした。</strong>
+          <p style={{ marginBottom: 0 }}>
+            trace_id の入力値、対象 warehouse、または履歴に trace_id が保存されているかを確認してください。
+            この画面ではデータの作成・補正・再構築は行いません。
+          </p>
+        </div>
       ) : null}
 
       {requestGroups.length > 0 ? (
         <section style={styles.relationSection}>
-          <h3 style={{ marginTop: 0 }}>trace relation</h3>
-          <p style={{ color: "#555", marginTop: 0 }}>
-            request_id 単位で関連イベントをまとめ、inventory / pallet / warehouse location
-            history の出所と flow を確認します。
+          <h3 style={{ marginTop: 0 }}>trace relation（request_id 別）</h3>
+          <p style={styles.sectionLead}>
+            同じ request_id に属するイベントをまとめています。request 内で inventory / pallet /
+            warehouse location history がどう連動したかを確認します。
           </p>
           <div style={styles.relationGrid}>
             {requestGroups.map((group, groupIndex) => (
@@ -369,16 +412,25 @@ export function TraceTimelineSection() {
                 style={styles.relationCard}
               >
                 <div style={styles.relationHeader}>
-                  <strong>request</strong>
-                  <span style={styles.mono}>{displayValue(group.requestId)}</span>
+                  <strong>request_id</strong>
+                  <span style={styles.mono}>
+                    {group.requestId ? group.requestId : "request_id なし"}
+                  </span>
                   <span style={{ color: "#555" }}>{group.events.length} events</span>
                 </div>
 
                 <div style={{ marginBottom: "0.55rem" }}>
+                  <span style={{ color: "#555", marginRight: "0.45rem", fontWeight: 700 }}>
+                    source
+                  </span>
                   {group.sources.map((source) => (
                     <span
                       key={source}
-                      style={{ ...styles.sourceBadge, ...sourceColor(source), marginRight: "0.35rem" }}
+                      style={{
+                        ...styles.sourceBadge,
+                        ...sourceColor(source),
+                        marginRight: "0.35rem",
+                      }}
                     >
                       {sourceLabel(source)}
                     </span>
@@ -397,10 +449,15 @@ export function TraceTimelineSection() {
                 </div>
 
                 <div style={styles.flowLine} aria-label="event flow">
-                  {group.flowLabels.map((label, index) => (
-                    <span key={`${label}:${index}`} style={{ display: "inline-flex", gap: "0.35rem" }}>
+                  {group.events.map((event, index) => (
+                    <span
+                      key={`${eventFlowLabel(event)}:${event.id}:${index}`}
+                      style={{ display: "inline-flex", gap: "0.35rem" }}
+                    >
                       {index > 0 ? <span style={styles.flowArrow}>-&gt;</span> : null}
-                      <span style={styles.flowNode}>{label}</span>
+                      <span style={{ ...styles.flowNode, ...eventActionStyle(event) }}>
+                        {eventFlowLabel(event)}
+                      </span>
                     </span>
                   ))}
                 </div>
@@ -411,72 +468,84 @@ export function TraceTimelineSection() {
       ) : null}
 
       {sortedEvents.length > 0 ? (
-        <div style={styles.timeline}>
-          {sortedEvents.map((event, index) => {
-            const sourceStyle = sourceColor(event.source);
-            const requestId = eventRequestId(event);
+        <section style={{ marginTop: "1rem" }}>
+          <h3>timeline（時系列）</h3>
+          <p style={styles.sectionLead}>
+            created_at を基準に古い順で表示します。source badge と action badge で、在庫・
+            パレット・棚番履歴の違いを確認できます。
+          </p>
+          <div style={styles.timeline}>
+            {sortedEvents.map((event, index) => {
+              const sourceStyle = sourceColor(event.source);
+              const requestId = eventRequestId(event);
 
-            return (
-              <article key={`${event.source}:${event.id}:${index}`} style={styles.eventCard}>
-                <div style={styles.eventHeader}>
-                  <span style={{ ...styles.sourceBadge, ...sourceStyle }}>
-                    {sourceLabel(event.source)}
-                  </span>
-                  <span style={styles.eventType}>{displayValue(event.event_type)}</span>
-                  <span style={{ color: "#555" }}>{formatDateTime(eventTimeValue(event))}</span>
-                </div>
-
-                <div style={styles.metaGrid}>
-                  <div style={styles.metaItem}>
-                    <span style={styles.metaLabel}>event source</span>
-                    <span>{event.source}</span>
-                  </div>
-                  <div style={styles.metaItem}>
-                    <span style={styles.metaLabel}>created_at</span>
-                    <span>{formatDateTime(event.created_at)}</span>
-                  </div>
-                  <div style={styles.metaItem}>
-                    <span style={styles.metaLabel}>trace_id</span>
-                    <span style={styles.mono}>{displayValue(event.trace_id ?? searchedTraceId)}</span>
-                  </div>
-                  <div style={styles.metaItem}>
-                    <span style={styles.metaLabel}>request_id</span>
-                    <span style={styles.mono}>{displayValue(requestId)}</span>
-                  </div>
-                  <div style={styles.metaItem}>
-                    <span style={styles.metaLabel}>transaction type</span>
-                    <span>{displayValue(event.event_type)}</span>
-                  </div>
-                  <div style={styles.metaItem}>
-                    <span style={styles.metaLabel}>warehouse_code</span>
-                    <span>{event.warehouse_code}</span>
-                  </div>
-                  <div style={styles.metaItem}>
-                    <span style={styles.metaLabel}>location</span>
-                    <span>{eventLocation(event)}</span>
-                  </div>
-                  <div style={styles.metaItem}>
-                    <span style={styles.metaLabel}>part_no / quantity</span>
-                    <span>
-                      {displayValue(event.part_no)} /{" "}
-                      {event.quantity === null || event.quantity === undefined
-                        ? "-"
-                        : `${event.quantity}${event.quantity_unit ? ` ${event.quantity_unit}` : ""}`}
+              return (
+                <article key={`${event.source}:${event.id}:${index}`} style={styles.eventCard}>
+                  <div style={styles.eventHeader}>
+                    <span style={{ ...styles.sourceBadge, ...sourceStyle }}>
+                      {sourceLabel(event.source)}
+                    </span>
+                    <span style={{ ...styles.actionBadge, ...eventActionStyle(event) }}>
+                      {eventActionLabel(event)}
+                    </span>
+                    <span style={styles.eventType}>{displayValue(event.event_type)}</span>
+                    <span style={{ color: "#555" }}>
+                      {formatDateTime(eventTimeValue(event))}
                     </span>
                   </div>
-                  <div style={styles.metaItem}>
-                    <span style={styles.metaLabel}>pallet</span>
-                    <span>{displayValue(event.pallet_code ?? event.pallet_id)}</span>
+
+                  <div style={styles.metaGrid}>
+                    <div style={styles.metaItem}>
+                      <span style={styles.metaLabel}>event source / 出所</span>
+                      <span>{event.source}</span>
+                    </div>
+                    <div style={styles.metaItem}>
+                      <span style={styles.metaLabel}>transaction type / 種別</span>
+                      <span>{displayValue(event.event_type)}</span>
+                    </div>
+                    <div style={styles.metaItem}>
+                      <span style={styles.metaLabel}>created_at / 発生順</span>
+                      <span>{formatDateTime(event.created_at)}</span>
+                    </div>
+                    <div style={styles.metaItem}>
+                      <span style={styles.metaLabel}>location / 棚番</span>
+                      <span>{eventLocation(event)}</span>
+                    </div>
+                    <div style={styles.metaItem}>
+                      <span style={styles.metaLabel}>request_id</span>
+                      <span style={styles.mono}>{displayValue(requestId)}</span>
+                    </div>
+                    <div style={styles.metaItem}>
+                      <span style={styles.metaLabel}>trace_id</span>
+                      <span style={styles.mono}>
+                        {displayValue(event.trace_id ?? searchedTraceId)}
+                      </span>
+                    </div>
+                    <div style={styles.metaItem}>
+                      <span style={styles.metaLabel}>part_no / quantity</span>
+                      <span>
+                        {displayValue(event.part_no)} /{" "}
+                        {event.quantity === null || event.quantity === undefined
+                          ? "-"
+                          : `${event.quantity}${
+                              event.quantity_unit ? ` ${event.quantity_unit}` : ""
+                            }`}
+                      </span>
+                    </div>
+                    <div style={styles.metaItem}>
+                      <span style={styles.metaLabel}>pallet</span>
+                      <span>{displayValue(event.pallet_code ?? event.pallet_id)}</span>
+                    </div>
+                    <div style={styles.metaItem}>
+                      <span style={styles.metaLabel}>operator</span>
+                      <span>{displayValue(event.operator_name ?? event.operator_id)}</span>
+                    </div>
                   </div>
-                  <div style={styles.metaItem}>
-                    <span style={styles.metaLabel}>operator</span>
-                    <span>{displayValue(event.operator_name ?? event.operator_id)}</span>
-                  </div>
-                </div>
-              </article>
-            );
-          })}
-        </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
       ) : null}
     </section>
   );
