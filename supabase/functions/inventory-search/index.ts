@@ -30,6 +30,12 @@ type PalletItemLinkRow = {
   updated_at: string | null;
 };
 
+// NOTE:
+// This endpoint returns a pallet current-inventory read model:
+// - source tables: pallet_units + pallet_item_links
+// - not inventory_current
+// - not an aggregation of inventory_transactions
+// pallet_units is a projection/read model; pallet_transactions remains the pallet source of truth.
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,

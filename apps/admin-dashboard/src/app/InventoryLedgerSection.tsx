@@ -42,7 +42,7 @@ function compactDate(value: string): string {
 }
 
 function csvFileName(startDate: string, endDate: string): string {
-  return `pallet_inventory_ledger_${compactDate(startDate)}_${compactDate(endDate)}.csv`;
+  return `pallet_current_inventory_ledger_${compactDate(startDate)}_${compactDate(endDate)}.csv`;
 }
 
 function csvEscape(value: string | number): string {
@@ -274,7 +274,11 @@ export function InventoryLedgerSection() {
       setRows(buildLedgerRows(palletResult.pallets, unregisteredKeys));
     } catch (err) {
       setRows([]);
-      setError(err instanceof Error ? err.message : "在庫台帳データの取得中にエラーが発生しました。");
+        setError(
+          err instanceof Error
+            ? err.message
+            : "パレット在庫台帳データの取得中にエラーが発生しました。"
+        );
     } finally {
       setLoading(false);
     }
@@ -334,13 +338,21 @@ export function InventoryLedgerSection() {
 
   return (
     <section style={styles.panel}>
-      <h2>在庫台帳</h2>
-      <p>社内確認・棚管理・在庫台帳用に、現在のパレット在庫状態をCSV出力します。</p>
-      <p>現在は履歴期間集計ではなく、指定期間情報付きの現在在庫台帳です</p>
+      <h2>パレット在庫台帳（現在状態）</h2>
+      <p>
+        表示元は `inventory-search` Edge Function です。実体は
+        `pallet_units` と `pallet_item_links` を使ったパレット現在状態の read model です。
+      </p>
+      <p>
+        `inventory_current` や `inventory_transactions` の集計ではありません。
+        在庫数量の source of truth は `inventory_transactions`、パレット履歴の source of truth は
+        `pallet_transactions` として扱います。
+      </p>
+      <p>日付はCSV出力用の期間メモであり、現時点では履歴期間集計の検索条件ではありません。</p>
 
       <form style={styles.form} onSubmit={handleSearch}>
         <label style={styles.field}>
-          <span>warehouse_code</span>
+          <span>warehouse_code（権限境界）</span>
           <input
             style={styles.input}
             value={warehouseCode}
@@ -358,7 +370,7 @@ export function InventoryLedgerSection() {
           />
         </label>
         <label style={styles.field}>
-          <span>集計開始日</span>
+          <span>CSV期間開始日</span>
           <input
             style={styles.input}
             type="date"
@@ -367,7 +379,7 @@ export function InventoryLedgerSection() {
           />
         </label>
         <label style={styles.field}>
-          <span>集計終了日</span>
+          <span>CSV期間終了日</span>
           <input
             style={styles.input}
             type="date"
@@ -376,7 +388,7 @@ export function InventoryLedgerSection() {
           />
         </label>
         <button style={styles.button} type="submit" disabled={loading}>
-          {loading ? "取得中..." : "在庫台帳データ取得"}
+          {loading ? "取得中..." : "パレット在庫台帳データ取得"}
         </button>
         <button
           style={styles.secondaryButton}
@@ -384,14 +396,14 @@ export function InventoryLedgerSection() {
           onClick={handleDownloadCsv}
           disabled={rows.length === 0}
         >
-          在庫台帳CSV出力
+          パレット在庫台帳CSV出力
         </button>
       </form>
 
       {error ? <div style={styles.error}>{error}</div> : null}
 
       <p>
-        <strong>集計期間：</strong>
+        <strong>CSV出力期間：</strong>
         {aggregationStartDate} 〜 {aggregationEndDate}
       </p>
 
@@ -418,7 +430,7 @@ export function InventoryLedgerSection() {
         </div>
       </div>
 
-      <h3>パレット在庫明細（CSV対象）</h3>
+      <h3>パレット現在在庫明細（CSV対象）</h3>
       <div style={styles.tableWrap}>
         <table style={styles.table}>
           <thead>
@@ -453,7 +465,7 @@ export function InventoryLedgerSection() {
             {rows.length === 0 ? (
               <tr>
                 <td style={styles.td} colSpan={10}>
-                  パレット在庫明細はありません。
+                  パレット現在在庫明細はありません。
                 </td>
               </tr>
             ) : null}
