@@ -16,11 +16,21 @@ type CompareDashboardRow = {
   item: CurrentWarehouseItem;
 };
 
+type AgingBucket = "today" | "1-3 days" | "4-7 days" | "over 7 days" | "unknown";
+
 const severityOrder: DifferenceSeverity[] = ["critical", "high", "warning", "info"];
+const agingOrder: AgingBucket[] = ["today", "1-3 days", "4-7 days", "over 7 days"];
 
 function displayValue(value: string | number | null | undefined): string {
   if (value === null || value === undefined || value === "") return "-";
   return String(value);
+}
+
+function formatDateTime(value: string | null | undefined): string {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString("ja-JP");
 }
 
 const styles = {
@@ -107,6 +117,16 @@ const styles = {
     borderColor: "#c62828",
     background: "#ffebee",
     color: "#b71c1c",
+  },
+  agingCard: {
+    padding: "0.75rem",
+    border: "1px solid #ddd",
+    borderRadius: "12px",
+    background: "#fff",
+  },
+  oldAgingCard: {
+    borderColor: "#ef6c00",
+    background: "#fff3e0",
   },
   locationCard: {
     marginTop: "1rem",
@@ -231,6 +251,36 @@ function severitySortValue(severity: DifferenceSeverity): number {
   return 3;
 }
 
+function agingBucket(updatedAt: string | null | undefined): AgingBucket {
+  if (!updatedAt) return "unknown";
+  const updatedAtMs = new Date(updatedAt).getTime();
+  if (Number.isNaN(updatedAtMs)) return "unknown";
+
+  const elapsedDays = Math.floor((Date.now() - updatedAtMs) / (24 * 60 * 60 * 1000));
+  if (elapsedDays <= 0) return "today";
+  if (elapsedDays <= 3) return "1-3 days";
+  if (elapsedDays <= 7) return "4-7 days";
+  return "over 7 days";
+}
+
+function agingSortValue(bucket: AgingBucket): number {
+  if (bucket === "over 7 days") return 0;
+  if (bucket === "4-7 days") return 1;
+  if (bucket === "1-3 days") return 2;
+  if (bucket === "today") return 3;
+  return 4;
+}
+
+function agingCounts(rows: CompareDashboardRow[]): Record<AgingBucket, number> {
+  return rows.reduce<Record<AgingBucket, number>>(
+    (counts, row) => {
+      counts[agingBucket(row.item.updated_at)] += 1;
+      return counts;
+    },
+    { today: 0, "1-3 days": 0, "4-7 days": 0, "over 7 days": 0, unknown: 0 }
+  );
+}
+
 function formatQuantityDiff(value: number | null | undefined): string {
   if (value === null || value === undefined) return "-";
   if (value > 0) return `+${value}`;
@@ -318,12 +368,16 @@ export function CurrentWarehouseViewSection() {
 
   const compareRows = collectCompareRows(locations);
   const countsBySeverity = severityCounts(compareRows);
+  const reviewRowsBase = compareRows.filter((row) => row.item.review_required);
+  const countsByAging = agingCounts(reviewRowsBase);
   const reviewRows = compareRows
     .filter((row) => row.item.review_required)
     .sort(
       (a, b) =>
         severitySortValue(a.item.difference_severity) -
-        severitySortValue(b.item.difference_severity)
+          severitySortValue(b.item.difference_severity) ||
+        agingSortValue(agingBucket(a.item.updated_at)) -
+          agingSortValue(agingBucket(b.item.updated_at))
     );
 
   return (
@@ -417,6 +471,28 @@ export function CurrentWarehouseViewSection() {
             </div>
           </div>
 
+          <h4>aging visibility</h4>
+          <p style={styles.compareLead}>
+            review_required の差異がどれくらい残っているかを updated_at から分類します。
+            古い差異ほど優先確認の候補です。
+          </p>
+          <div style={styles.severityGrid}>
+            {agingOrder.map((bucket) => (
+              <div
+                key={bucket}
+                style={{
+                  ...styles.agingCard,
+                  ...(bucket === "4-7 days" || bucket === "over 7 days"
+                    ? styles.oldAgingCard
+                    : {}),
+                }}
+              >
+                <strong>{bucket}</strong>
+                <span style={styles.severityCount}>{countsByAging[bucket]}</span>
+              </div>
+            ))}
+          </div>
+
           <h4>確認すべき差異一覧</h4>
           {reviewRows.length === 0 ? (
             <p style={{ color: "#555" }}>
@@ -435,6 +511,8 @@ export function CurrentWarehouseViewSection() {
                     <th style={styles.th}>pallet qty</th>
                     <th style={styles.th}>inventory_current</th>
                     <th style={styles.th}>quantity_diff</th>
+                    <th style={styles.th}>updated_at</th>
+                    <th style={styles.th}>aging</th>
                     <th style={styles.th}>reason code</th>
                   </tr>
                 </thead>
@@ -463,6 +541,16 @@ export function CurrentWarehouseViewSection() {
                       </td>
                       <td style={{ ...styles.td, ...styles.warningCell }}>
                         {formatQuantityDiff(row.item.quantity_diff)}
+                      </td>
+                      <td style={styles.td}>{formatDateTime(row.item.updated_at)}</td>
+                      <td
+                        style={
+                          agingBucket(row.item.updated_at) === "over 7 days"
+                            ? { ...styles.td, ...styles.warningCell }
+                            : styles.td
+                        }
+                      >
+                        {agingBucket(row.item.updated_at)}
                       </td>
                       <td style={styles.td}>
                         {row.item.difference_reason_codes.length > 0
