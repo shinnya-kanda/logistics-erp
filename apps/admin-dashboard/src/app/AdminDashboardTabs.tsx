@@ -5,6 +5,7 @@ import { BillingCheckSection } from "./BillingCheckSection";
 import { CurrentWarehouseViewSection } from "./CurrentWarehouseViewSection";
 import { CustomerExportSection } from "./CustomerExportSection";
 import { EmptyPalletSearchSection } from "./EmptyPalletSearchSection";
+import { GovernanceDashboardSection } from "./GovernanceDashboardSection";
 import { InboundLabelPrintSection } from "./InboundLabelPrintSection";
 import { InventoryCurrentSection } from "./InventoryCurrentSection";
 import { InventoryLedgerSection } from "./InventoryLedgerSection";
@@ -25,6 +26,7 @@ type AdminTab =
   | "inventory-ledger"
   | "trace-search"
   | "trace-timeline"
+  | "governance"
   | "customer-export"
   | "inbound-label-print";
 
@@ -39,6 +41,7 @@ const tabs: Array<{ id: AdminTab; label: string }> = [
   { id: "inventory-ledger", label: "パレット在庫台帳" },
   { id: "trace-search", label: "trace検索" },
   { id: "trace-timeline", label: "trace timeline" },
+  { id: "governance", label: "Governance" },
   { id: "customer-export", label: "客先提出" },
   { id: "inbound-label-print", label: "入庫ラベル発行" },
 ];
@@ -103,6 +106,7 @@ export function AdminDashboardTabs() {
       {activeTab === "inventory-ledger" ? <InventoryLedgerSection /> : null}
       {activeTab === "trace-search" ? <TraceSearchSection /> : null}
       {activeTab === "trace-timeline" ? <TraceTimelineSection /> : null}
+      {activeTab === "governance" ? <GovernanceDashboardSection /> : null}
       {activeTab === "customer-export" ? <CustomerExportSection /> : null}
       {activeTab === "inbound-label-print" ? <InboundLabelPrintSection /> : null}
     </>
