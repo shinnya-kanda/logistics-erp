@@ -1,30 +1,19 @@
 "use client";
 
 import type { CSSProperties } from "react";
-
-type OverviewCard = {
-  label: string;
-  value: string;
-  description: string;
-  tone: "info" | "warning" | "critical" | "safe";
-};
-
-type SummaryRow = {
-  label: string;
-  value: string;
-  note: string;
-};
-
-type ReadOnlyNote = {
-  title: string;
-  category: string;
-  note: string;
-};
+import type {
+  GovernanceEvidenceSummaryRow,
+  GovernanceIncidentSummaryRow,
+  GovernanceOperationQueueSummaryRow,
+  GovernanceOverviewCard,
+  GovernanceReadOnlyNote,
+  GovernanceSummaryRow,
+} from "./governanceDashboardTypes";
 
 const noExecutionText =
   "No correction, rebuild, replay, approval, retry, assignment, or sync is executed here.";
 
-const overviewCards: OverviewCard[] = [
+const overviewCards: GovernanceOverviewCard[] = [
   {
     label: "注意が必要な signal",
     value: "12",
@@ -51,7 +40,7 @@ const overviewCards: OverviewCard[] = [
   },
 ];
 
-const incidentSummary: SummaryRow[] = [
+const incidentSummary: GovernanceIncidentSummaryRow[] = [
   {
     label: "未確認の governance incident",
     value: "5",
@@ -69,7 +58,7 @@ const incidentSummary: SummaryRow[] = [
   },
 ];
 
-const operationQueueSummary: SummaryRow[] = [
+const operationQueueSummary: GovernanceOperationQueueSummaryRow[] = [
   {
     label: "Review 候補",
     value: "7",
@@ -87,7 +76,7 @@ const operationQueueSummary: SummaryRow[] = [
   },
 ];
 
-const evidenceSummary: SummaryRow[] = [
+const evidenceSummary: GovernanceEvidenceSummaryRow[] = [
   {
     label: "証跡あり",
     value: "8",
@@ -105,23 +94,27 @@ const evidenceSummary: SummaryRow[] = [
   },
 ];
 
-const readOnlyNotes: ReadOnlyNote[] = [
+const readOnlyNotes: GovernanceReadOnlyNote[] = [
   {
+    noteType: "semantic",
     title: "Semantic safety",
     category: "Interpretation safety",
     note: "Confidence high は、review に必要な証跡や scope が比較的そろっていることを示します。safe to execute ではありません。",
   },
   {
+    noteType: "integrity",
     title: "Integrity review",
     category: "Governance quality",
     note: "Integrity signal は dashboard quality と audit limitation を示します。データを変更するものではありません。",
   },
   {
+    noteType: "attention",
     title: "Attention quality",
     category: "Review signal only",
     note: "priority と attention は human review の見落とし防止に使います。execution priority や assignment mutation ではありません。",
   },
   {
+    noteType: "safe-interpretation",
     title: "Safe interpretation",
     category: "Execution expectation isolation",
     note: "READ ONLY と NO EXECUTION は、この静的 dashboard の表示上の前提です。",
@@ -282,7 +275,7 @@ const styles: Record<string, CSSProperties> = {
   },
 };
 
-function overviewCardStyle(tone: OverviewCard["tone"]): CSSProperties {
+function overviewCardStyle(tone: GovernanceOverviewCard["tone"]): CSSProperties {
   if (tone === "critical") {
     return { borderColor: "#c62828", background: "#ffebee", color: "#7f0000" };
   }
@@ -305,7 +298,7 @@ function SummarySection({
 }: {
   title: string;
   description: string;
-  rows: SummaryRow[];
+  rows: GovernanceSummaryRow[];
 }) {
   return (
     <section style={styles.section}>
