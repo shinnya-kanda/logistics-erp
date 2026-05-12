@@ -41,6 +41,14 @@ export type GovernanceReadabilityLevel =
 
 export type GovernanceOverviewTone = GovernanceSeverity | "safe";
 
+export type GovernanceDisplayState =
+  | "loading"
+  | "ready"
+  | "empty"
+  | "stale"
+  | "partial"
+  | "degraded";
+
 export type GovernanceContractMetadata = {
   readonly severity: GovernanceSeverity;
   readonly lifecycleState: GovernanceLifecycleState;
@@ -104,6 +112,16 @@ export type GovernanceDashboardReadOnlyData = {
   readonly operationQueueSummary: readonly GovernanceOperationQueueSummaryRow[];
   readonly evidenceSummary: readonly GovernanceEvidenceSummaryRow[];
   readonly readOnlyNotes: readonly GovernanceReadOnlyNote[];
+};
+
+export type GovernanceStateNotice = {
+  readonly displayState: GovernanceDisplayState;
+  readonly title: string;
+  readonly message: string;
+  readonly severity: GovernanceSeverity;
+  readonly lifecycleState: GovernanceLifecycleState;
+  readonly visibility: GovernanceNoteVisibility;
+  readonly readability: GovernanceReadabilityLevel;
 };
 
 export type GovernanceOverviewItem = GovernanceOverviewCard;
