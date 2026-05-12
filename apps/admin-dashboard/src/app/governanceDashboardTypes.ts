@@ -97,3 +97,11 @@ export type GovernanceReadOnlyNote =
   | GovernanceIntegrityNote
   | GovernanceAttentionNote
   | GovernanceSafeInterpretationNote;
+
+export type GovernanceDashboardReadOnlyData = {
+  readonly overviewCards: readonly GovernanceOverviewCard[];
+  readonly incidentSummary: readonly GovernanceIncidentSummaryRow[];
+  readonly operationQueueSummary: readonly GovernanceOperationQueueSummaryRow[];
+  readonly evidenceSummary: readonly GovernanceEvidenceSummaryRow[];
+  readonly readOnlyNotes: readonly GovernanceReadOnlyNote[];
+};
