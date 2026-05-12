@@ -1,0 +1,286 @@
+import type { CSSProperties, ReactNode } from "react";
+import type {
+  GovernanceLifecycleState,
+  GovernanceOverviewTone,
+  GovernanceReadOnlyNote,
+  GovernanceSeverity,
+  GovernanceSummaryRow,
+} from "./governanceDashboardTypes";
+
+type GovernanceSectionCardProps = {
+  readonly title: string;
+  readonly value?: string;
+  readonly description: string;
+  readonly severity: GovernanceSeverity;
+  readonly lifecycleState: GovernanceLifecycleState;
+  readonly tone?: GovernanceOverviewTone;
+};
+
+type GovernanceReadOnlyNoticeProps = {
+  readonly children: ReactNode;
+  readonly tone?: "warning" | "neutral";
+};
+
+const styles: Record<string, CSSProperties> = {
+  badge: {
+    display: "inline-flex",
+    alignItems: "center",
+    border: "1px solid #90a4ae",
+    borderRadius: "999px",
+    padding: "0.2rem 0.5rem",
+    background: "#f5f7fb",
+    color: "#333",
+    fontSize: "0.78rem",
+    fontWeight: 800,
+    letterSpacing: "0.02em",
+  },
+  readOnlyBadge: {
+    borderColor: "#0d47a1",
+    background: "#e3f2fd",
+    color: "#0d47a1",
+    padding: "0.35rem 0.7rem",
+    fontSize: "0.9rem",
+    fontWeight: 900,
+  },
+  noExecutionBadge: {
+    borderColor: "#1b5e20",
+    background: "#e8f5e9",
+    color: "#1b5e20",
+    padding: "0.35rem 0.7rem",
+    fontSize: "0.9rem",
+    fontWeight: 900,
+  },
+  badgeRow: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "0.45rem",
+    alignItems: "center",
+  },
+  notice: {
+    margin: "1rem 0",
+    padding: "0.9rem 1rem",
+    border: "1px solid #ef6c00",
+    borderRadius: "12px",
+    background: "#fff3e0",
+    color: "#5d3900",
+    fontWeight: 700,
+    lineHeight: 1.6,
+  },
+  neutralNotice: {
+    border: "1px dashed #90a4ae",
+    background: "#f5f7fb",
+    color: "#333",
+    fontWeight: 400,
+  },
+  section: {
+    marginTop: "1.25rem",
+    padding: "1rem",
+    border: "1px solid #ddd",
+    borderRadius: "12px",
+    background: "#fafafa",
+  },
+  sectionTitle: {
+    marginTop: 0,
+    marginBottom: "0.35rem",
+  },
+  lead: {
+    marginTop: "0.5rem",
+    color: "#555",
+    lineHeight: 1.7,
+    maxWidth: "58rem",
+  },
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(14rem, 1fr))",
+    gap: "0.85rem",
+    marginTop: "0.9rem",
+  },
+  card: {
+    padding: "0.9rem",
+    border: "1px solid #ddd",
+    borderRadius: "12px",
+    background: "#fff",
+  },
+  cardLabel: {
+    margin: 0,
+    color: "#555",
+    fontSize: "0.88rem",
+    fontWeight: 700,
+  },
+  cardValue: {
+    display: "block",
+    marginTop: "0.35rem",
+    fontSize: "1.65rem",
+    fontWeight: 900,
+  },
+  cardDescription: {
+    margin: "0.45rem 0 0",
+    color: "#555",
+    lineHeight: 1.5,
+  },
+  metadataRow: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "0.45rem",
+    marginTop: "0.7rem",
+  },
+  noteCard: {
+    padding: "0.9rem",
+    border: "1px solid #cfd8dc",
+    borderRadius: "12px",
+    background: "#fff",
+    lineHeight: 1.6,
+  },
+  noteCategory: {
+    display: "inline-block",
+    marginBottom: "0.45rem",
+    padding: "0.2rem 0.45rem",
+    borderRadius: "999px",
+    background: "#f5f7fb",
+    color: "#333",
+    fontSize: "0.82rem",
+    fontWeight: 800,
+  },
+};
+
+function cardToneStyle(tone: GovernanceOverviewTone | undefined): CSSProperties {
+  if (tone === "critical") {
+    return { borderColor: "#c62828", background: "#ffebee", color: "#7f0000" };
+  }
+
+  if (tone === "high" || tone === "warning") {
+    return { borderColor: "#ef6c00", background: "#fff3e0", color: "#5d3900" };
+  }
+
+  if (tone === "safe") {
+    return { borderColor: "#2e7d32", background: "#e8f5e9", color: "#1b5e20" };
+  }
+
+  return { borderColor: "#90caf9", background: "#e3f2fd", color: "#0d47a1" };
+}
+
+function severityLabel(severity: GovernanceSeverity): string {
+  if (severity === "critical") return "Severity: critical";
+  if (severity === "high") return "Severity: high";
+  if (severity === "warning") return "Severity: warning";
+  return "Severity: info";
+}
+
+function lifecycleLabel(lifecycleState: GovernanceLifecycleState): string {
+  if (lifecycleState === "detected") return "Lifecycle: detected";
+  if (lifecycleState === "reviewing") return "Lifecycle: reviewing";
+  if (lifecycleState === "classified") return "Lifecycle: classified";
+  return "Lifecycle: reaffirmed";
+}
+
+export function GovernanceSeverityBadge({
+  severity,
+}: {
+  readonly severity: GovernanceSeverity;
+}) {
+  return <span style={styles.badge}>{severityLabel(severity)}</span>;
+}
+
+export function GovernanceLifecycleBadge({
+  lifecycleState,
+}: {
+  readonly lifecycleState: GovernanceLifecycleState;
+}) {
+  return <span style={styles.badge}>{lifecycleLabel(lifecycleState)}</span>;
+}
+
+export function GovernanceReadOnlyNotice({
+  children,
+  tone = "warning",
+}: GovernanceReadOnlyNoticeProps) {
+  return (
+    <div
+      style={{
+        ...styles.notice,
+        ...(tone === "neutral" ? styles.neutralNotice : {}),
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+export function GovernanceReadOnlyBoundaryBadges() {
+  return (
+    <div style={styles.badgeRow} aria-label="Read-only governance badges">
+      <span style={{ ...styles.badge, ...styles.readOnlyBadge }}>READ ONLY</span>
+      <span style={{ ...styles.badge, ...styles.noExecutionBadge }}>NO EXECUTION</span>
+    </div>
+  );
+}
+
+export function GovernanceSectionCard({
+  title,
+  value,
+  description,
+  severity,
+  lifecycleState,
+  tone,
+}: GovernanceSectionCardProps) {
+  return (
+    <article style={{ ...styles.card, ...cardToneStyle(tone) }}>
+      <p style={styles.cardLabel}>{title}</p>
+      {value ? <span style={styles.cardValue}>{value}</span> : null}
+      <p style={styles.cardDescription}>{description}</p>
+      <div style={styles.metadataRow}>
+        <GovernanceSeverityBadge severity={severity} />
+        <GovernanceLifecycleBadge lifecycleState={lifecycleState} />
+      </div>
+    </article>
+  );
+}
+
+export function GovernanceSummarySection({
+  title,
+  description,
+  rows,
+}: {
+  readonly title: string;
+  readonly description: string;
+  readonly rows: readonly GovernanceSummaryRow[];
+}) {
+  return (
+    <section style={styles.section}>
+      <h3 style={styles.sectionTitle}>{title}</h3>
+      <p style={styles.lead}>{description}</p>
+      <div style={styles.grid}>
+        {rows.map((row) => (
+          <GovernanceSectionCard
+            key={row.label}
+            title={row.label}
+            value={row.value}
+            description={row.note}
+            severity={row.severity}
+            lifecycleState={row.lifecycleState}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+export function GovernanceSemanticNoteCard({ note }: { readonly note: GovernanceReadOnlyNote }) {
+  return (
+    <article style={styles.noteCard}>
+      <span style={styles.noteCategory}>{note.categoryLabel}</span>
+      <h4 style={{ margin: "0 0 0.35rem" }}>{note.title}</h4>
+      <p style={{ margin: 0 }}>{note.note}</p>
+      <div style={styles.metadataRow}>
+        <GovernanceSeverityBadge severity={note.severity} />
+        <GovernanceLifecycleBadge lifecycleState={note.lifecycleState} />
+      </div>
+    </article>
+  );
+}
+
+export const governanceComponentStyles = {
+  grid: styles.grid,
+  section: styles.section,
+  sectionTitle: styles.sectionTitle,
+  lead: styles.lead,
+};
