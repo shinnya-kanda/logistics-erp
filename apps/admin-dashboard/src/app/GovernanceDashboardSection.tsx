@@ -1,13 +1,20 @@
 "use client";
 
 import type { CSSProperties } from "react";
+import {
+  GovernanceReadOnlyBoundaryBadges,
+  GovernanceReadOnlyNotice,
+  GovernanceSectionCard,
+  GovernanceSemanticNoteCard,
+  GovernanceSummarySection,
+  governanceComponentStyles,
+} from "./governanceDashboardComponents";
 import type {
   GovernanceEvidenceSummaryRow,
   GovernanceIncidentSummaryRow,
   GovernanceOperationQueueSummaryRow,
   GovernanceOverviewCard,
   GovernanceReadOnlyNote,
-  GovernanceSummaryRow,
 } from "./governanceDashboardTypes";
 
 const noExecutionText =
@@ -232,179 +239,13 @@ const styles: Record<string, CSSProperties> = {
     lineHeight: 1.7,
     maxWidth: "58rem",
   },
-  badgeRow: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "0.5rem",
-    alignItems: "center",
-  },
-  badge: {
-    display: "inline-flex",
-    alignItems: "center",
-    border: "1px solid #0d47a1",
-    borderRadius: "999px",
-    padding: "0.35rem 0.7rem",
-    background: "#e3f2fd",
-    color: "#0d47a1",
-    fontWeight: 900,
-    letterSpacing: "0.03em",
-  },
-  noExecutionBadge: {
-    borderColor: "#1b5e20",
-    background: "#e8f5e9",
-    color: "#1b5e20",
-  },
-  warningBox: {
-    margin: "1rem 0",
-    padding: "0.9rem 1rem",
-    border: "1px solid #ef6c00",
-    borderRadius: "12px",
-    background: "#fff3e0",
-    color: "#5d3900",
-    fontWeight: 700,
-    lineHeight: 1.6,
-  },
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(14rem, 1fr))",
-    gap: "0.85rem",
-    marginTop: "0.9rem",
-  },
-  card: {
-    padding: "0.9rem",
-    border: "1px solid #ddd",
-    borderRadius: "12px",
-    background: "#fafafa",
-  },
-  cardLabel: {
-    margin: 0,
-    color: "#555",
-    fontSize: "0.88rem",
-    fontWeight: 700,
-  },
-  cardValue: {
-    display: "block",
-    marginTop: "0.35rem",
-    fontSize: "1.65rem",
-    fontWeight: 900,
-  },
-  cardDescription: {
-    margin: "0.45rem 0 0",
-    color: "#555",
-    lineHeight: 1.5,
-  },
-  section: {
-    marginTop: "1.25rem",
-    padding: "1rem",
-    border: "1px solid #ddd",
-    borderRadius: "12px",
-    background: "#fafafa",
-  },
-  sectionTitle: {
-    marginTop: 0,
-    marginBottom: "0.35rem",
-  },
-  summaryList: {
-    display: "grid",
-    gap: "0.7rem",
-    marginTop: "0.85rem",
-  },
-  summaryRow: {
-    display: "grid",
-    gridTemplateColumns: "minmax(10rem, 1fr) auto minmax(16rem, 2fr)",
-    gap: "0.75rem",
-    alignItems: "start",
-    padding: "0.75rem",
-    border: "1px solid #e0e0e0",
-    borderRadius: "10px",
-    background: "#fff",
-  },
-  summaryLabel: {
-    fontWeight: 800,
-  },
-  summaryValue: {
-    fontWeight: 900,
-    color: "#0d47a1",
-  },
-  summaryNote: {
-    color: "#555",
-    lineHeight: 1.5,
-  },
   noteGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(18rem, 1fr))",
     gap: "0.85rem",
     marginTop: "0.85rem",
   },
-  noteCard: {
-    padding: "0.9rem",
-    border: "1px solid #cfd8dc",
-    borderRadius: "12px",
-    background: "#fff",
-    lineHeight: 1.6,
-  },
-  noteCategory: {
-    display: "inline-block",
-    marginBottom: "0.45rem",
-    padding: "0.2rem 0.45rem",
-    borderRadius: "999px",
-    background: "#f5f7fb",
-    color: "#333",
-    fontSize: "0.82rem",
-    fontWeight: 800,
-  },
-  footerNote: {
-    marginTop: "1rem",
-    padding: "0.85rem 1rem",
-    border: "1px dashed #90a4ae",
-    borderRadius: "12px",
-    background: "#f5f7fb",
-    color: "#333",
-    lineHeight: 1.6,
-  },
 };
-
-function overviewCardStyle(tone: GovernanceOverviewCard["tone"]): CSSProperties {
-  if (tone === "critical") {
-    return { borderColor: "#c62828", background: "#ffebee", color: "#7f0000" };
-  }
-
-  if (tone === "warning") {
-    return { borderColor: "#ef6c00", background: "#fff3e0", color: "#5d3900" };
-  }
-
-  if (tone === "safe") {
-    return { borderColor: "#2e7d32", background: "#e8f5e9", color: "#1b5e20" };
-  }
-
-  return { borderColor: "#90caf9", background: "#e3f2fd", color: "#0d47a1" };
-}
-
-function SummarySection({
-  title,
-  description,
-  rows,
-}: {
-  title: string;
-  description: string;
-  rows: GovernanceSummaryRow[];
-}) {
-  return (
-    <section style={styles.section}>
-      <h3 style={styles.sectionTitle}>{title}</h3>
-      <p style={styles.lead}>{description}</p>
-      <div style={styles.summaryList}>
-        {rows.map((row) => (
-          <div key={row.label} style={styles.summaryRow}>
-            <span style={styles.summaryLabel}>{row.label}</span>
-            <span style={styles.summaryValue}>{row.value}</span>
-            <span style={styles.summaryNote}>{row.note}</span>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
 
 export function GovernanceDashboardSection() {
   return (
@@ -418,72 +259,68 @@ export function GovernanceDashboardSection() {
             API、Edge Function、DB、RPC には接続しません。
           </p>
         </div>
-        <div style={styles.badgeRow} aria-label="Read-only governance badges">
-          <span style={styles.badge}>READ ONLY</span>
-          <span style={{ ...styles.badge, ...styles.noExecutionBadge }}>NO EXECUTION</span>
-        </div>
+        <GovernanceReadOnlyBoundaryBadges />
       </div>
 
-      <div style={styles.warningBox}>
+      <GovernanceReadOnlyNotice>
         Review signal only. 表示された内容は人による確認のための signal です。
         {noExecutionText}
-      </div>
+      </GovernanceReadOnlyNotice>
 
       <section aria-label="ガバナンス概要">
         <h3>ガバナンス概要</h3>
-        <div style={styles.grid}>
+        <div style={governanceComponentStyles.grid}>
           {overviewCards.map((card) => (
-            <article
+            <GovernanceSectionCard
               key={card.label}
-              style={{ ...styles.card, ...overviewCardStyle(card.tone) }}
-            >
-              <p style={styles.cardLabel}>{card.label}</p>
-              <span style={styles.cardValue}>{card.value}</span>
-              <p style={styles.cardDescription}>{card.description}</p>
-            </article>
+              title={card.label}
+              value={card.value}
+              description={card.description}
+              severity={card.severity}
+              lifecycleState={card.lifecycleState}
+              tone={card.tone}
+            />
           ))}
         </div>
       </section>
 
-      <SummarySection
+      <GovernanceSummarySection
         title="Incident サマリー"
         description="read-only の調査と audit context のために、incident の状態を静的に表示します。"
         rows={incidentSummary}
       />
 
-      <SummarySection
+      <GovernanceSummarySection
         title="Operation queue サマリー"
         description="governance review 用の静的な queue summary です。queue state は execution lifecycle ではありません。"
         rows={operationQueueSummary}
       />
 
-      <SummarySection
+      <GovernanceSummarySection
         title="証跡サマリー"
         description="audit limitation を見える状態にするための静的な evidence summary です。"
         rows={evidenceSummary}
       />
 
-      <section style={styles.section}>
-        <h3 style={styles.sectionTitle}>Semantic safety / Integrity / Attention note</h3>
-        <p style={styles.lead}>
+      <section style={governanceComponentStyles.section}>
+        <h3 style={governanceComponentStyles.sectionTitle}>
+          Semantic safety / Integrity / Attention note
+        </h3>
+        <p style={governanceComponentStyles.lead}>
           ここに表示する内容は read-only note です。correction、rebuild、replay、
           approval、retry、assignment、sync の操作は含みません。
         </p>
         <div style={styles.noteGrid}>
           {readOnlyNotes.map((note) => (
-            <article key={note.title} style={styles.noteCard}>
-              <span style={styles.noteCategory}>{note.categoryLabel}</span>
-              <h4 style={{ margin: "0 0 0.35rem" }}>{note.title}</h4>
-              <p style={{ margin: 0 }}>{note.note}</p>
-            </article>
+            <GovernanceSemanticNoteCard key={note.title} note={note} />
           ))}
         </div>
       </section>
 
-      <div style={styles.footerNote}>
+      <GovernanceReadOnlyNotice tone="neutral">
         READ ONLY / NO EXECUTION: {noExecutionText} この static dashboard は実データを取得せず、
         assignment、approval、incident、operation、evidence、timeline、projection を変更しません。
-      </div>
+      </GovernanceReadOnlyNotice>
     </section>
   );
 }
