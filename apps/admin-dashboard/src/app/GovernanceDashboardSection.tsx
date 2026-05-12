@@ -6,12 +6,14 @@ import {
   GovernanceReadOnlyNotice,
   GovernanceSectionCard,
   GovernanceSemanticNoteCard,
+  GovernanceStateNotice,
   GovernanceSummarySection,
   governanceComponentStyles,
 } from "./governanceDashboardComponents";
 import { getGovernanceDashboardMockData } from "./governanceDashboardMockData";
 import {
   getGovernanceEvidenceSummaries,
+  getGovernanceStateNotice,
   getGovernanceIncidentSummaries,
   getGovernanceOperationQueueItems,
   getGovernanceOverviewItems,
@@ -58,6 +60,7 @@ export function GovernanceDashboardSection() {
   const operationQueueItems = getGovernanceOperationQueueItems(governanceData);
   const evidenceSummaries = getGovernanceEvidenceSummaries(governanceData);
   const semanticNotes = getGovernanceSemanticNotes(governanceData);
+  const stateNotice = getGovernanceStateNotice(governanceData);
 
   return (
     <section style={styles.panel} aria-labelledby="governance-dashboard-heading">
@@ -77,6 +80,8 @@ export function GovernanceDashboardSection() {
         Review signal only. 表示された内容は人による確認のための signal です。
         {noExecutionText}
       </GovernanceReadOnlyNotice>
+
+      <GovernanceStateNotice notice={stateNotice} />
 
       <section aria-label="ガバナンス概要">
         <h3>ガバナンス概要</h3>

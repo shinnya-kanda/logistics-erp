@@ -1,9 +1,11 @@
 import type { CSSProperties, ReactNode } from "react";
 import type {
+  GovernanceDisplayState,
   GovernanceLifecycleState,
   GovernanceOverviewTone,
   GovernanceReadOnlyNote,
   GovernanceSeverity,
+  GovernanceStateNotice,
   GovernanceSummaryRow,
 } from "./governanceDashboardTypes";
 
@@ -173,6 +175,15 @@ function lifecycleLabel(lifecycleState: GovernanceLifecycleState): string {
   return "Lifecycle: reaffirmed";
 }
 
+function displayStateLabel(displayState: GovernanceDisplayState): string {
+  if (displayState === "loading") return "Display state: loading";
+  if (displayState === "empty") return "Display state: empty";
+  if (displayState === "stale") return "Display state: stale";
+  if (displayState === "partial") return "Display state: partial";
+  if (displayState === "degraded") return "Display state: degraded";
+  return "Display state: ready";
+}
+
 export function GovernanceSeverityBadge({
   severity,
 }: {
@@ -187,6 +198,14 @@ export function GovernanceLifecycleBadge({
   readonly lifecycleState: GovernanceLifecycleState;
 }) {
   return <span style={styles.badge}>{lifecycleLabel(lifecycleState)}</span>;
+}
+
+export function GovernanceDisplayStateBadge({
+  displayState,
+}: {
+  readonly displayState: GovernanceDisplayState;
+}) {
+  return <span style={styles.badge}>{displayStateLabel(displayState)}</span>;
 }
 
 export function GovernanceReadOnlyNotice({
@@ -211,6 +230,21 @@ export function GovernanceReadOnlyBoundaryBadges() {
       <span style={{ ...styles.badge, ...styles.readOnlyBadge }}>READ ONLY</span>
       <span style={{ ...styles.badge, ...styles.noExecutionBadge }}>NO EXECUTION</span>
     </div>
+  );
+}
+
+export function GovernanceStateNotice({ notice }: { readonly notice: GovernanceStateNotice }) {
+  return (
+    <GovernanceReadOnlyNotice tone={notice.displayState === "ready" ? "neutral" : "warning"}>
+      <strong>{notice.title}</strong>
+      <br />
+      {notice.message}
+      <div style={styles.metadataRow}>
+        <GovernanceDisplayStateBadge displayState={notice.displayState} />
+        <GovernanceSeverityBadge severity={notice.severity} />
+        <GovernanceLifecycleBadge lifecycleState={notice.lifecycleState} />
+      </div>
+    </GovernanceReadOnlyNotice>
   );
 }
 
