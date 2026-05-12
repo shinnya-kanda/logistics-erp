@@ -8,6 +8,7 @@ import {
   GovernanceSemanticNoteCard,
   GovernanceStateNotice,
   GovernanceSummarySection,
+  GovernanceTimelineSection,
   governanceComponentStyles,
 } from "./governanceDashboardComponents";
 import { getGovernanceDashboardMockData } from "./governanceDashboardMockData";
@@ -18,6 +19,7 @@ import {
   getGovernanceOperationQueueItems,
   getGovernanceOverviewItems,
   getGovernanceSemanticNotes,
+  getGovernanceTimelineItems,
 } from "./governanceDashboardSelectors";
 
 const noExecutionText =
@@ -60,6 +62,7 @@ export function GovernanceDashboardSection() {
   const operationQueueItems = getGovernanceOperationQueueItems(governanceData);
   const evidenceSummaries = getGovernanceEvidenceSummaries(governanceData);
   const semanticNotes = getGovernanceSemanticNotes(governanceData);
+  const timelineItems = getGovernanceTimelineItems(governanceData);
   const stateNotice = getGovernanceStateNotice(governanceData);
 
   return (
@@ -116,6 +119,12 @@ export function GovernanceDashboardSection() {
         title="証跡サマリー"
         description="audit limitation を見える状態にするための静的な evidence summary です。"
         rows={evidenceSummaries}
+      />
+
+      <GovernanceTimelineSection
+        title="Read-only timeline"
+        description="review / observability purpose の timeline です。時系列表示は visibility のためだけに扱います。"
+        items={timelineItems}
       />
 
       <section style={governanceComponentStyles.section}>
