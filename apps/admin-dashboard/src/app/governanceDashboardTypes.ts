@@ -32,6 +32,13 @@ export type GovernanceSemanticNoteCategory =
   | "review_signal_only"
   | "expectation_isolation";
 
+export type GovernanceTimelineCategory =
+  | "incident"
+  | "semantic_review"
+  | "evidence"
+  | "integrity"
+  | "attention";
+
 export type GovernanceNoteVisibility = "overview" | "summary" | "detail" | "note";
 
 export type GovernanceReadabilityLevel =
@@ -68,6 +75,16 @@ export type GovernanceSummaryRow = GovernanceContractMetadata & {
   readonly label: string;
   readonly value: string;
   readonly note: string;
+};
+
+export type GovernanceTimelineItem = GovernanceContractMetadata & {
+  readonly id: string;
+  readonly occurredAtLabel: string;
+  readonly category: GovernanceTimelineCategory;
+  readonly categoryLabel: string;
+  readonly title: string;
+  readonly description: string;
+  readonly sourceLabel: string;
 };
 
 export type GovernanceIncidentSummaryRow = GovernanceSummaryRow;
@@ -112,6 +129,7 @@ export type GovernanceDashboardReadOnlyData = {
   readonly operationQueueSummary: readonly GovernanceOperationQueueSummaryRow[];
   readonly evidenceSummary: readonly GovernanceEvidenceSummaryRow[];
   readonly readOnlyNotes: readonly GovernanceReadOnlyNote[];
+  readonly timelineItems: readonly GovernanceTimelineItem[];
 };
 
 export type GovernanceStateNotice = {
@@ -133,3 +151,5 @@ export type GovernanceOperationQueueItem = GovernanceOperationQueueSummaryRow;
 export type GovernanceEvidenceSummaryItem = GovernanceEvidenceSummaryRow;
 
 export type GovernanceSemanticNoteItem = GovernanceReadOnlyNote;
+
+export type GovernanceTimelineDisplayItem = GovernanceTimelineItem;

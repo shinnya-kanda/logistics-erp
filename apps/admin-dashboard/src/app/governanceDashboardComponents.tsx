@@ -7,6 +7,7 @@ import type {
   GovernanceSeverity,
   GovernanceStateNotice,
   GovernanceSummaryRow,
+  GovernanceTimelineDisplayItem,
 } from "./governanceDashboardTypes";
 
 type GovernanceSectionCardProps = {
@@ -141,6 +142,30 @@ const styles: Record<string, CSSProperties> = {
     background: "#f5f7fb",
     color: "#333",
     fontSize: "0.82rem",
+    fontWeight: 800,
+  },
+  timelineList: {
+    display: "grid",
+    gap: "0.75rem",
+    marginTop: "0.85rem",
+  },
+  timelineItem: {
+    padding: "0.9rem",
+    border: "1px solid #ddd",
+    borderRadius: "12px",
+    background: "#fff",
+    lineHeight: 1.6,
+  },
+  timelineHeader: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "0.5rem",
+    alignItems: "baseline",
+    justifyContent: "space-between",
+  },
+  timelineTime: {
+    color: "#555",
+    fontSize: "0.88rem",
     fontWeight: 800,
   },
 };
@@ -309,6 +334,42 @@ export function GovernanceSemanticNoteCard({ note }: { readonly note: Governance
         <GovernanceLifecycleBadge lifecycleState={note.lifecycleState} />
       </div>
     </article>
+  );
+}
+
+export function GovernanceTimelineSection({
+  title,
+  description,
+  items,
+}: {
+  readonly title: string;
+  readonly description: string;
+  readonly items: readonly GovernanceTimelineDisplayItem[];
+}) {
+  return (
+    <section style={styles.section}>
+      <h3 style={styles.sectionTitle}>{title}</h3>
+      <p style={styles.lead}>{description}</p>
+      <div style={styles.timelineList}>
+        {items.map((item) => (
+          <article key={item.id} style={styles.timelineItem}>
+            <div style={styles.timelineHeader}>
+              <span style={styles.noteCategory}>{item.categoryLabel}</span>
+              <span style={styles.timelineTime}>{item.occurredAtLabel}</span>
+            </div>
+            <h4 style={{ margin: "0.45rem 0 0.35rem" }}>{item.title}</h4>
+            <p style={{ margin: 0 }}>{item.description}</p>
+            <p style={{ margin: "0.45rem 0 0", color: "#555" }}>
+              Source: {item.sourceLabel}
+            </p>
+            <div style={styles.metadataRow}>
+              <GovernanceSeverityBadge severity={item.severity} />
+              <GovernanceLifecycleBadge lifecycleState={item.lifecycleState} />
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
   );
 }
 

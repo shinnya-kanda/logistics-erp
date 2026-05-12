@@ -7,6 +7,7 @@ import type {
   GovernanceOverviewItem,
   GovernanceSemanticNoteItem,
   GovernanceStateNotice,
+  GovernanceTimelineDisplayItem,
 } from "./governanceDashboardTypes";
 
 // Read-only selector layer for rendering-safe Governance Dashboard data.
@@ -47,6 +48,12 @@ export function getGovernanceSemanticNotes(
   return data.readOnlyNotes.map(keepReadOnlyItem);
 }
 
+export function getGovernanceTimelineItems(
+  data: GovernanceDashboardReadOnlyData,
+): readonly GovernanceTimelineDisplayItem[] {
+  return data.timelineItems.map(keepReadOnlyItem);
+}
+
 export function getGovernanceDisplayState(
   data: GovernanceDashboardReadOnlyData,
 ): GovernanceDisplayState {
@@ -56,6 +63,7 @@ export function getGovernanceDisplayState(
     ...data.operationQueueSummary,
     ...data.evidenceSummary,
     ...data.readOnlyNotes,
+    ...data.timelineItems,
   ];
 
   if (allItems.length === 0) return "empty";
