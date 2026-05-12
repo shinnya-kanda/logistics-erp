@@ -105,3 +105,13 @@ export type GovernanceDashboardReadOnlyData = {
   readonly evidenceSummary: readonly GovernanceEvidenceSummaryRow[];
   readonly readOnlyNotes: readonly GovernanceReadOnlyNote[];
 };
+
+export type GovernanceOverviewItem = GovernanceOverviewCard;
+
+export type GovernanceIncidentSummaryItem = GovernanceIncidentSummaryRow;
+
+export type GovernanceOperationQueueItem = GovernanceOperationQueueSummaryRow;
+
+export type GovernanceEvidenceSummaryItem = GovernanceEvidenceSummaryRow;
+
+export type GovernanceSemanticNoteItem = GovernanceReadOnlyNote;

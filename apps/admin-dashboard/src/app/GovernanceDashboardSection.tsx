@@ -10,6 +10,13 @@ import {
   governanceComponentStyles,
 } from "./governanceDashboardComponents";
 import { getGovernanceDashboardMockData } from "./governanceDashboardMockData";
+import {
+  getGovernanceEvidenceSummaries,
+  getGovernanceIncidentSummaries,
+  getGovernanceOperationQueueItems,
+  getGovernanceOverviewItems,
+  getGovernanceSemanticNotes,
+} from "./governanceDashboardSelectors";
 
 const noExecutionText =
   "No correction, rebuild, replay, approval, retry, assignment, or sync is executed here.";
@@ -46,6 +53,11 @@ const styles: Record<string, CSSProperties> = {
 
 export function GovernanceDashboardSection() {
   const governanceData = getGovernanceDashboardMockData();
+  const overviewItems = getGovernanceOverviewItems(governanceData);
+  const incidentSummaries = getGovernanceIncidentSummaries(governanceData);
+  const operationQueueItems = getGovernanceOperationQueueItems(governanceData);
+  const evidenceSummaries = getGovernanceEvidenceSummaries(governanceData);
+  const semanticNotes = getGovernanceSemanticNotes(governanceData);
 
   return (
     <section style={styles.panel} aria-labelledby="governance-dashboard-heading">
@@ -69,7 +81,7 @@ export function GovernanceDashboardSection() {
       <section aria-label="ガバナンス概要">
         <h3>ガバナンス概要</h3>
         <div style={governanceComponentStyles.grid}>
-          {governanceData.overviewCards.map((card) => (
+          {overviewItems.map((card) => (
             <GovernanceSectionCard
               key={card.label}
               title={card.label}
@@ -86,19 +98,19 @@ export function GovernanceDashboardSection() {
       <GovernanceSummarySection
         title="Incident サマリー"
         description="read-only の調査と audit context のために、incident の状態を静的に表示します。"
-        rows={governanceData.incidentSummary}
+        rows={incidentSummaries}
       />
 
       <GovernanceSummarySection
         title="Operation queue サマリー"
         description="governance review 用の静的な queue summary です。queue state は execution lifecycle ではありません。"
-        rows={governanceData.operationQueueSummary}
+        rows={operationQueueItems}
       />
 
       <GovernanceSummarySection
         title="証跡サマリー"
         description="audit limitation を見える状態にするための静的な evidence summary です。"
-        rows={governanceData.evidenceSummary}
+        rows={evidenceSummaries}
       />
 
       <section style={governanceComponentStyles.section}>
@@ -110,7 +122,7 @@ export function GovernanceDashboardSection() {
           approval、retry、assignment、sync の操作は含みません。
         </p>
         <div style={styles.noteGrid}>
-          {governanceData.readOnlyNotes.map((note) => (
+          {semanticNotes.map((note) => (
             <GovernanceSemanticNoteCard key={note.title} note={note} />
           ))}
         </div>
