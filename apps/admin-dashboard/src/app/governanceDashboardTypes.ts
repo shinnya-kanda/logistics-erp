@@ -1,18 +1,62 @@
 // Read-only data contract for the static Governance Dashboard.
-// This file intentionally defines display-only records and contains no
-// mutation, execution, approval, retry, correction, rebuild, replay, or sync
-// action contract.
+// This file intentionally defines display-only records. It must not grow
+// write-side workflow contracts.
 
-export type GovernanceOverviewTone = "info" | "warning" | "critical" | "safe";
+export type GovernanceSeverity = "info" | "warning" | "high" | "critical";
 
-export type GovernanceOverviewCard = {
+export type GovernanceLifecycleState =
+  | "detected"
+  | "reviewing"
+  | "classified"
+  | "reaffirmed";
+
+export type GovernanceDegradationType =
+  | "none"
+  | "meaning_consistency"
+  | "semantic_safety"
+  | "safe_interpretation"
+  | "integrity"
+  | "attention"
+  | "readability"
+  | "lifecycle";
+
+export type GovernanceNoteType =
+  | "semantic_safety"
+  | "integrity"
+  | "attention"
+  | "safe_interpretation";
+
+export type GovernanceSemanticNoteCategory =
+  | "interpretation_safety"
+  | "governance_quality"
+  | "review_signal_only"
+  | "expectation_isolation";
+
+export type GovernanceNoteVisibility = "overview" | "summary" | "detail" | "note";
+
+export type GovernanceReadabilityLevel =
+  | "scan_first"
+  | "short_note"
+  | "detail_note";
+
+export type GovernanceOverviewTone = GovernanceSeverity | "safe";
+
+export type GovernanceContractMetadata = {
+  readonly severity: GovernanceSeverity;
+  readonly lifecycleState: GovernanceLifecycleState;
+  readonly degradationType: GovernanceDegradationType;
+  readonly visibility: GovernanceNoteVisibility;
+  readonly readability: GovernanceReadabilityLevel;
+};
+
+export type GovernanceOverviewCard = GovernanceContractMetadata & {
   readonly label: string;
   readonly value: string;
   readonly description: string;
   readonly tone: GovernanceOverviewTone;
 };
 
-export type GovernanceSummaryRow = {
+export type GovernanceSummaryRow = GovernanceContractMetadata & {
   readonly label: string;
   readonly value: string;
   readonly note: string;
@@ -24,14 +68,16 @@ export type GovernanceOperationQueueSummaryRow = GovernanceSummaryRow;
 
 export type GovernanceEvidenceSummaryRow = GovernanceSummaryRow;
 
-export type GovernanceReadOnlyNoteBase = {
+export type GovernanceReadOnlyNoteBase = GovernanceContractMetadata & {
+  readonly noteType: GovernanceNoteType;
   readonly title: string;
-  readonly category: string;
+  readonly category: GovernanceSemanticNoteCategory;
+  readonly categoryLabel: string;
   readonly note: string;
 };
 
 export type GovernanceSemanticNote = GovernanceReadOnlyNoteBase & {
-  readonly noteType: "semantic";
+  readonly noteType: "semantic_safety";
 };
 
 export type GovernanceIntegrityNote = GovernanceReadOnlyNoteBase & {
@@ -43,7 +89,7 @@ export type GovernanceAttentionNote = GovernanceReadOnlyNoteBase & {
 };
 
 export type GovernanceSafeInterpretationNote = GovernanceReadOnlyNoteBase & {
-  readonly noteType: "safe-interpretation";
+  readonly noteType: "safe_interpretation";
 };
 
 export type GovernanceReadOnlyNote =
