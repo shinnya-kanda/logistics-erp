@@ -2,6 +2,10 @@ import type {
   GovernanceBadgeTone,
   GovernanceDashboardReadOnlyData,
   GovernanceDisplayState,
+  GovernanceEvidenceConfidence,
+  GovernanceEvidenceConfidenceSummary,
+  GovernanceEvidenceGroup,
+  GovernanceEvidenceProjection,
   GovernanceEvidenceSummaryItem,
   GovernanceRenderingState,
   GovernanceIncidentSummaryItem,
@@ -114,7 +118,55 @@ export function getGovernanceOperationQueueItems(
 export function getGovernanceEvidenceSummaries(
   data: GovernanceDashboardReadOnlyData,
 ): readonly GovernanceEvidenceSummaryItem[] {
+  return getGovernanceEvidenceProjections(data);
+}
+
+export function getGovernanceEvidenceProjections(
+  data: GovernanceDashboardReadOnlyData,
+): readonly GovernanceEvidenceProjection[] {
   return data.evidenceSummary.map(keepReadOnlyItem);
+}
+
+export function getGovernanceEvidenceAttentionItems(
+  data: GovernanceDashboardReadOnlyData,
+): readonly GovernanceEvidenceProjection[] {
+  return getGovernanceEvidenceProjections(data).filter((item) => item.attention);
+}
+
+export function getGovernanceEvidenceGroups(
+  data: GovernanceDashboardReadOnlyData,
+): readonly GovernanceEvidenceGroup[] {
+  const groups = new Map<string, GovernanceEvidenceProjection[]>();
+
+  for (const item of getGovernanceEvidenceProjections(data)) {
+    const existingGroup = groups.get(item.groupKey) ?? [];
+    groups.set(item.groupKey, [...existingGroup, item]);
+  }
+
+  return [...groups.entries()].map(([groupKey, items]) => ({
+    groupKey,
+    groupLabel: items[0]?.groupLabel ?? groupKey,
+    items,
+  }));
+}
+
+export function getGovernanceEvidenceConfidenceSummary(
+  data: GovernanceDashboardReadOnlyData,
+): readonly GovernanceEvidenceConfidenceSummary[] {
+  const confidenceOrder: readonly GovernanceEvidenceConfidence[] = [
+    "high",
+    "medium",
+    "low",
+    "unknown",
+  ];
+
+  return confidenceOrder
+    .map((confidence) => ({
+      confidence,
+      count: getGovernanceEvidenceProjections(data).filter((item) => item.confidence === confidence)
+        .length,
+    }))
+    .filter((summary) => summary.count > 0);
 }
 
 export function getGovernanceSemanticNotes(

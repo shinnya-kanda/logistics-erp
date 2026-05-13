@@ -13,6 +13,9 @@ import {
 } from "./governanceDashboardComponents";
 import { getGovernanceDashboardMockData } from "./governanceDashboardMockData";
 import {
+  getGovernanceEvidenceAttentionItems,
+  getGovernanceEvidenceConfidenceSummary,
+  getGovernanceEvidenceGroups,
   getGovernanceEvidenceSummaries,
   getGovernanceStateNotice,
   getGovernanceIncidentSummaries,
@@ -64,6 +67,9 @@ export function GovernanceDashboardSection() {
   const incidentSummaries = getGovernanceIncidentSummaries(governanceData);
   const operationQueueItems = getGovernanceOperationQueueItems(governanceData);
   const evidenceSummaries = getGovernanceEvidenceSummaries(governanceData);
+  const evidenceGroups = getGovernanceEvidenceGroups(governanceData);
+  const evidenceAttentionItems = getGovernanceEvidenceAttentionItems(governanceData);
+  const evidenceConfidenceSummary = getGovernanceEvidenceConfidenceSummary(governanceData);
   const semanticNotes = getGovernanceSemanticNotes(governanceData);
   const timelineItems = getGovernanceTimelineItems(governanceData);
   const timelineHighlights = getGovernanceTimelineHighlights(governanceData);
@@ -126,6 +132,7 @@ export function GovernanceDashboardSection() {
         title="証跡サマリー"
         description="audit limitation を見える状態にするための静的な evidence summary です。"
         rows={evidenceSummaries}
+        projectionSummary={`Evidence projection groups: ${evidenceGroups.length} / Attention: ${evidenceAttentionItems.length} / Confidence: ${evidenceConfidenceSummary.map((item) => `${item.confidence} ${item.count}`).join(", ")}`}
       />
 
       <GovernanceTimelineSection
