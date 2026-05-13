@@ -7,6 +7,12 @@ import type {
   GovernanceEvidenceGroup,
   GovernanceEvidenceProjection,
   GovernanceEvidenceSummaryItem,
+  GovernanceIncidentAttentionLevel,
+  GovernanceIncidentAttentionSummary,
+  GovernanceIncidentGroup,
+  GovernanceIncidentProjection,
+  GovernanceIncidentSeverity,
+  GovernanceIncidentSeveritySummary,
   GovernanceRenderingState,
   GovernanceIncidentSummaryItem,
   GovernanceOperationQueueItem,
@@ -106,7 +112,70 @@ export function getGovernanceOverviewItems(
 export function getGovernanceIncidentSummaries(
   data: GovernanceDashboardReadOnlyData,
 ): readonly GovernanceIncidentSummaryItem[] {
+  return getGovernanceIncidentProjections(data);
+}
+
+export function getGovernanceIncidentProjections(
+  data: GovernanceDashboardReadOnlyData,
+): readonly GovernanceIncidentProjection[] {
   return data.incidentSummary.map(keepReadOnlyItem);
+}
+
+export function getGovernanceIncidentGroups(
+  data: GovernanceDashboardReadOnlyData,
+): readonly GovernanceIncidentGroup[] {
+  const groups = new Map<string, GovernanceIncidentProjection[]>();
+
+  for (const item of getGovernanceIncidentProjections(data)) {
+    const existingGroup = groups.get(item.groupKey) ?? [];
+    groups.set(item.groupKey, [...existingGroup, item]);
+  }
+
+  return [...groups.entries()].map(([groupKey, items]) => ({
+    groupKey,
+    groupLabel: items[0]?.groupLabel ?? groupKey,
+    items,
+  }));
+}
+
+export function getGovernanceIncidentSeveritySummary(
+  data: GovernanceDashboardReadOnlyData,
+): readonly GovernanceIncidentSeveritySummary[] {
+  const severityOrder: readonly GovernanceIncidentSeverity[] = [
+    "critical",
+    "high",
+    "watch",
+    "info",
+  ];
+
+  return severityOrder
+    .map((severity) => ({
+      severity,
+      count: getGovernanceIncidentProjections(data).filter(
+        (item) => item.incidentSeverity === severity,
+      ).length,
+    }))
+    .filter((summary) => summary.count > 0);
+}
+
+export function getGovernanceIncidentAttentionSummary(
+  data: GovernanceDashboardReadOnlyData,
+): readonly GovernanceIncidentAttentionSummary[] {
+  const attentionOrder: readonly GovernanceIncidentAttentionLevel[] = [
+    "urgent",
+    "high",
+    "medium",
+    "low",
+  ];
+
+  return attentionOrder
+    .map((attentionLevel) => ({
+      attentionLevel,
+      count: getGovernanceIncidentProjections(data).filter(
+        (item) => item.attentionLevel === attentionLevel,
+      ).length,
+    }))
+    .filter((summary) => summary.count > 0);
 }
 
 export function getGovernanceOperationQueueItems(
