@@ -1,8 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import type {
-  GovernanceDegradationState,
+  GovernanceBadgeTone,
   GovernanceDisplayState,
-  GovernanceFreshnessState,
   GovernanceLifecycleState,
   GovernanceOverviewTone,
   GovernanceReadOnlyNote,
@@ -12,7 +11,6 @@ import type {
   GovernanceStateNotice,
   GovernanceSummaryRow,
   GovernanceTimelineDisplayItem,
-  GovernanceVisibilityMode,
 } from "./governanceDashboardTypes";
 
 type GovernanceSectionCardProps = {
@@ -223,30 +221,48 @@ function renderStateLabel(renderState: GovernanceRenderState): string {
   return "Render state: ready";
 }
 
-function freshnessStateLabel(freshnessState: GovernanceFreshnessState): string {
-  if (freshnessState === "stale") return "Freshness: stale";
-  if (freshnessState === "unknown") return "Freshness: unknown";
-  return "Freshness: fresh";
+function badgeToneStyle(tone: GovernanceBadgeTone): CSSProperties {
+  if (tone === "critical") return { borderColor: "#c62828", background: "#ffebee", color: "#7f0000" };
+  if (tone === "high" || tone === "warning") {
+    return { borderColor: "#ef6c00", background: "#fff3e0", color: "#5d3900" };
+  }
+  if (tone === "safe") return { borderColor: "#2e7d32", background: "#e8f5e9", color: "#1b5e20" };
+  if (tone === "info") return { borderColor: "#90caf9", background: "#e3f2fd", color: "#0d47a1" };
+  return {};
 }
 
-function degradationStateLabel(degradationState: GovernanceDegradationState): string {
-  if (degradationState === "degraded") return "Degradation: degraded";
-  if (degradationState === "limited") return "Degradation: limited";
-  return "Degradation: none";
+function severityBadge(severity: GovernanceSeverity): GovernanceSemanticBadge {
+  return {
+    id: `severity-${severity}`,
+    category: "severity",
+    label: severityLabel(severity),
+    tone: severity === "critical" ? "critical" : severity === "high" ? "high" : severity,
+    visibility: "summary",
+    semanticMeaning: "review attention level の表示であり、処理優先度ではありません。",
+  };
 }
 
-function visibilityModeLabel(visibilityMode: GovernanceVisibilityMode): string {
-  if (visibilityMode === "summary") return "Visibility: summary";
-  if (visibilityMode === "detail") return "Visibility: detail";
-  if (visibilityMode === "timeline") return "Visibility: timeline";
-  return "Visibility: overview";
+function lifecycleBadge(lifecycleState: GovernanceLifecycleState): GovernanceSemanticBadge {
+  return {
+    id: `lifecycle-${lifecycleState}`,
+    category: "lifecycle",
+    label: lifecycleLabel(lifecycleState),
+    tone: "neutral",
+    visibility: "summary",
+    semanticMeaning: "read-only review lifecycle の表示であり、実行状態遷移ではありません。",
+  };
 }
 
-function semanticBadgeLabel(badge: GovernanceSemanticBadge): string {
-  if (badge === "approval") return "Approval badge";
-  if (badge === "evidence") return "Evidence badge";
-  if (badge === "read_only") return "READ ONLY";
-  return "Review signal only";
+export function GovernanceSemanticBadgePill({
+  badge,
+}: {
+  readonly badge: GovernanceSemanticBadge;
+}) {
+  return (
+    <span style={{ ...styles.badge, ...badgeToneStyle(badge.tone) }} title={badge.semanticMeaning}>
+      {badge.label}
+    </span>
+  );
 }
 
 export function GovernanceSeverityBadge({
@@ -254,7 +270,7 @@ export function GovernanceSeverityBadge({
 }: {
   readonly severity: GovernanceSeverity;
 }) {
-  return <span style={styles.badge}>{severityLabel(severity)}</span>;
+  return <GovernanceSemanticBadgePill badge={severityBadge(severity)} />;
 }
 
 export function GovernanceLifecycleBadge({
@@ -262,7 +278,7 @@ export function GovernanceLifecycleBadge({
 }: {
   readonly lifecycleState: GovernanceLifecycleState;
 }) {
-  return <span style={styles.badge}>{lifecycleLabel(lifecycleState)}</span>;
+  return <GovernanceSemanticBadgePill badge={lifecycleBadge(lifecycleState)} />;
 }
 
 export function GovernanceDisplayStateBadge({
@@ -281,30 +297,6 @@ export function GovernanceRenderStateBadge({
   return <span style={styles.badge}>{renderStateLabel(renderState)}</span>;
 }
 
-export function GovernanceFreshnessStateBadge({
-  freshnessState,
-}: {
-  readonly freshnessState: GovernanceFreshnessState;
-}) {
-  return <span style={styles.badge}>{freshnessStateLabel(freshnessState)}</span>;
-}
-
-export function GovernanceDegradationStateBadge({
-  degradationState,
-}: {
-  readonly degradationState: GovernanceDegradationState;
-}) {
-  return <span style={styles.badge}>{degradationStateLabel(degradationState)}</span>;
-}
-
-export function GovernanceVisibilityModeBadge({
-  visibilityMode,
-}: {
-  readonly visibilityMode: GovernanceVisibilityMode;
-}) {
-  return <span style={styles.badge}>{visibilityModeLabel(visibilityMode)}</span>;
-}
-
 export function GovernanceSemanticBadgeList({
   badges,
 }: {
@@ -315,9 +307,7 @@ export function GovernanceSemanticBadgeList({
   return (
     <>
       {badges.map((badge) => (
-        <span key={badge} style={styles.badge}>
-          {semanticBadgeLabel(badge)}
-        </span>
+        <GovernanceSemanticBadgePill key={badge.id} badge={badge} />
       ))}
     </>
   );
@@ -357,11 +347,7 @@ export function GovernanceStateNotice({ notice }: { readonly notice: GovernanceS
       <div style={styles.metadataRow}>
         <GovernanceDisplayStateBadge displayState={notice.displayState} />
         <GovernanceRenderStateBadge renderState={notice.renderState} />
-        <GovernanceFreshnessStateBadge freshnessState={notice.freshnessState} />
-        <GovernanceDegradationStateBadge degradationState={notice.degradationState} />
-        <GovernanceVisibilityModeBadge visibilityMode={notice.visibilityMode} />
-        <GovernanceSeverityBadge severity={notice.severity} />
-        <GovernanceLifecycleBadge lifecycleState={notice.lifecycleState} />
+        <GovernanceSemanticBadgeList badges={notice.semanticBadges} />
       </div>
     </GovernanceReadOnlyNotice>
   );

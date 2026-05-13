@@ -1,4 +1,5 @@
 import type {
+  GovernanceBadgeTone,
   GovernanceDashboardReadOnlyData,
   GovernanceDisplayState,
   GovernanceEvidenceSummaryItem,
@@ -6,6 +7,7 @@ import type {
   GovernanceIncidentSummaryItem,
   GovernanceOperationQueueItem,
   GovernanceOverviewItem,
+  GovernanceSemanticBadge,
   GovernanceSemanticNoteItem,
   GovernanceStateNotice,
   GovernanceTimelineDisplayItem,
@@ -17,6 +19,76 @@ import type {
 
 function keepReadOnlyItem<TItem>(item: TItem): TItem {
   return item;
+}
+
+function severityTone(severity: GovernanceStateNotice["severity"]): GovernanceBadgeTone {
+  if (severity === "critical") return "critical";
+  if (severity === "high") return "high";
+  if (severity === "warning") return "warning";
+  return "info";
+}
+
+export function getGovernanceStateNoticeBadges(
+  notice: Pick<
+    GovernanceStateNotice,
+    | "severity"
+    | "lifecycleState"
+    | "freshnessState"
+    | "degradationState"
+    | "visibilityMode"
+  >,
+): readonly GovernanceSemanticBadge[] {
+  return [
+    {
+      id: `state-severity-${notice.severity}`,
+      category: "severity",
+      label: `Severity: ${notice.severity}`,
+      tone: severityTone(notice.severity),
+      visibility: "state_notice",
+      semanticMeaning: "表示上の review attention level であり、処理優先度ではありません。",
+    },
+    {
+      id: `state-lifecycle-${notice.lifecycleState}`,
+      category: "lifecycle",
+      label: `Lifecycle: ${notice.lifecycleState}`,
+      tone: "neutral",
+      visibility: "state_notice",
+      semanticMeaning: "read-only review lifecycle の表示であり、operation lifecycle 遷移ではありません。",
+    },
+    {
+      id: `state-freshness-${notice.freshnessState}`,
+      category: "freshness",
+      label: `Freshness: ${notice.freshnessState}`,
+      tone: notice.freshnessState === "stale" ? "warning" : "info",
+      visibility: "state_notice",
+      semanticMeaning: "表示情報の freshness signal であり、同期や再取得を開始しません。",
+    },
+    {
+      id: `state-degradation-${notice.degradationState}`,
+      category: "degradation",
+      label: `Degradation: ${notice.degradationState}`,
+      tone: notice.degradationState === "degraded" ? "high" : "warning",
+      visibility: "state_notice",
+      semanticMeaning: "dashboard interpretation limitation の表示であり、remediation 実行ではありません。",
+    },
+    {
+      id: `state-visibility-${notice.visibilityMode}`,
+      category: "visibility",
+      label: `Visibility: ${notice.visibilityMode}`,
+      tone: "neutral",
+      visibility: "state_notice",
+      semanticMeaning: "表示範囲の semantic mode であり、権限変更や mutation ではありません。",
+    },
+  ];
+}
+
+function withStateNoticeBadges(
+  notice: Omit<GovernanceStateNotice, "semanticBadges">,
+): GovernanceStateNotice {
+  return {
+    ...notice,
+    semanticBadges: getGovernanceStateNoticeBadges(notice),
+  };
 }
 
 export function getGovernanceOverviewItems(
@@ -96,7 +168,7 @@ export function getGovernanceStateNotice(
   const renderingState = getGovernanceRenderingState(data);
 
   if (displayState === "empty") {
-    return {
+    return withStateNoticeBadges({
       displayState,
       renderState: renderingState.renderState,
       freshnessState: renderingState.freshnessState,
@@ -108,11 +180,11 @@ export function getGovernanceStateNotice(
       lifecycleState: "detected",
       visibility: "summary",
       readability: "short_note",
-    };
+    });
   }
 
   if (displayState === "degraded") {
-    return {
+    return withStateNoticeBadges({
       displayState,
       renderState: renderingState.renderState,
       freshnessState: renderingState.freshnessState,
@@ -125,11 +197,11 @@ export function getGovernanceStateNotice(
       lifecycleState: "reviewing",
       visibility: "summary",
       readability: "short_note",
-    };
+    });
   }
 
   if (displayState === "partial") {
-    return {
+    return withStateNoticeBadges({
       displayState,
       renderState: renderingState.renderState,
       freshnessState: renderingState.freshnessState,
@@ -142,11 +214,11 @@ export function getGovernanceStateNotice(
       lifecycleState: "classified",
       visibility: "summary",
       readability: "short_note",
-    };
+    });
   }
 
   if (displayState === "stale") {
-    return {
+    return withStateNoticeBadges({
       displayState,
       renderState: renderingState.renderState,
       freshnessState: renderingState.freshnessState,
@@ -158,11 +230,11 @@ export function getGovernanceStateNotice(
       lifecycleState: "reviewing",
       visibility: "summary",
       readability: "short_note",
-    };
+    });
   }
 
   if (displayState === "loading") {
-    return {
+    return withStateNoticeBadges({
       displayState,
       renderState: renderingState.renderState,
       freshnessState: renderingState.freshnessState,
@@ -174,10 +246,10 @@ export function getGovernanceStateNotice(
       lifecycleState: "detected",
       visibility: "summary",
       readability: "short_note",
-    };
+    });
   }
 
-  return {
+  return withStateNoticeBadges({
     displayState,
     renderState: renderingState.renderState,
     freshnessState: renderingState.freshnessState,
@@ -189,5 +261,5 @@ export function getGovernanceStateNotice(
     lifecycleState: "reaffirmed",
     visibility: "summary",
     readability: "short_note",
-  };
+  });
 }

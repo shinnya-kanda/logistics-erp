@@ -24,7 +24,16 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
       degradationType: "attention",
       visibility: "overview",
       readability: "scan_first",
-      semanticBadges: ["review_signal"],
+      semanticBadges: [
+        {
+          id: "overview-review-signal",
+          category: "review_signal",
+          label: "Review signal only",
+          tone: "warning",
+          visibility: "overview",
+          semanticMeaning: "human review のための signal であり、処理指示ではありません。",
+        },
+      ],
     },
     {
       label: "Critical attention",
@@ -58,7 +67,16 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
       degradationType: "none",
       visibility: "overview",
       readability: "scan_first",
-      semanticBadges: ["read_only"],
+      semanticBadges: [
+        {
+          id: "overview-read-only",
+          category: "read_only",
+          label: "READ ONLY",
+          tone: "safe",
+          visibility: "overview",
+          semanticMeaning: "表示専用であり、mutation や execution を含みません。",
+        },
+      ],
     },
   ],
   incidentSummary: [
@@ -113,7 +131,16 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
       degradationType: "safe_interpretation",
       visibility: "summary",
       readability: "short_note",
-      semanticBadges: ["approval"],
+      semanticBadges: [
+        {
+          id: "operation-approval-reference",
+          category: "approval",
+          label: "Approval badge",
+          tone: "warning",
+          visibility: "summary",
+          semanticMeaning: "approval mutation ではなく、approval state の参照表示です。",
+        },
+      ],
     },
     {
       label: "Lifecycle limitation",
@@ -136,7 +163,16 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
       degradationType: "none",
       visibility: "summary",
       readability: "short_note",
-      semanticBadges: ["evidence"],
+      semanticBadges: [
+        {
+          id: "evidence-present-reference",
+          category: "evidence",
+          label: "Evidence badge",
+          tone: "info",
+          visibility: "summary",
+          semanticMeaning: "review 用 evidence の存在を示すだけで、正しさを保証しません。",
+        },
+      ],
     },
     {
       label: "証跡が部分的",
@@ -147,7 +183,16 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
       degradationType: "integrity",
       visibility: "summary",
       readability: "short_note",
-      semanticBadges: ["evidence"],
+      semanticBadges: [
+        {
+          id: "evidence-partial-reference",
+          category: "evidence",
+          label: "Evidence badge",
+          tone: "warning",
+          visibility: "summary",
+          semanticMeaning: "部分的な evidence limitation の表示であり、証跡追加指示ではありません。",
+        },
+      ],
     },
     {
       label: "Timeline gap",
