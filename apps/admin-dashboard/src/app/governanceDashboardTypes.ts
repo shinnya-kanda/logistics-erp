@@ -39,7 +39,35 @@ export type GovernanceTimelineCategory =
   | "integrity"
   | "attention";
 
-export type GovernanceSemanticBadge = "approval" | "evidence" | "read_only" | "review_signal";
+export type GovernanceBadgeCategory =
+  | "severity"
+  | "lifecycle"
+  | "approval"
+  | "evidence"
+  | "freshness"
+  | "degradation"
+  | "visibility"
+  | "read_only"
+  | "review_signal";
+
+export type GovernanceBadgeTone = "neutral" | "info" | "warning" | "high" | "critical" | "safe";
+
+export type GovernanceBadgeVisibility =
+  | "overview"
+  | "summary"
+  | "detail"
+  | "state_notice"
+  | "timeline"
+  | "note";
+
+export type GovernanceSemanticBadge = {
+  readonly id: string;
+  readonly category: GovernanceBadgeCategory;
+  readonly label: string;
+  readonly tone: GovernanceBadgeTone;
+  readonly visibility: GovernanceBadgeVisibility;
+  readonly semanticMeaning: string;
+};
 
 export type GovernanceNoteVisibility = "overview" | "summary" | "detail" | "note";
 
@@ -151,6 +179,7 @@ export type GovernanceStateNotice = {
   readonly freshnessState: GovernanceFreshnessState;
   readonly degradationState: GovernanceDegradationState;
   readonly visibilityMode: GovernanceVisibilityMode;
+  readonly semanticBadges: readonly GovernanceSemanticBadge[];
   readonly title: string;
   readonly message: string;
   readonly severity: GovernanceSeverity;
