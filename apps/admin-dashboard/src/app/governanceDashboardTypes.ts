@@ -39,6 +39,8 @@ export type GovernanceTimelineCategory =
   | "integrity"
   | "attention";
 
+export type GovernanceSemanticBadge = "approval" | "evidence" | "read_only" | "review_signal";
+
 export type GovernanceNoteVisibility = "overview" | "summary" | "detail" | "note";
 
 export type GovernanceReadabilityLevel =
@@ -69,12 +71,14 @@ export type GovernanceOverviewCard = GovernanceContractMetadata & {
   readonly value: string;
   readonly description: string;
   readonly tone: GovernanceOverviewTone;
+  readonly semanticBadges?: readonly GovernanceSemanticBadge[];
 };
 
 export type GovernanceSummaryRow = GovernanceContractMetadata & {
   readonly label: string;
   readonly value: string;
   readonly note: string;
+  readonly semanticBadges?: readonly GovernanceSemanticBadge[];
 };
 
 export type GovernanceTimelineItem = GovernanceContractMetadata & {

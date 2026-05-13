@@ -4,6 +4,7 @@ import type {
   GovernanceLifecycleState,
   GovernanceOverviewTone,
   GovernanceReadOnlyNote,
+  GovernanceSemanticBadge,
   GovernanceSeverity,
   GovernanceStateNotice,
   GovernanceSummaryRow,
@@ -17,6 +18,7 @@ type GovernanceSectionCardProps = {
   readonly severity: GovernanceSeverity;
   readonly lifecycleState: GovernanceLifecycleState;
   readonly tone?: GovernanceOverviewTone;
+  readonly semanticBadges?: readonly GovernanceSemanticBadge[];
 };
 
 type GovernanceReadOnlyNoticeProps = {
@@ -209,6 +211,13 @@ function displayStateLabel(displayState: GovernanceDisplayState): string {
   return "Display state: ready";
 }
 
+function semanticBadgeLabel(badge: GovernanceSemanticBadge): string {
+  if (badge === "approval") return "Approval badge";
+  if (badge === "evidence") return "Evidence badge";
+  if (badge === "read_only") return "READ ONLY";
+  return "Review signal only";
+}
+
 export function GovernanceSeverityBadge({
   severity,
 }: {
@@ -231,6 +240,24 @@ export function GovernanceDisplayStateBadge({
   readonly displayState: GovernanceDisplayState;
 }) {
   return <span style={styles.badge}>{displayStateLabel(displayState)}</span>;
+}
+
+export function GovernanceSemanticBadgeList({
+  badges,
+}: {
+  readonly badges?: readonly GovernanceSemanticBadge[];
+}) {
+  if (!badges?.length) return null;
+
+  return (
+    <>
+      {badges.map((badge) => (
+        <span key={badge} style={styles.badge}>
+          {semanticBadgeLabel(badge)}
+        </span>
+      ))}
+    </>
+  );
 }
 
 export function GovernanceReadOnlyNotice({
@@ -280,6 +307,7 @@ export function GovernanceSectionCard({
   severity,
   lifecycleState,
   tone,
+  semanticBadges,
 }: GovernanceSectionCardProps) {
   return (
     <article style={{ ...styles.card, ...cardToneStyle(tone) }}>
@@ -289,6 +317,7 @@ export function GovernanceSectionCard({
       <div style={styles.metadataRow}>
         <GovernanceSeverityBadge severity={severity} />
         <GovernanceLifecycleBadge lifecycleState={lifecycleState} />
+        <GovernanceSemanticBadgeList badges={semanticBadges} />
       </div>
     </article>
   );
@@ -316,6 +345,7 @@ export function GovernanceSummarySection({
             description={row.note}
             severity={row.severity}
             lifecycleState={row.lifecycleState}
+            semanticBadges={row.semanticBadges}
           />
         ))}
       </div>

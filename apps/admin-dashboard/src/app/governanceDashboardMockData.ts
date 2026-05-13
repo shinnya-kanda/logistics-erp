@@ -12,6 +12,7 @@ const governanceDashboardMockData: GovernanceDashboardReadOnlyData = {
       degradationType: "attention",
       visibility: "overview",
       readability: "scan_first",
+      semanticBadges: ["review_signal"],
     },
     {
       label: "Critical attention",
@@ -45,6 +46,7 @@ const governanceDashboardMockData: GovernanceDashboardReadOnlyData = {
       degradationType: "none",
       visibility: "overview",
       readability: "scan_first",
+      semanticBadges: ["read_only"],
     },
   ],
   incidentSummary: [
@@ -99,6 +101,7 @@ const governanceDashboardMockData: GovernanceDashboardReadOnlyData = {
       degradationType: "safe_interpretation",
       visibility: "summary",
       readability: "short_note",
+      semanticBadges: ["approval"],
     },
     {
       label: "Lifecycle limitation",
@@ -121,6 +124,7 @@ const governanceDashboardMockData: GovernanceDashboardReadOnlyData = {
       degradationType: "none",
       visibility: "summary",
       readability: "short_note",
+      semanticBadges: ["evidence"],
     },
     {
       label: "証跡が部分的",
@@ -131,6 +135,7 @@ const governanceDashboardMockData: GovernanceDashboardReadOnlyData = {
       degradationType: "integrity",
       visibility: "summary",
       readability: "short_note",
+      semanticBadges: ["evidence"],
     },
     {
       label: "Timeline gap",
