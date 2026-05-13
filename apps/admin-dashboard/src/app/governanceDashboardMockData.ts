@@ -1,6 +1,9 @@
-import type { GovernanceDashboardReadOnlyData } from "./governanceDashboardTypes";
+import type {
+  GovernanceDashboardMockContract,
+  GovernanceDashboardReadOnlyData,
+} from "./governanceDashboardTypes";
 
-const governanceDashboardMockData: GovernanceDashboardReadOnlyData = {
+const governanceDashboardMockData: GovernanceDashboardMockContract = {
   overviewCards: [
     {
       label: "注意が必要な signal",

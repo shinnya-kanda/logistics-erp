@@ -157,3 +157,24 @@ export type GovernanceEvidenceSummaryItem = GovernanceEvidenceSummaryRow;
 export type GovernanceSemanticNoteItem = GovernanceReadOnlyNote;
 
 export type GovernanceTimelineDisplayItem = GovernanceTimelineItem;
+
+export type GovernanceSummaryCardMock = GovernanceOverviewCard;
+
+export type GovernanceIncidentMock = GovernanceIncidentSummaryRow;
+
+export type GovernanceOperationQueueMock = GovernanceOperationQueueSummaryRow;
+
+export type GovernanceEvidenceMock = GovernanceEvidenceSummaryRow;
+
+export type GovernanceTimelineMock = GovernanceTimelineItem;
+
+export type GovernanceReadOnlyNoteMock = GovernanceReadOnlyNote;
+
+export type GovernanceDashboardMockContract = {
+  readonly overviewCards: readonly GovernanceSummaryCardMock[];
+  readonly incidentSummary: readonly GovernanceIncidentMock[];
+  readonly operationQueueSummary: readonly GovernanceOperationQueueMock[];
+  readonly evidenceSummary: readonly GovernanceEvidenceMock[];
+  readonly readOnlyNotes: readonly GovernanceReadOnlyNoteMock[];
+  readonly timelineItems: readonly GovernanceTimelineMock[];
+};
