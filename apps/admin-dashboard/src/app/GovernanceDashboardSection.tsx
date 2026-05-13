@@ -98,6 +98,7 @@ export function GovernanceDashboardSection() {
               severity={card.severity}
               lifecycleState={card.lifecycleState}
               tone={card.tone}
+              semanticBadges={card.semanticBadges}
             />
           ))}
         </div>
