@@ -4,6 +4,15 @@ import type {
 } from "./governanceDashboardTypes";
 
 const governanceDashboardMockData: GovernanceDashboardMockContract = {
+  renderingState: {
+    renderState: "readonly",
+    freshnessState: "fresh",
+    degradationState: "limited",
+    visibilityMode: "overview",
+    label: "Read-only render state",
+    message:
+      "static mock data を read-only rendering として表示しています。partial / degraded signal は review visibility のためだけに扱います。",
+  },
   overviewCards: [
     {
       label: "注意が必要な signal",
