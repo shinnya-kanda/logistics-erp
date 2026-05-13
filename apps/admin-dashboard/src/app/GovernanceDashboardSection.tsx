@@ -17,6 +17,9 @@ import {
   getGovernanceEvidenceConfidenceSummary,
   getGovernanceEvidenceGroups,
   getGovernanceEvidenceSummaries,
+  getGovernanceIncidentAttentionSummary,
+  getGovernanceIncidentGroups,
+  getGovernanceIncidentSeveritySummary,
   getGovernanceStateNotice,
   getGovernanceIncidentSummaries,
   getGovernanceOperationQueueItems,
@@ -65,6 +68,9 @@ export function GovernanceDashboardSection() {
   const governanceData = getGovernanceDashboardMockData();
   const overviewItems = getGovernanceOverviewItems(governanceData);
   const incidentSummaries = getGovernanceIncidentSummaries(governanceData);
+  const incidentGroups = getGovernanceIncidentGroups(governanceData);
+  const incidentSeveritySummary = getGovernanceIncidentSeveritySummary(governanceData);
+  const incidentAttentionSummary = getGovernanceIncidentAttentionSummary(governanceData);
   const operationQueueItems = getGovernanceOperationQueueItems(governanceData);
   const evidenceSummaries = getGovernanceEvidenceSummaries(governanceData);
   const evidenceGroups = getGovernanceEvidenceGroups(governanceData);
@@ -120,6 +126,7 @@ export function GovernanceDashboardSection() {
         title="Incident サマリー"
         description="read-only の調査と audit context のために、incident の状態を静的に表示します。"
         rows={incidentSummaries}
+        projectionSummary={`Incident projection groups: ${incidentGroups.length} / Severity: ${incidentSeveritySummary.map((item) => `${item.severity} ${item.count}`).join(", ")} / Attention: ${incidentAttentionSummary.map((item) => `${item.attentionLevel} ${item.count}`).join(", ")}`}
       />
 
       <GovernanceSummarySection

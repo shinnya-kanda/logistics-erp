@@ -82,6 +82,32 @@ export type GovernanceEvidenceSource =
   | "timeline_projection"
   | "semantic_review";
 
+export type GovernanceIncidentCategory =
+  | "semantic_ambiguity"
+  | "attention_backlog"
+  | "integrity_review"
+  | "investigation_signal"
+  | "coordination_context";
+
+export type GovernanceIncidentSeverity = "info" | "watch" | "high" | "critical";
+
+export type GovernanceIncidentStatus =
+  | "detected"
+  | "triage_visible"
+  | "under_review"
+  | "classified";
+
+export type GovernanceIncidentVisibility = "summary" | "grouped" | "attention" | "detail";
+
+export type GovernanceIncidentRelation =
+  | "requires_review"
+  | "related_semantics"
+  | "attention_marker"
+  | "escalation_context"
+  | "uncertainty_context";
+
+export type GovernanceIncidentAttentionLevel = "low" | "medium" | "high" | "urgent";
+
 export type GovernanceBadgeCategory =
   | "severity"
   | "lifecycle"
@@ -181,7 +207,19 @@ export type GovernanceTimelineProjection = GovernanceContractMetadata & {
 
 export type GovernanceTimelineItem = GovernanceTimelineProjection;
 
-export type GovernanceIncidentSummaryRow = GovernanceSummaryRow;
+export type GovernanceIncidentProjection = GovernanceSummaryRow & {
+  readonly incidentCategory: GovernanceIncidentCategory;
+  readonly incidentSeverity: GovernanceIncidentSeverity;
+  readonly incidentStatus: GovernanceIncidentStatus;
+  readonly incidentVisibility: GovernanceIncidentVisibility;
+  readonly relation: GovernanceIncidentRelation;
+  readonly attentionLevel: GovernanceIncidentAttentionLevel;
+  readonly projectionLabel: string;
+  readonly groupKey: string;
+  readonly groupLabel: string;
+};
+
+export type GovernanceIncidentSummaryRow = GovernanceIncidentProjection;
 
 export type GovernanceOperationQueueSummaryRow = GovernanceSummaryRow;
 
@@ -270,6 +308,22 @@ export type GovernanceTimelineGroup = {
   readonly groupKey: string;
   readonly groupLabel: string;
   readonly items: readonly GovernanceTimelineProjection[];
+};
+
+export type GovernanceIncidentGroup = {
+  readonly groupKey: string;
+  readonly groupLabel: string;
+  readonly items: readonly GovernanceIncidentProjection[];
+};
+
+export type GovernanceIncidentSeveritySummary = {
+  readonly severity: GovernanceIncidentSeverity;
+  readonly count: number;
+};
+
+export type GovernanceIncidentAttentionSummary = {
+  readonly attentionLevel: GovernanceIncidentAttentionLevel;
+  readonly count: number;
 };
 
 export type GovernanceEvidenceGroup = {
