@@ -386,15 +386,18 @@ export function GovernanceSummarySection({
   title,
   description,
   rows,
+  projectionSummary,
 }: {
   readonly title: string;
   readonly description: string;
   readonly rows: readonly GovernanceSummaryRow[];
+  readonly projectionSummary?: string;
 }) {
   return (
     <section style={styles.section}>
       <h3 style={styles.sectionTitle}>{title}</h3>
       <p style={styles.lead}>{description}</p>
+      {projectionSummary ? <p style={styles.projectionMeta}>{projectionSummary}</p> : null}
       <div style={styles.grid}>
         {rows.map((row) => (
           <GovernanceSectionCard

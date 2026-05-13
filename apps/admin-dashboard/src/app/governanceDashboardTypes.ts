@@ -58,6 +58,30 @@ export type GovernanceTimelineEvidenceState =
   | "partial"
   | "lineage_visible";
 
+export type GovernanceEvidenceCategory =
+  | "rationale"
+  | "provenance"
+  | "lineage"
+  | "confidence"
+  | "audit_context";
+
+export type GovernanceEvidenceConfidence = "high" | "medium" | "low" | "unknown";
+
+export type GovernanceEvidenceVisibility = "summary" | "reasoning" | "lineage" | "detail";
+
+export type GovernanceEvidenceRelation =
+  | "supports_reasoning"
+  | "explains_signal"
+  | "links_lineage"
+  | "qualifies_confidence"
+  | "marks_limitation";
+
+export type GovernanceEvidenceSource =
+  | "static_mock"
+  | "policy_reference"
+  | "timeline_projection"
+  | "semantic_review";
+
 export type GovernanceBadgeCategory =
   | "severity"
   | "lifecycle"
@@ -161,7 +185,19 @@ export type GovernanceIncidentSummaryRow = GovernanceSummaryRow;
 
 export type GovernanceOperationQueueSummaryRow = GovernanceSummaryRow;
 
-export type GovernanceEvidenceSummaryRow = GovernanceSummaryRow;
+export type GovernanceEvidenceProjection = GovernanceSummaryRow & {
+  readonly evidenceCategory: GovernanceEvidenceCategory;
+  readonly confidence: GovernanceEvidenceConfidence;
+  readonly evidenceVisibility: GovernanceEvidenceVisibility;
+  readonly relation: GovernanceEvidenceRelation;
+  readonly source: GovernanceEvidenceSource;
+  readonly projectionLabel: string;
+  readonly groupKey: string;
+  readonly groupLabel: string;
+  readonly attention: boolean;
+};
+
+export type GovernanceEvidenceSummaryRow = GovernanceEvidenceProjection;
 
 export type GovernanceReadOnlyNoteBase = GovernanceContractMetadata & {
   readonly noteType: GovernanceNoteType;
@@ -234,6 +270,17 @@ export type GovernanceTimelineGroup = {
   readonly groupKey: string;
   readonly groupLabel: string;
   readonly items: readonly GovernanceTimelineProjection[];
+};
+
+export type GovernanceEvidenceGroup = {
+  readonly groupKey: string;
+  readonly groupLabel: string;
+  readonly items: readonly GovernanceEvidenceProjection[];
+};
+
+export type GovernanceEvidenceConfidenceSummary = {
+  readonly confidence: GovernanceEvidenceConfidence;
+  readonly count: number;
 };
 
 export type GovernanceRenderingState = {
