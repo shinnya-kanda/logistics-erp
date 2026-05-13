@@ -172,6 +172,12 @@ const styles: Record<string, CSSProperties> = {
     fontSize: "0.88rem",
     fontWeight: 800,
   },
+  projectionMeta: {
+    margin: "0.45rem 0 0",
+    color: "#455a64",
+    fontSize: "0.88rem",
+    fontWeight: 700,
+  },
 };
 
 function cardToneStyle(tone: GovernanceOverviewTone | undefined): CSSProperties {
@@ -424,15 +430,18 @@ export function GovernanceTimelineSection({
   title,
   description,
   items,
+  projectionSummary,
 }: {
   readonly title: string;
   readonly description: string;
   readonly items: readonly GovernanceTimelineDisplayItem[];
+  readonly projectionSummary?: string;
 }) {
   return (
     <section style={styles.section}>
       <h3 style={styles.sectionTitle}>{title}</h3>
       <p style={styles.lead}>{description}</p>
+      {projectionSummary ? <p style={styles.projectionMeta}>{projectionSummary}</p> : null}
       <div style={styles.timelineList}>
         {items.map((item) => (
           <article key={item.id} style={styles.timelineItem}>
@@ -445,9 +454,37 @@ export function GovernanceTimelineSection({
             <p style={{ margin: "0.45rem 0 0", color: "#555" }}>
               Source: {item.sourceLabel}
             </p>
+            <p style={styles.projectionMeta}>
+              Projection: {item.projectionLabel} / Group: {item.groupLabel} / Relation:{" "}
+              {item.relation} / Evidence: {item.evidenceState}
+            </p>
             <div style={styles.metadataRow}>
               <GovernanceSeverityBadge severity={item.severity} />
               <GovernanceLifecycleBadge lifecycleState={item.lifecycleState} />
+              {item.highlight ? (
+                <GovernanceSemanticBadgePill
+                  badge={{
+                    id: `${item.id}-highlight`,
+                    category: "visibility",
+                    label: "Timeline highlight",
+                    tone: "warning",
+                    visibility: "timeline",
+                    semanticMeaning: "review visibility の強調であり、実行優先度ではありません。",
+                  }}
+                />
+              ) : null}
+              {item.attention ? (
+                <GovernanceSemanticBadgePill
+                  badge={{
+                    id: `${item.id}-attention`,
+                    category: "review_signal",
+                    label: "Attention signal",
+                    tone: item.timelineSeverity === "critical" ? "critical" : "warning",
+                    visibility: "timeline",
+                    semanticMeaning: "human review の見落とし防止であり、assignment ではありません。",
+                  }}
+                />
+              ) : null}
             </div>
           </article>
         ))}

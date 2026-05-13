@@ -11,6 +11,8 @@ import type {
   GovernanceSemanticNoteItem,
   GovernanceStateNotice,
   GovernanceTimelineDisplayItem,
+  GovernanceTimelineGroup,
+  GovernanceTimelineProjection,
 } from "./governanceDashboardTypes";
 
 // Read-only selector layer for rendering-safe Governance Dashboard data.
@@ -124,7 +126,42 @@ export function getGovernanceSemanticNotes(
 export function getGovernanceTimelineItems(
   data: GovernanceDashboardReadOnlyData,
 ): readonly GovernanceTimelineDisplayItem[] {
+  return getGovernanceTimelineProjections(data);
+}
+
+export function getGovernanceTimelineProjections(
+  data: GovernanceDashboardReadOnlyData,
+): readonly GovernanceTimelineProjection[] {
   return data.timelineItems.map(keepReadOnlyItem);
+}
+
+export function getGovernanceTimelineHighlights(
+  data: GovernanceDashboardReadOnlyData,
+): readonly GovernanceTimelineProjection[] {
+  return getGovernanceTimelineProjections(data).filter((item) => item.highlight);
+}
+
+export function getGovernanceTimelineAttentionItems(
+  data: GovernanceDashboardReadOnlyData,
+): readonly GovernanceTimelineProjection[] {
+  return getGovernanceTimelineProjections(data).filter((item) => item.attention);
+}
+
+export function getGovernanceTimelineGroups(
+  data: GovernanceDashboardReadOnlyData,
+): readonly GovernanceTimelineGroup[] {
+  const groups = new Map<string, GovernanceTimelineProjection[]>();
+
+  for (const item of getGovernanceTimelineProjections(data)) {
+    const existingGroup = groups.get(item.groupKey) ?? [];
+    groups.set(item.groupKey, [...existingGroup, item]);
+  }
+
+  return [...groups.entries()].map(([groupKey, items]) => ({
+    groupKey,
+    groupLabel: items[0]?.groupLabel ?? groupKey,
+    items,
+  }));
 }
 
 export function getGovernanceRenderingState(

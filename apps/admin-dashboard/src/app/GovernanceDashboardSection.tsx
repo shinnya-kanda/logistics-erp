@@ -19,6 +19,9 @@ import {
   getGovernanceOperationQueueItems,
   getGovernanceOverviewItems,
   getGovernanceSemanticNotes,
+  getGovernanceTimelineAttentionItems,
+  getGovernanceTimelineGroups,
+  getGovernanceTimelineHighlights,
   getGovernanceTimelineItems,
 } from "./governanceDashboardSelectors";
 
@@ -63,6 +66,9 @@ export function GovernanceDashboardSection() {
   const evidenceSummaries = getGovernanceEvidenceSummaries(governanceData);
   const semanticNotes = getGovernanceSemanticNotes(governanceData);
   const timelineItems = getGovernanceTimelineItems(governanceData);
+  const timelineHighlights = getGovernanceTimelineHighlights(governanceData);
+  const timelineAttentionItems = getGovernanceTimelineAttentionItems(governanceData);
+  const timelineGroups = getGovernanceTimelineGroups(governanceData);
   const stateNotice = getGovernanceStateNotice(governanceData);
 
   return (
@@ -126,6 +132,7 @@ export function GovernanceDashboardSection() {
         title="Read-only timeline"
         description="review / observability purpose の timeline です。時系列表示は visibility のためだけに扱います。"
         items={timelineItems}
+        projectionSummary={`Projection groups: ${timelineGroups.length} / Highlights: ${timelineHighlights.length} / Attention: ${timelineAttentionItems.length}`}
       />
 
       <section style={governanceComponentStyles.section}>

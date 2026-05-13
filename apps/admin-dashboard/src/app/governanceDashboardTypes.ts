@@ -37,7 +37,26 @@ export type GovernanceTimelineCategory =
   | "semantic_review"
   | "evidence"
   | "integrity"
-  | "attention";
+  | "attention"
+  | "provenance"
+  | "explainability";
+
+export type GovernanceTimelineSeverity = "info" | "watch" | "attention" | "critical";
+
+export type GovernanceTimelineVisibility = "overview" | "grouped" | "highlighted" | "detail";
+
+export type GovernanceTimelineRelation =
+  | "source_event"
+  | "derived_signal"
+  | "evidence_link"
+  | "semantic_context"
+  | "attention_marker";
+
+export type GovernanceTimelineEvidenceState =
+  | "none"
+  | "referenced"
+  | "partial"
+  | "lineage_visible";
 
 export type GovernanceBadgeCategory =
   | "severity"
@@ -117,7 +136,7 @@ export type GovernanceSummaryRow = GovernanceContractMetadata & {
   readonly semanticBadges?: readonly GovernanceSemanticBadge[];
 };
 
-export type GovernanceTimelineItem = GovernanceContractMetadata & {
+export type GovernanceTimelineProjection = GovernanceContractMetadata & {
   readonly id: string;
   readonly occurredAtLabel: string;
   readonly category: GovernanceTimelineCategory;
@@ -125,7 +144,18 @@ export type GovernanceTimelineItem = GovernanceContractMetadata & {
   readonly title: string;
   readonly description: string;
   readonly sourceLabel: string;
+  readonly projectionLabel: string;
+  readonly timelineSeverity: GovernanceTimelineSeverity;
+  readonly timelineVisibility: GovernanceTimelineVisibility;
+  readonly relation: GovernanceTimelineRelation;
+  readonly evidenceState: GovernanceTimelineEvidenceState;
+  readonly groupKey: string;
+  readonly groupLabel: string;
+  readonly highlight: boolean;
+  readonly attention: boolean;
 };
+
+export type GovernanceTimelineItem = GovernanceTimelineProjection;
 
 export type GovernanceIncidentSummaryRow = GovernanceSummaryRow;
 
@@ -170,7 +200,7 @@ export type GovernanceDashboardReadOnlyData = {
   readonly operationQueueSummary: readonly GovernanceOperationQueueSummaryRow[];
   readonly evidenceSummary: readonly GovernanceEvidenceSummaryRow[];
   readonly readOnlyNotes: readonly GovernanceReadOnlyNote[];
-  readonly timelineItems: readonly GovernanceTimelineItem[];
+  readonly timelineItems: readonly GovernanceTimelineProjection[];
 };
 
 export type GovernanceStateNotice = {
@@ -198,7 +228,13 @@ export type GovernanceEvidenceSummaryItem = GovernanceEvidenceSummaryRow;
 
 export type GovernanceSemanticNoteItem = GovernanceReadOnlyNote;
 
-export type GovernanceTimelineDisplayItem = GovernanceTimelineItem;
+export type GovernanceTimelineDisplayItem = GovernanceTimelineProjection;
+
+export type GovernanceTimelineGroup = {
+  readonly groupKey: string;
+  readonly groupLabel: string;
+  readonly items: readonly GovernanceTimelineProjection[];
+};
 
 export type GovernanceRenderingState = {
   readonly renderState: GovernanceRenderState;
@@ -217,7 +253,7 @@ export type GovernanceOperationQueueMock = GovernanceOperationQueueSummaryRow;
 
 export type GovernanceEvidenceMock = GovernanceEvidenceSummaryRow;
 
-export type GovernanceTimelineMock = GovernanceTimelineItem;
+export type GovernanceTimelineMock = GovernanceTimelineProjection;
 
 export type GovernanceReadOnlyNoteMock = GovernanceReadOnlyNote;
 
