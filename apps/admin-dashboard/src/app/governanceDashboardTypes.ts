@@ -58,6 +58,14 @@ export type GovernanceDisplayState =
   | "partial"
   | "degraded";
 
+export type GovernanceRenderState = "readonly" | "ready" | "partial" | "stale" | "degraded";
+
+export type GovernanceFreshnessState = "fresh" | "stale" | "unknown";
+
+export type GovernanceDegradationState = "none" | "limited" | "degraded";
+
+export type GovernanceVisibilityMode = "overview" | "summary" | "detail" | "timeline";
+
 export type GovernanceContractMetadata = {
   readonly severity: GovernanceSeverity;
   readonly lifecycleState: GovernanceLifecycleState;
@@ -128,6 +136,7 @@ export type GovernanceReadOnlyNote =
   | GovernanceSafeInterpretationNote;
 
 export type GovernanceDashboardReadOnlyData = {
+  readonly renderingState: GovernanceRenderingState;
   readonly overviewCards: readonly GovernanceOverviewCard[];
   readonly incidentSummary: readonly GovernanceIncidentSummaryRow[];
   readonly operationQueueSummary: readonly GovernanceOperationQueueSummaryRow[];
@@ -138,6 +147,10 @@ export type GovernanceDashboardReadOnlyData = {
 
 export type GovernanceStateNotice = {
   readonly displayState: GovernanceDisplayState;
+  readonly renderState: GovernanceRenderState;
+  readonly freshnessState: GovernanceFreshnessState;
+  readonly degradationState: GovernanceDegradationState;
+  readonly visibilityMode: GovernanceVisibilityMode;
   readonly title: string;
   readonly message: string;
   readonly severity: GovernanceSeverity;
@@ -158,6 +171,15 @@ export type GovernanceSemanticNoteItem = GovernanceReadOnlyNote;
 
 export type GovernanceTimelineDisplayItem = GovernanceTimelineItem;
 
+export type GovernanceRenderingState = {
+  readonly renderState: GovernanceRenderState;
+  readonly freshnessState: GovernanceFreshnessState;
+  readonly degradationState: GovernanceDegradationState;
+  readonly visibilityMode: GovernanceVisibilityMode;
+  readonly label: string;
+  readonly message: string;
+};
+
 export type GovernanceSummaryCardMock = GovernanceOverviewCard;
 
 export type GovernanceIncidentMock = GovernanceIncidentSummaryRow;
@@ -171,6 +193,7 @@ export type GovernanceTimelineMock = GovernanceTimelineItem;
 export type GovernanceReadOnlyNoteMock = GovernanceReadOnlyNote;
 
 export type GovernanceDashboardMockContract = {
+  readonly renderingState: GovernanceRenderingState;
   readonly overviewCards: readonly GovernanceSummaryCardMock[];
   readonly incidentSummary: readonly GovernanceIncidentMock[];
   readonly operationQueueSummary: readonly GovernanceOperationQueueMock[];

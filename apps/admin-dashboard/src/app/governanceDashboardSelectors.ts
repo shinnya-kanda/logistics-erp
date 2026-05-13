@@ -2,6 +2,7 @@ import type {
   GovernanceDashboardReadOnlyData,
   GovernanceDisplayState,
   GovernanceEvidenceSummaryItem,
+  GovernanceRenderingState,
   GovernanceIncidentSummaryItem,
   GovernanceOperationQueueItem,
   GovernanceOverviewItem,
@@ -54,6 +55,12 @@ export function getGovernanceTimelineItems(
   return data.timelineItems.map(keepReadOnlyItem);
 }
 
+export function getGovernanceRenderingState(
+  data: GovernanceDashboardReadOnlyData,
+): GovernanceRenderingState {
+  return data.renderingState;
+}
+
 export function getGovernanceDisplayState(
   data: GovernanceDashboardReadOnlyData,
 ): GovernanceDisplayState {
@@ -86,10 +93,15 @@ export function getGovernanceStateNotice(
   data: GovernanceDashboardReadOnlyData,
 ): GovernanceStateNotice {
   const displayState = getGovernanceDisplayState(data);
+  const renderingState = getGovernanceRenderingState(data);
 
   if (displayState === "empty") {
     return {
       displayState,
+      renderState: renderingState.renderState,
+      freshnessState: renderingState.freshnessState,
+      degradationState: renderingState.degradationState,
+      visibilityMode: renderingState.visibilityMode,
       title: "Display state: empty",
       message: "表示できる governance signal はありません。これは read-only visibility state です。",
       severity: "info",
@@ -102,9 +114,13 @@ export function getGovernanceStateNotice(
   if (displayState === "degraded") {
     return {
       displayState,
+      renderState: renderingState.renderState,
+      freshnessState: renderingState.freshnessState,
+      degradationState: renderingState.degradationState,
+      visibilityMode: renderingState.visibilityMode,
       title: "Display state: degraded",
       message:
-        "semantic safety / integrity / attention に review limitation があります。state は visibility のためだけに表示します。",
+        `${renderingState.message} semantic safety / integrity / attention に review limitation があります。state は visibility のためだけに表示します。`,
       severity: "high",
       lifecycleState: "reviewing",
       visibility: "summary",
@@ -115,9 +131,13 @@ export function getGovernanceStateNotice(
   if (displayState === "partial") {
     return {
       displayState,
+      renderState: renderingState.renderState,
+      freshnessState: renderingState.freshnessState,
+      degradationState: renderingState.degradationState,
+      visibilityMode: renderingState.visibilityMode,
       title: "Display state: partial",
       message:
-        "一部の governance signal に limitation があります。state は human review の補助として扱います。",
+        `${renderingState.message} 一部の governance signal に limitation があります。state は human review の補助として扱います。`,
       severity: "warning",
       lifecycleState: "classified",
       visibility: "summary",
@@ -128,6 +148,10 @@ export function getGovernanceStateNotice(
   if (displayState === "stale") {
     return {
       displayState,
+      renderState: renderingState.renderState,
+      freshnessState: renderingState.freshnessState,
+      degradationState: renderingState.degradationState,
+      visibilityMode: renderingState.visibilityMode,
       title: "Display state: stale",
       message: "表示情報が古い可能性があります。state は freshness limitation の表示です。",
       severity: "warning",
@@ -140,6 +164,10 @@ export function getGovernanceStateNotice(
   if (displayState === "loading") {
     return {
       displayState,
+      renderState: renderingState.renderState,
+      freshnessState: renderingState.freshnessState,
+      degradationState: renderingState.degradationState,
+      visibilityMode: renderingState.visibilityMode,
       title: "Display state: loading",
       message: "表示準備中の read-only state です。処理の開始を意味しません。",
       severity: "info",
@@ -151,8 +179,12 @@ export function getGovernanceStateNotice(
 
   return {
     displayState,
+    renderState: renderingState.renderState,
+    freshnessState: renderingState.freshnessState,
+    degradationState: renderingState.degradationState,
+    visibilityMode: renderingState.visibilityMode,
     title: "Display state: ready",
-    message: "静的 mock data は表示可能です。READ ONLY / NO EXECUTION の境界を維持します。",
+    message: `${renderingState.message} READ ONLY / NO EXECUTION の境界を維持します。`,
     severity: "info",
     lifecycleState: "reaffirmed",
     visibility: "summary",
