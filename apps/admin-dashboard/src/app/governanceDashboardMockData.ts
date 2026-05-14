@@ -1,7 +1,46 @@
 import type {
   GovernanceDashboardMockContract,
   GovernanceDashboardReadOnlyData,
+  GovernanceProjectionId,
+  GovernanceProjectionLineage,
 } from "./governanceDashboardTypes";
+
+const parentTraceId = "mock-parent-trace-governance-dashboard";
+
+function createGovernanceProjectionLineage({
+  projectionId,
+  parentProjectionId = "root",
+  derivedFrom = [],
+  dependencies = [],
+}: {
+  readonly projectionId: GovernanceProjectionId;
+  readonly parentProjectionId?: GovernanceProjectionId | "root";
+  readonly derivedFrom?: readonly GovernanceProjectionId[];
+  readonly dependencies?: readonly GovernanceProjectionId[];
+}): GovernanceProjectionLineage {
+  return {
+    parent: {
+      parentProjectionId,
+      label: parentProjectionId === "root" ? "Root governance projection" : "Parent projection",
+      semanticMeaning: "read-only lineage parent であり、projection 再生成や実行順序ではありません。",
+    },
+    derivedFrom: derivedFrom.map((sourceProjectionId) => ({
+      sourceProjectionId,
+      label: "Derived reasoning source",
+      semanticMeaning: "reasoning context の由来であり、source mutation ではありません。",
+    })),
+    dependencies: dependencies.map((dependencyProjectionId) => ({
+      dependencyProjectionId,
+      label: "Read-only reasoning dependency",
+      semanticMeaning: "表示上の reasoning dependency であり、実行依存ではありません。",
+    })),
+    trace: {
+      traceId: `${projectionId}:trace`,
+      parentTraceId,
+      requestChainLabel: "Static governance dashboard parent trace",
+    },
+  };
+}
 
 const governanceDashboardMockData: GovernanceDashboardMockContract = {
   renderingState: {
@@ -98,6 +137,10 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
         label: "Unconfirmed incident identity",
         parentTraceId: "mock-parent-trace-governance-dashboard",
       },
+      lineage: createGovernanceProjectionLineage({
+        projectionId: "governance:incident:unconfirmed-incident",
+        derivedFrom: ["governance:timeline:timeline-incident-001"],
+      }),
       incidentCategory: "investigation_signal",
       incidentSeverity: "watch",
       incidentStatus: "detected",
@@ -152,6 +195,11 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
         label: "Semantic ambiguity identity",
         parentTraceId: "mock-parent-trace-governance-dashboard",
       },
+      lineage: createGovernanceProjectionLineage({
+        projectionId: "governance:incident:semantic-ambiguity",
+        derivedFrom: ["governance:timeline:timeline-semantic-001"],
+        dependencies: ["governance:evidence:timeline-gap"],
+      }),
       incidentCategory: "semantic_ambiguity",
       incidentSeverity: "high",
       incidentStatus: "under_review",
@@ -213,6 +261,10 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
         label: "Attention backlog identity",
         parentTraceId: "mock-parent-trace-governance-dashboard",
       },
+      lineage: createGovernanceProjectionLineage({
+        projectionId: "governance:incident:attention-backlog",
+        dependencies: ["governance:operation:approval-reference"],
+      }),
       incidentCategory: "attention_backlog",
       incidentSeverity: "watch",
       incidentStatus: "classified",
@@ -269,6 +321,10 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
         label: "Review candidate identity",
         parentTraceId: "mock-parent-trace-governance-dashboard",
       },
+      lineage: createGovernanceProjectionLineage({
+        projectionId: "governance:operation:review-candidate",
+        dependencies: ["governance:incident:unconfirmed-incident"],
+      }),
       operationCategory: "review_candidate",
       operationPriority: "normal",
       operationState: "visible",
@@ -314,6 +370,11 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
         label: "Approval reference identity",
         parentTraceId: "mock-parent-trace-governance-dashboard",
       },
+      lineage: createGovernanceProjectionLineage({
+        projectionId: "governance:operation:approval-reference",
+        parentProjectionId: "governance:operation:review-candidate",
+        dependencies: ["governance:incident:attention-backlog"],
+      }),
       operationCategory: "approval_reference",
       operationPriority: "high",
       operationState: "review_reference",
@@ -377,6 +438,10 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
         label: "Lifecycle limitation identity",
         parentTraceId: "mock-parent-trace-governance-dashboard",
       },
+      lineage: createGovernanceProjectionLineage({
+        projectionId: "governance:operation:lifecycle-limitation",
+        derivedFrom: ["governance:timeline:timeline-integrity-001"],
+      }),
       operationCategory: "lifecycle_limitation",
       operationPriority: "high",
       operationState: "classified",
@@ -424,6 +489,10 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
         label: "Available evidence identity",
         parentTraceId: "mock-parent-trace-governance-dashboard",
       },
+      lineage: createGovernanceProjectionLineage({
+        projectionId: "governance:evidence:available-evidence",
+        dependencies: ["governance:operation:review-candidate"],
+      }),
       evidenceCategory: "provenance",
       confidence: "high",
       evidenceVisibility: "summary",
@@ -480,6 +549,10 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
         label: "Partial evidence identity",
         parentTraceId: "mock-parent-trace-governance-dashboard",
       },
+      lineage: createGovernanceProjectionLineage({
+        projectionId: "governance:evidence:partial-evidence",
+        derivedFrom: ["governance:timeline:timeline-evidence-001"],
+      }),
       evidenceCategory: "lineage",
       confidence: "medium",
       evidenceVisibility: "lineage",
@@ -544,6 +617,10 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
         label: "Timeline gap identity",
         parentTraceId: "mock-parent-trace-governance-dashboard",
       },
+      lineage: createGovernanceProjectionLineage({
+        projectionId: "governance:evidence:timeline-gap",
+        dependencies: ["governance:incident:semantic-ambiguity"],
+      }),
       evidenceCategory: "audit_context",
       confidence: "low",
       evidenceVisibility: "reasoning",
@@ -642,6 +719,10 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
         label: "Incident timeline identity",
         parentTraceId: "mock-parent-trace-governance-dashboard",
       },
+      lineage: createGovernanceProjectionLineage({
+        projectionId: "governance:timeline:timeline-incident-001",
+        dependencies: ["governance:incident:unconfirmed-incident"],
+      }),
       id: "timeline-incident-001",
       occurredAtLabel: "Mock day 1 09:00",
       category: "incident",
@@ -701,6 +782,10 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
         label: "Semantic timeline identity",
         parentTraceId: "mock-parent-trace-governance-dashboard",
       },
+      lineage: createGovernanceProjectionLineage({
+        projectionId: "governance:timeline:timeline-semantic-001",
+        dependencies: ["governance:incident:semantic-ambiguity"],
+      }),
       id: "timeline-semantic-001",
       occurredAtLabel: "Mock day 1 10:30",
       category: "semantic_review",
@@ -760,6 +845,10 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
         label: "Evidence timeline identity",
         parentTraceId: "mock-parent-trace-governance-dashboard",
       },
+      lineage: createGovernanceProjectionLineage({
+        projectionId: "governance:timeline:timeline-evidence-001",
+        dependencies: ["governance:evidence:partial-evidence"],
+      }),
       id: "timeline-evidence-001",
       occurredAtLabel: "Mock day 1 11:15",
       category: "evidence",
@@ -819,6 +908,10 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
         label: "Attention timeline identity",
         parentTraceId: "mock-parent-trace-governance-dashboard",
       },
+      lineage: createGovernanceProjectionLineage({
+        projectionId: "governance:timeline:timeline-attention-001",
+        dependencies: ["governance:incident:attention-backlog"],
+      }),
       id: "timeline-attention-001",
       occurredAtLabel: "Mock day 1 13:00",
       category: "attention",
@@ -878,6 +971,10 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
         label: "Integrity timeline identity",
         parentTraceId: "mock-parent-trace-governance-dashboard",
       },
+      lineage: createGovernanceProjectionLineage({
+        projectionId: "governance:timeline:timeline-integrity-001",
+        dependencies: ["governance:operation:lifecycle-limitation"],
+      }),
       id: "timeline-integrity-001",
       occurredAtLabel: "Mock day 1 14:20",
       category: "integrity",
