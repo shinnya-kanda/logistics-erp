@@ -108,6 +108,30 @@ export type GovernanceIncidentRelation =
 
 export type GovernanceIncidentAttentionLevel = "low" | "medium" | "high" | "urgent";
 
+export type GovernanceOperationCategory =
+  | "review_candidate"
+  | "approval_reference"
+  | "lifecycle_limitation"
+  | "coordination_signal"
+  | "policy_boundary";
+
+export type GovernanceOperationPriority = "low" | "normal" | "high" | "critical";
+
+export type GovernanceOperationState =
+  | "visible"
+  | "review_reference"
+  | "coordination_needed"
+  | "classified";
+
+export type GovernanceOperationVisibility = "summary" | "grouped" | "attention" | "detail";
+
+export type GovernanceOperationRelation =
+  | "review_coordination"
+  | "approval_reference"
+  | "policy_boundary"
+  | "lifecycle_context"
+  | "attention_marker";
+
 export type GovernanceBadgeCategory =
   | "severity"
   | "lifecycle"
@@ -221,7 +245,18 @@ export type GovernanceIncidentProjection = GovernanceSummaryRow & {
 
 export type GovernanceIncidentSummaryRow = GovernanceIncidentProjection;
 
-export type GovernanceOperationQueueSummaryRow = GovernanceSummaryRow;
+export type GovernanceOperationProjection = GovernanceSummaryRow & {
+  readonly operationCategory: GovernanceOperationCategory;
+  readonly operationPriority: GovernanceOperationPriority;
+  readonly operationState: GovernanceOperationState;
+  readonly operationVisibility: GovernanceOperationVisibility;
+  readonly relation: GovernanceOperationRelation;
+  readonly projectionLabel: string;
+  readonly groupKey: string;
+  readonly groupLabel: string;
+};
+
+export type GovernanceOperationQueueSummaryRow = GovernanceOperationProjection;
 
 export type GovernanceEvidenceProjection = GovernanceSummaryRow & {
   readonly evidenceCategory: GovernanceEvidenceCategory;
@@ -323,6 +358,22 @@ export type GovernanceIncidentSeveritySummary = {
 
 export type GovernanceIncidentAttentionSummary = {
   readonly attentionLevel: GovernanceIncidentAttentionLevel;
+  readonly count: number;
+};
+
+export type GovernanceOperationGroup = {
+  readonly groupKey: string;
+  readonly groupLabel: string;
+  readonly items: readonly GovernanceOperationProjection[];
+};
+
+export type GovernanceOperationPrioritySummary = {
+  readonly priority: GovernanceOperationPriority;
+  readonly count: number;
+};
+
+export type GovernanceOperationStateSummary = {
+  readonly state: GovernanceOperationState;
   readonly count: number;
 };
 
