@@ -27,11 +27,14 @@ import type {
   GovernanceProjectionAttentionEdge,
   GovernanceProjectionIdentity,
   GovernanceProjectionIdentityMap,
+  GovernanceProjectionDependencyEdge,
+  GovernanceProjectionLineageEdge,
   GovernanceProjectionNamespace,
   GovernanceProjectionNamespaceGroup,
   GovernanceProjectionRelationEdge,
   GovernanceProjectionScope,
   GovernanceProjectionScopeGroup,
+  GovernanceProjectionTraceMap,
   GovernanceProjectionType,
   GovernanceSemanticBadge,
   GovernanceSemanticNoteItem,
@@ -470,6 +473,38 @@ export function getGovernanceProjectionNamespaceGroups(
   }
 
   return [...groups.entries()].map(([namespace, identities]) => ({ namespace, identities }));
+}
+
+export function getGovernanceProjectionLineageGraph(
+  data: GovernanceDashboardReadOnlyData,
+): readonly GovernanceProjectionLineageEdge[] {
+  return getGovernanceCrossProjections(data).map((item) => ({
+    projectionId: item.identity.projectionId,
+    parent: item.lineage.parent,
+    derivedFrom: item.lineage.derivedFrom,
+  }));
+}
+
+export function getGovernanceProjectionDependencies(
+  data: GovernanceDashboardReadOnlyData,
+): readonly GovernanceProjectionDependencyEdge[] {
+  return getGovernanceCrossProjections(data).flatMap((item) =>
+    item.lineage.dependencies.map((dependency) => ({
+      projectionId: item.identity.projectionId,
+      dependency,
+    })),
+  );
+}
+
+export function getGovernanceProjectionTraceMap(
+  data: GovernanceDashboardReadOnlyData,
+): GovernanceProjectionTraceMap {
+  return Object.fromEntries(
+    getGovernanceCrossProjections(data).map((item) => [
+      item.identity.projectionId,
+      item.lineage.trace,
+    ]),
+  ) as GovernanceProjectionTraceMap;
 }
 
 export function getGovernanceRenderingState(

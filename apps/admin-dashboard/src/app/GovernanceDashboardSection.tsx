@@ -23,9 +23,12 @@ import {
   getGovernanceProjectionAnchors,
   getGovernanceProjectionAttentionGraph,
   getGovernanceProjectionIdentities,
+  getGovernanceProjectionDependencies,
+  getGovernanceProjectionLineageGraph,
   getGovernanceProjectionNamespaceGroups,
   getGovernanceProjectionRelations,
   getGovernanceProjectionScopeGroups,
+  getGovernanceProjectionTraceMap,
   getGovernanceStateNotice,
   getGovernanceIncidentSummaries,
   getGovernanceOperationGroups,
@@ -99,6 +102,9 @@ export function GovernanceDashboardSection() {
   const projectionIdentities = getGovernanceProjectionIdentities(governanceData);
   const projectionScopeGroups = getGovernanceProjectionScopeGroups(governanceData);
   const projectionNamespaceGroups = getGovernanceProjectionNamespaceGroups(governanceData);
+  const projectionLineageGraph = getGovernanceProjectionLineageGraph(governanceData);
+  const projectionDependencies = getGovernanceProjectionDependencies(governanceData);
+  const projectionTraceMap = getGovernanceProjectionTraceMap(governanceData);
   const stateNotice = getGovernanceStateNotice(governanceData);
 
   return (
@@ -133,6 +139,12 @@ export function GovernanceDashboardSection() {
         Projection identity map: Identities {projectionIdentities.length} / Scopes{" "}
         {projectionScopeGroups.length} / Namespaces {projectionNamespaceGroups.length}. Identity is
         read-only reasoning metadata and does not create API, trace mutation, or execution behavior.
+      </GovernanceReadOnlyNotice>
+
+      <GovernanceReadOnlyNotice tone="neutral">
+        Projection lineage graph: Lineage nodes {projectionLineageGraph.length} / Dependencies{" "}
+        {projectionDependencies.length} / Trace map {Object.keys(projectionTraceMap).length}. This
+        is static lineage visibility and does not create replay, rebuild, retry, or trace mutation.
       </GovernanceReadOnlyNotice>
 
       <section aria-label="ガバナンス概要">
