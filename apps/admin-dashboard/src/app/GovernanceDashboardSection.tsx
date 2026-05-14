@@ -20,6 +20,9 @@ import {
   getGovernanceIncidentAttentionSummary,
   getGovernanceIncidentGroups,
   getGovernanceIncidentSeveritySummary,
+  getGovernanceProjectionAnchors,
+  getGovernanceProjectionAttentionGraph,
+  getGovernanceProjectionRelations,
   getGovernanceStateNotice,
   getGovernanceIncidentSummaries,
   getGovernanceOperationGroups,
@@ -87,6 +90,9 @@ export function GovernanceDashboardSection() {
   const timelineHighlights = getGovernanceTimelineHighlights(governanceData);
   const timelineAttentionItems = getGovernanceTimelineAttentionItems(governanceData);
   const timelineGroups = getGovernanceTimelineGroups(governanceData);
+  const projectionRelations = getGovernanceProjectionRelations(governanceData);
+  const projectionAnchors = getGovernanceProjectionAnchors(governanceData);
+  const projectionAttentionGraph = getGovernanceProjectionAttentionGraph(governanceData);
   const stateNotice = getGovernanceStateNotice(governanceData);
 
   return (
@@ -109,6 +115,13 @@ export function GovernanceDashboardSection() {
       </GovernanceReadOnlyNotice>
 
       <GovernanceStateNotice notice={stateNotice} />
+
+      <GovernanceReadOnlyNotice tone="neutral">
+        Cross-projection reasoning graph: Relations {projectionRelations.length} / Anchors{" "}
+        {projectionAnchors.length} / Attention signals {projectionAttentionGraph.length}. This is
+        static read-only visibility and does not trigger coordination, assignment, correction, or
+        execution.
+      </GovernanceReadOnlyNotice>
 
       <section aria-label="ガバナンス概要">
         <h3>ガバナンス概要</h3>

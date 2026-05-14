@@ -23,6 +23,10 @@ import type {
   GovernanceOperationProjection,
   GovernanceOperationState,
   GovernanceOperationStateSummary,
+  GovernanceProjectionAnchorNode,
+  GovernanceProjectionAttentionEdge,
+  GovernanceProjectionRelationEdge,
+  GovernanceProjectionType,
   GovernanceSemanticBadge,
   GovernanceSemanticNoteItem,
   GovernanceStateNotice,
@@ -38,6 +42,12 @@ import type {
 function keepReadOnlyItem<TItem>(item: TItem): TItem {
   return item;
 }
+
+type GovernanceCrossProjection =
+  | GovernanceIncidentProjection
+  | GovernanceOperationProjection
+  | GovernanceEvidenceProjection
+  | GovernanceTimelineProjection;
 
 function severityTone(severity: GovernanceStateNotice["severity"]): GovernanceBadgeTone {
   if (severity === "critical") return "critical";
@@ -352,6 +362,65 @@ export function getGovernanceTimelineGroups(
     groupLabel: items[0]?.groupLabel ?? groupKey,
     items,
   }));
+}
+
+function projectionSourceId(item: GovernanceCrossProjection): string {
+  if ("id" in item) return item.id;
+  return item.groupKey;
+}
+
+function projectionSourceType(item: GovernanceCrossProjection): GovernanceProjectionType {
+  if ("incidentCategory" in item) return "incident";
+  if ("operationCategory" in item) return "operation";
+  if ("evidenceCategory" in item) return "evidence";
+  return "timeline";
+}
+
+export function getGovernanceCrossProjections(
+  data: GovernanceDashboardReadOnlyData,
+): readonly GovernanceCrossProjection[] {
+  return [
+    ...getGovernanceIncidentProjections(data),
+    ...getGovernanceOperationProjections(data),
+    ...getGovernanceEvidenceProjections(data),
+    ...getGovernanceTimelineProjections(data),
+  ];
+}
+
+export function getGovernanceProjectionRelations(
+  data: GovernanceDashboardReadOnlyData,
+): readonly GovernanceProjectionRelationEdge[] {
+  return getGovernanceCrossProjections(data).flatMap((item) =>
+    item.crossReferences.map((reference) => ({
+      sourceId: projectionSourceId(item),
+      sourceType: projectionSourceType(item),
+      reference,
+    })),
+  );
+}
+
+export function getGovernanceProjectionAnchors(
+  data: GovernanceDashboardReadOnlyData,
+): readonly GovernanceProjectionAnchorNode[] {
+  return getGovernanceCrossProjections(data).flatMap((item) =>
+    item.anchors.map((anchor) => ({
+      sourceId: projectionSourceId(item),
+      sourceType: projectionSourceType(item),
+      anchor,
+    })),
+  );
+}
+
+export function getGovernanceProjectionAttentionGraph(
+  data: GovernanceDashboardReadOnlyData,
+): readonly GovernanceProjectionAttentionEdge[] {
+  return getGovernanceCrossProjections(data).flatMap((item) =>
+    item.attentionSignals.map((attentionSignal) => ({
+      sourceId: projectionSourceId(item),
+      sourceType: projectionSourceType(item),
+      attentionSignal,
+    })),
+  );
 }
 
 export function getGovernanceRenderingState(
