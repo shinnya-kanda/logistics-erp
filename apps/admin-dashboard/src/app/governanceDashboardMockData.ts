@@ -98,6 +98,32 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
       projectionLabel: "Investigation projection",
       groupKey: "unconfirmed-incident",
       groupLabel: "Unconfirmed incident",
+      crossReferences: [
+        {
+          referenceId: "timeline-incident-001",
+          projectionType: "timeline",
+          label: "Incident timeline projection",
+          relationType: "explains_context",
+          semanticMeaning: "incident signal の観測文脈を timeline projection として参照します。",
+        },
+      ],
+      anchors: [
+        {
+          anchorId: "anchor-incident-investigation",
+          projectionType: "incident",
+          label: "Investigation boundary",
+          semanticBoundary: "調査 visibility の境界であり、source of truth failure の確定ではありません。",
+        },
+      ],
+      attentionSignals: [
+        {
+          signalId: "attention-incident-unconfirmed",
+          projectionType: "incident",
+          label: "Unconfirmed incident review",
+          attentionLevel: "medium",
+          semanticMeaning: "human review の注意喚起であり、修正実行を意味しません。",
+        },
+      ],
     },
     {
       label: "Dashboard 間の曖昧さ",
@@ -117,6 +143,39 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
       projectionLabel: "Semantic ambiguity projection",
       groupKey: "semantic-ambiguity",
       groupLabel: "Semantic ambiguity",
+      crossReferences: [
+        {
+          referenceId: "timeline-semantic-001",
+          projectionType: "timeline",
+          label: "Semantic review timeline",
+          relationType: "shares_anchor",
+          semanticMeaning: "meaning consistency の anchor を timeline projection と共有します。",
+        },
+        {
+          referenceId: "timeline-gap",
+          projectionType: "evidence",
+          label: "Timeline gap evidence",
+          relationType: "supports_reasoning",
+          semanticMeaning: "曖昧さの判断材料として evidence projection を参照します。",
+        },
+      ],
+      anchors: [
+        {
+          anchorId: "anchor-meaning-boundary",
+          projectionType: "incident",
+          label: "Meaning boundary",
+          semanticBoundary: "意味境界の確認であり、execution eligibility の判定ではありません。",
+        },
+      ],
+      attentionSignals: [
+        {
+          signalId: "attention-semantic-ambiguity",
+          projectionType: "incident",
+          label: "Semantic ambiguity attention",
+          attentionLevel: "high",
+          semanticMeaning: "semantic consistency review の優先表示であり、assignment ではありません。",
+        },
+      ],
     },
     {
       label: "滞留している review signal",
@@ -136,6 +195,32 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
       projectionLabel: "Attention backlog projection",
       groupKey: "attention-backlog",
       groupLabel: "Attention backlog",
+      crossReferences: [
+        {
+          referenceId: "approval-reference",
+          projectionType: "operation",
+          label: "Approval reference projection",
+          relationType: "coordinates_review",
+          semanticMeaning: "review coordination の文脈を参照しますが、approval mutation ではありません。",
+        },
+      ],
+      anchors: [
+        {
+          anchorId: "anchor-attention-backlog",
+          projectionType: "incident",
+          label: "Attention boundary",
+          semanticBoundary: "attention backlog の visibility であり、処理順序ではありません。",
+        },
+      ],
+      attentionSignals: [
+        {
+          signalId: "attention-review-backlog",
+          projectionType: "incident",
+          label: "Backlog attention",
+          attentionLevel: "high",
+          semanticMeaning: "見落とし防止の signal であり、retry や assignment を開始しません。",
+        },
+      ],
     },
   ],
   operationQueueSummary: [
@@ -156,6 +241,24 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
       projectionLabel: "Review coordination projection",
       groupKey: "review-candidate",
       groupLabel: "Review candidate",
+      crossReferences: [
+        {
+          referenceId: "unconfirmed-incident",
+          projectionType: "incident",
+          label: "Unconfirmed incident projection",
+          relationType: "coordinates_review",
+          semanticMeaning: "review candidate と incident visibility の関係を示します。",
+        },
+      ],
+      anchors: [
+        {
+          anchorId: "anchor-review-coordination",
+          projectionType: "operation",
+          label: "Review coordination boundary",
+          semanticBoundary: "review coordination の表示であり、実行 queue ではありません。",
+        },
+      ],
+      attentionSignals: [],
     },
     {
       label: "Approval state 参照",
@@ -174,6 +277,32 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
       projectionLabel: "Approval reference projection",
       groupKey: "approval-reference",
       groupLabel: "Approval reference",
+      crossReferences: [
+        {
+          referenceId: "attention-backlog",
+          projectionType: "incident",
+          label: "Attention backlog projection",
+          relationType: "bounds_policy",
+          semanticMeaning: "approval reference の境界を incident attention と対応付けます。",
+        },
+      ],
+      anchors: [
+        {
+          anchorId: "anchor-approval-boundary",
+          projectionType: "operation",
+          label: "Approval boundary",
+          semanticBoundary: "approval state の参照であり、approval mutation ではありません。",
+        },
+      ],
+      attentionSignals: [
+        {
+          signalId: "attention-approval-reference",
+          projectionType: "operation",
+          label: "Approval reference attention",
+          attentionLevel: "high",
+          semanticMeaning: "approval 誤解を防ぐための review signal です。",
+        },
+      ],
       semanticBadges: [
         {
           id: "operation-approval-reference",
@@ -202,6 +331,24 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
       projectionLabel: "Lifecycle coordination projection",
       groupKey: "lifecycle-limitation",
       groupLabel: "Lifecycle limitation",
+      crossReferences: [
+        {
+          referenceId: "timeline-integrity-001",
+          projectionType: "timeline",
+          label: "Integrity timeline projection",
+          relationType: "explains_context",
+          semanticMeaning: "lifecycle limitation の確認文脈を timeline projection で参照します。",
+        },
+      ],
+      anchors: [
+        {
+          anchorId: "anchor-lifecycle-boundary",
+          projectionType: "operation",
+          label: "Lifecycle boundary",
+          semanticBoundary: "operation lifecycle 遷移ではなく、review context の表示です。",
+        },
+      ],
+      attentionSignals: [],
     },
   ],
   evidenceSummary: [
@@ -223,6 +370,24 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
       groupKey: "available-evidence",
       groupLabel: "Available evidence",
       attention: false,
+      crossReferences: [
+        {
+          referenceId: "review-candidate",
+          projectionType: "operation",
+          label: "Review candidate projection",
+          relationType: "supports_reasoning",
+          semanticMeaning: "review candidate の判断材料として evidence visibility を参照します。",
+        },
+      ],
+      anchors: [
+        {
+          anchorId: "anchor-provenance-lineage",
+          projectionType: "evidence",
+          label: "Provenance lineage boundary",
+          semanticBoundary: "provenance の可視化であり、正しさの保証ではありません。",
+        },
+      ],
+      attentionSignals: [],
       semanticBadges: [
         {
           id: "evidence-present-reference",
@@ -252,6 +417,32 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
       groupKey: "partial-evidence",
       groupLabel: "Partial evidence",
       attention: true,
+      crossReferences: [
+        {
+          referenceId: "timeline-evidence-001",
+          projectionType: "timeline",
+          label: "Evidence timeline projection",
+          relationType: "shares_anchor",
+          semanticMeaning: "partial evidence の lineage anchor を timeline と共有します。",
+        },
+      ],
+      anchors: [
+        {
+          anchorId: "anchor-partial-lineage",
+          projectionType: "evidence",
+          label: "Partial lineage boundary",
+          semanticBoundary: "lineage limitation の表示であり、証跡追加指示ではありません。",
+        },
+      ],
+      attentionSignals: [
+        {
+          signalId: "attention-partial-evidence",
+          projectionType: "evidence",
+          label: "Partial evidence attention",
+          attentionLevel: "medium",
+          semanticMeaning: "audit limitation の注意喚起であり、修復実行ではありません。",
+        },
+      ],
       semanticBadges: [
         {
           id: "evidence-partial-reference",
@@ -281,6 +472,32 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
       groupKey: "timeline-gap",
       groupLabel: "Timeline gap evidence",
       attention: true,
+      crossReferences: [
+        {
+          referenceId: "semantic-ambiguity",
+          projectionType: "incident",
+          label: "Semantic ambiguity projection",
+          relationType: "supports_reasoning",
+          semanticMeaning: "timeline gap を semantic ambiguity の reasoning context として参照します。",
+        },
+      ],
+      anchors: [
+        {
+          anchorId: "anchor-timeline-gap",
+          projectionType: "evidence",
+          label: "Timeline gap boundary",
+          semanticBoundary: "gap の可視化であり、replay eligibility ではありません。",
+        },
+      ],
+      attentionSignals: [
+        {
+          signalId: "attention-timeline-gap",
+          projectionType: "evidence",
+          label: "Timeline gap attention",
+          attentionLevel: "high",
+          semanticMeaning: "review attention のための signal であり、replay を開始しません。",
+        },
+      ],
     },
   ],
   readOnlyNotes: [
@@ -357,6 +574,32 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
       degradationType: "semantic_safety",
       visibility: "detail",
       readability: "short_note",
+      crossReferences: [
+        {
+          referenceId: "unconfirmed-incident",
+          projectionType: "incident",
+          label: "Unconfirmed incident projection",
+          relationType: "explains_context",
+          semanticMeaning: "timeline 上の観測を incident investigation projection と接続します。",
+        },
+      ],
+      anchors: [
+        {
+          anchorId: "anchor-incident-investigation",
+          projectionType: "timeline",
+          label: "Incident timeline anchor",
+          semanticBoundary: "時系列表示であり、source of truth failure の確定ではありません。",
+        },
+      ],
+      attentionSignals: [
+        {
+          signalId: "attention-timeline-incident",
+          projectionType: "timeline",
+          label: "Incident timeline attention",
+          attentionLevel: "medium",
+          semanticMeaning: "timeline visibility の注意喚起であり、対応開始ではありません。",
+        },
+      ],
     },
     {
       id: "timeline-semantic-001",
@@ -381,6 +624,32 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
       degradationType: "meaning_consistency",
       visibility: "detail",
       readability: "short_note",
+      crossReferences: [
+        {
+          referenceId: "semantic-ambiguity",
+          projectionType: "incident",
+          label: "Semantic ambiguity projection",
+          relationType: "shares_anchor",
+          semanticMeaning: "meaning boundary を incident projection と共有します。",
+        },
+      ],
+      anchors: [
+        {
+          anchorId: "anchor-meaning-boundary",
+          projectionType: "timeline",
+          label: "Meaning boundary anchor",
+          semanticBoundary: "意味確認の anchor であり、execution 判断ではありません。",
+        },
+      ],
+      attentionSignals: [
+        {
+          signalId: "attention-timeline-semantic",
+          projectionType: "timeline",
+          label: "Semantic timeline attention",
+          attentionLevel: "high",
+          semanticMeaning: "semantic review の visibility signal であり、修正実行ではありません。",
+        },
+      ],
     },
     {
       id: "timeline-evidence-001",
@@ -405,6 +674,32 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
       degradationType: "integrity",
       visibility: "detail",
       readability: "short_note",
+      crossReferences: [
+        {
+          referenceId: "partial-evidence",
+          projectionType: "evidence",
+          label: "Partial evidence projection",
+          relationType: "supports_reasoning",
+          semanticMeaning: "timeline 上の証跡 limitation を evidence projection と接続します。",
+        },
+      ],
+      anchors: [
+        {
+          anchorId: "anchor-partial-lineage",
+          projectionType: "timeline",
+          label: "Evidence lineage anchor",
+          semanticBoundary: "lineage visibility の anchor であり、証跡追加指示ではありません。",
+        },
+      ],
+      attentionSignals: [
+        {
+          signalId: "attention-timeline-evidence",
+          projectionType: "timeline",
+          label: "Evidence timeline attention",
+          attentionLevel: "medium",
+          semanticMeaning: "partial evidence の注意表示であり、mutation ではありません。",
+        },
+      ],
     },
     {
       id: "timeline-attention-001",
@@ -429,6 +724,32 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
       degradationType: "attention",
       visibility: "detail",
       readability: "scan_first",
+      crossReferences: [
+        {
+          referenceId: "attention-backlog",
+          projectionType: "incident",
+          label: "Attention backlog projection",
+          relationType: "raises_attention",
+          semanticMeaning: "attention signal を incident backlog と接続します。",
+        },
+      ],
+      anchors: [
+        {
+          anchorId: "anchor-attention-backlog",
+          projectionType: "timeline",
+          label: "Attention timeline anchor",
+          semanticBoundary: "human review attention の表示であり、処理順序ではありません。",
+        },
+      ],
+      attentionSignals: [
+        {
+          signalId: "attention-timeline-critical",
+          projectionType: "timeline",
+          label: "Critical timeline attention",
+          attentionLevel: "urgent",
+          semanticMeaning: "強い注意表示であり、assignment mutation ではありません。",
+        },
+      ],
     },
     {
       id: "timeline-integrity-001",
@@ -453,6 +774,24 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
       degradationType: "integrity",
       visibility: "detail",
       readability: "short_note",
+      crossReferences: [
+        {
+          referenceId: "lifecycle-limitation",
+          projectionType: "operation",
+          label: "Lifecycle coordination projection",
+          relationType: "explains_context",
+          semanticMeaning: "integrity の文脈を operation lifecycle limitation と接続します。",
+        },
+      ],
+      anchors: [
+        {
+          anchorId: "anchor-provenance-lineage",
+          projectionType: "timeline",
+          label: "Integrity lineage anchor",
+          semanticBoundary: "integrity lineage の visibility であり、データ変更ではありません。",
+        },
+      ],
+      attentionSignals: [],
     },
   ],
 };

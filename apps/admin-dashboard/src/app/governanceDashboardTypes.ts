@@ -132,6 +132,39 @@ export type GovernanceOperationRelation =
   | "lifecycle_context"
   | "attention_marker";
 
+export type GovernanceProjectionType = "incident" | "evidence" | "timeline" | "operation";
+
+export type GovernanceProjectionRelationType =
+  | "supports_reasoning"
+  | "explains_context"
+  | "shares_anchor"
+  | "raises_attention"
+  | "bounds_policy"
+  | "coordinates_review";
+
+export type GovernanceProjectionReference = {
+  readonly referenceId: string;
+  readonly projectionType: GovernanceProjectionType;
+  readonly label: string;
+  readonly relationType: GovernanceProjectionRelationType;
+  readonly semanticMeaning: string;
+};
+
+export type GovernanceProjectionAnchor = {
+  readonly anchorId: string;
+  readonly projectionType: GovernanceProjectionType;
+  readonly label: string;
+  readonly semanticBoundary: string;
+};
+
+export type GovernanceProjectionAttentionSignal = {
+  readonly signalId: string;
+  readonly projectionType: GovernanceProjectionType;
+  readonly label: string;
+  readonly attentionLevel: GovernanceIncidentAttentionLevel;
+  readonly semanticMeaning: string;
+};
+
 export type GovernanceBadgeCategory =
   | "severity"
   | "lifecycle"
@@ -227,6 +260,9 @@ export type GovernanceTimelineProjection = GovernanceContractMetadata & {
   readonly groupLabel: string;
   readonly highlight: boolean;
   readonly attention: boolean;
+  readonly crossReferences: readonly GovernanceProjectionReference[];
+  readonly anchors: readonly GovernanceProjectionAnchor[];
+  readonly attentionSignals: readonly GovernanceProjectionAttentionSignal[];
 };
 
 export type GovernanceTimelineItem = GovernanceTimelineProjection;
@@ -241,6 +277,9 @@ export type GovernanceIncidentProjection = GovernanceSummaryRow & {
   readonly projectionLabel: string;
   readonly groupKey: string;
   readonly groupLabel: string;
+  readonly crossReferences: readonly GovernanceProjectionReference[];
+  readonly anchors: readonly GovernanceProjectionAnchor[];
+  readonly attentionSignals: readonly GovernanceProjectionAttentionSignal[];
 };
 
 export type GovernanceIncidentSummaryRow = GovernanceIncidentProjection;
@@ -254,6 +293,9 @@ export type GovernanceOperationProjection = GovernanceSummaryRow & {
   readonly projectionLabel: string;
   readonly groupKey: string;
   readonly groupLabel: string;
+  readonly crossReferences: readonly GovernanceProjectionReference[];
+  readonly anchors: readonly GovernanceProjectionAnchor[];
+  readonly attentionSignals: readonly GovernanceProjectionAttentionSignal[];
 };
 
 export type GovernanceOperationQueueSummaryRow = GovernanceOperationProjection;
@@ -268,6 +310,9 @@ export type GovernanceEvidenceProjection = GovernanceSummaryRow & {
   readonly groupKey: string;
   readonly groupLabel: string;
   readonly attention: boolean;
+  readonly crossReferences: readonly GovernanceProjectionReference[];
+  readonly anchors: readonly GovernanceProjectionAnchor[];
+  readonly attentionSignals: readonly GovernanceProjectionAttentionSignal[];
 };
 
 export type GovernanceEvidenceSummaryRow = GovernanceEvidenceProjection;
@@ -386,6 +431,24 @@ export type GovernanceEvidenceGroup = {
 export type GovernanceEvidenceConfidenceSummary = {
   readonly confidence: GovernanceEvidenceConfidence;
   readonly count: number;
+};
+
+export type GovernanceProjectionRelationEdge = {
+  readonly sourceId: string;
+  readonly sourceType: GovernanceProjectionType;
+  readonly reference: GovernanceProjectionReference;
+};
+
+export type GovernanceProjectionAnchorNode = {
+  readonly sourceId: string;
+  readonly sourceType: GovernanceProjectionType;
+  readonly anchor: GovernanceProjectionAnchor;
+};
+
+export type GovernanceProjectionAttentionEdge = {
+  readonly sourceId: string;
+  readonly sourceType: GovernanceProjectionType;
+  readonly attentionSignal: GovernanceProjectionAttentionSignal;
 };
 
 export type GovernanceRenderingState = {
