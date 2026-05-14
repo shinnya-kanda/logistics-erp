@@ -195,6 +195,29 @@ export type GovernanceProjectionLineage = {
   readonly trace: GovernanceProjectionTrace;
 };
 
+export type GovernanceProjectionIntegrityLevel = "stable" | "limited" | "degraded" | "unknown";
+
+export type GovernanceProjectionIntegrityIssue = {
+  readonly issueId: string;
+  readonly level: GovernanceProjectionIntegrityLevel;
+  readonly label: string;
+  readonly semanticMeaning: string;
+};
+
+export type GovernanceProjectionIntegritySignal = {
+  readonly signalId: string;
+  readonly level: GovernanceProjectionIntegrityLevel;
+  readonly label: string;
+  readonly semanticMeaning: string;
+};
+
+export type GovernanceProjectionIntegrity = {
+  readonly level: GovernanceProjectionIntegrityLevel;
+  readonly issues: readonly GovernanceProjectionIntegrityIssue[];
+  readonly signals: readonly GovernanceProjectionIntegritySignal[];
+  readonly summaryLabel: string;
+};
+
 export type GovernanceProjectionRelationType =
   | "supports_reasoning"
   | "explains_context"
@@ -307,6 +330,7 @@ export type GovernanceSummaryRow = GovernanceContractMetadata & {
 export type GovernanceTimelineProjection = GovernanceContractMetadata & {
   readonly identity: GovernanceProjectionIdentity;
   readonly lineage: GovernanceProjectionLineage;
+  readonly integrity: GovernanceProjectionIntegrity;
   readonly id: string;
   readonly occurredAtLabel: string;
   readonly category: GovernanceTimelineCategory;
@@ -333,6 +357,7 @@ export type GovernanceTimelineItem = GovernanceTimelineProjection;
 export type GovernanceIncidentProjection = GovernanceSummaryRow & {
   readonly identity: GovernanceProjectionIdentity;
   readonly lineage: GovernanceProjectionLineage;
+  readonly integrity: GovernanceProjectionIntegrity;
   readonly incidentCategory: GovernanceIncidentCategory;
   readonly incidentSeverity: GovernanceIncidentSeverity;
   readonly incidentStatus: GovernanceIncidentStatus;
@@ -352,6 +377,7 @@ export type GovernanceIncidentSummaryRow = GovernanceIncidentProjection;
 export type GovernanceOperationProjection = GovernanceSummaryRow & {
   readonly identity: GovernanceProjectionIdentity;
   readonly lineage: GovernanceProjectionLineage;
+  readonly integrity: GovernanceProjectionIntegrity;
   readonly operationCategory: GovernanceOperationCategory;
   readonly operationPriority: GovernanceOperationPriority;
   readonly operationState: GovernanceOperationState;
@@ -370,6 +396,7 @@ export type GovernanceOperationQueueSummaryRow = GovernanceOperationProjection;
 export type GovernanceEvidenceProjection = GovernanceSummaryRow & {
   readonly identity: GovernanceProjectionIdentity;
   readonly lineage: GovernanceProjectionLineage;
+  readonly integrity: GovernanceProjectionIntegrity;
   readonly evidenceCategory: GovernanceEvidenceCategory;
   readonly confidence: GovernanceEvidenceConfidence;
   readonly evidenceVisibility: GovernanceEvidenceVisibility;
@@ -544,6 +571,21 @@ export type GovernanceProjectionDependencyEdge = {
 };
 
 export type GovernanceProjectionTraceMap = Readonly<Record<GovernanceProjectionId, GovernanceProjectionTrace>>;
+
+export type GovernanceProjectionIntegritySummary = {
+  readonly level: GovernanceProjectionIntegrityLevel;
+  readonly count: number;
+};
+
+export type GovernanceProjectionIntegrityIssueEntry = {
+  readonly projectionId: GovernanceProjectionId;
+  readonly issue: GovernanceProjectionIntegrityIssue;
+};
+
+export type GovernanceProjectionIntegritySignalEntry = {
+  readonly projectionId: GovernanceProjectionId;
+  readonly signal: GovernanceProjectionIntegritySignal;
+};
 
 export type GovernanceRenderingState = {
   readonly renderState: GovernanceRenderState;

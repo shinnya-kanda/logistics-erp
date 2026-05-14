@@ -1,6 +1,8 @@
 import type {
   GovernanceDashboardMockContract,
   GovernanceDashboardReadOnlyData,
+  GovernanceProjectionIntegrity,
+  GovernanceProjectionIntegrityLevel,
   GovernanceProjectionId,
   GovernanceProjectionLineage,
 } from "./governanceDashboardTypes";
@@ -39,6 +41,33 @@ function createGovernanceProjectionLineage({
       parentTraceId,
       requestChainLabel: "Static governance dashboard parent trace",
     },
+  };
+}
+
+function createGovernanceProjectionIntegrity({
+  level,
+  issueLabels = [],
+  signalLabels = [],
+}: {
+  readonly level: GovernanceProjectionIntegrityLevel;
+  readonly issueLabels?: readonly string[];
+  readonly signalLabels?: readonly string[];
+}): GovernanceProjectionIntegrity {
+  return {
+    level,
+    issues: issueLabels.map((label, index) => ({
+      issueId: `integrity-issue-${level}-${index + 1}`,
+      level,
+      label,
+      semanticMeaning: "integrity review の表示であり、修復や再生成の開始ではありません。",
+    })),
+    signals: signalLabels.map((label, index) => ({
+      signalId: `integrity-signal-${level}-${index + 1}`,
+      level,
+      label,
+      semanticMeaning: "governance integrity の確認 signal であり、mutation を意味しません。",
+    })),
+    summaryLabel: `Integrity: ${level}`,
   };
 }
 
@@ -141,6 +170,11 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
         projectionId: "governance:incident:unconfirmed-incident",
         derivedFrom: ["governance:timeline:timeline-incident-001"],
       }),
+      integrity: createGovernanceProjectionIntegrity({
+        level: "limited",
+        issueLabels: ["incident source remains review-only"],
+        signalLabels: ["incident projection is visible for review"],
+      }),
       incidentCategory: "investigation_signal",
       incidentSeverity: "watch",
       incidentStatus: "detected",
@@ -199,6 +233,11 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
         projectionId: "governance:incident:semantic-ambiguity",
         derivedFrom: ["governance:timeline:timeline-semantic-001"],
         dependencies: ["governance:evidence:timeline-gap"],
+      }),
+      integrity: createGovernanceProjectionIntegrity({
+        level: "degraded",
+        issueLabels: ["meaning boundary requires semantic review"],
+        signalLabels: ["semantic ambiguity has high review attention"],
       }),
       incidentCategory: "semantic_ambiguity",
       incidentSeverity: "high",
@@ -265,6 +304,11 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
         projectionId: "governance:incident:attention-backlog",
         dependencies: ["governance:operation:approval-reference"],
       }),
+      integrity: createGovernanceProjectionIntegrity({
+        level: "limited",
+        issueLabels: ["attention backlog remains visible"],
+        signalLabels: ["attention projection is contained as read-only"],
+      }),
       incidentCategory: "attention_backlog",
       incidentSeverity: "watch",
       incidentStatus: "classified",
@@ -325,6 +369,10 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
         projectionId: "governance:operation:review-candidate",
         dependencies: ["governance:incident:unconfirmed-incident"],
       }),
+      integrity: createGovernanceProjectionIntegrity({
+        level: "stable",
+        signalLabels: ["review candidate remains coordination-only"],
+      }),
       operationCategory: "review_candidate",
       operationPriority: "normal",
       operationState: "visible",
@@ -374,6 +422,11 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
         projectionId: "governance:operation:approval-reference",
         parentProjectionId: "governance:operation:review-candidate",
         dependencies: ["governance:incident:attention-backlog"],
+      }),
+      integrity: createGovernanceProjectionIntegrity({
+        level: "limited",
+        issueLabels: ["approval reference may be misread as mutation"],
+        signalLabels: ["approval boundary is explicitly read-only"],
       }),
       operationCategory: "approval_reference",
       operationPriority: "high",
@@ -442,6 +495,11 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
         projectionId: "governance:operation:lifecycle-limitation",
         derivedFrom: ["governance:timeline:timeline-integrity-001"],
       }),
+      integrity: createGovernanceProjectionIntegrity({
+        level: "limited",
+        issueLabels: ["lifecycle wording needs boundary review"],
+        signalLabels: ["operation lifecycle is shown as review context"],
+      }),
       operationCategory: "lifecycle_limitation",
       operationPriority: "high",
       operationState: "classified",
@@ -492,6 +550,10 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
       lineage: createGovernanceProjectionLineage({
         projectionId: "governance:evidence:available-evidence",
         dependencies: ["governance:operation:review-candidate"],
+      }),
+      integrity: createGovernanceProjectionIntegrity({
+        level: "stable",
+        signalLabels: ["evidence provenance is visible"],
       }),
       evidenceCategory: "provenance",
       confidence: "high",
@@ -552,6 +614,11 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
       lineage: createGovernanceProjectionLineage({
         projectionId: "governance:evidence:partial-evidence",
         derivedFrom: ["governance:timeline:timeline-evidence-001"],
+      }),
+      integrity: createGovernanceProjectionIntegrity({
+        level: "limited",
+        issueLabels: ["partial lineage limits confidence"],
+        signalLabels: ["partial evidence remains explicitly bounded"],
       }),
       evidenceCategory: "lineage",
       confidence: "medium",
@@ -620,6 +687,11 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
       lineage: createGovernanceProjectionLineage({
         projectionId: "governance:evidence:timeline-gap",
         dependencies: ["governance:incident:semantic-ambiguity"],
+      }),
+      integrity: createGovernanceProjectionIntegrity({
+        level: "degraded",
+        issueLabels: ["timeline gap reduces reasoning confidence"],
+        signalLabels: ["gap is visible as audit context only"],
       }),
       evidenceCategory: "audit_context",
       confidence: "low",
@@ -723,6 +795,11 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
         projectionId: "governance:timeline:timeline-incident-001",
         dependencies: ["governance:incident:unconfirmed-incident"],
       }),
+      integrity: createGovernanceProjectionIntegrity({
+        level: "limited",
+        issueLabels: ["incident timeline is observational only"],
+        signalLabels: ["timeline incident visibility is bounded"],
+      }),
       id: "timeline-incident-001",
       occurredAtLabel: "Mock day 1 09:00",
       category: "incident",
@@ -785,6 +862,11 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
       lineage: createGovernanceProjectionLineage({
         projectionId: "governance:timeline:timeline-semantic-001",
         dependencies: ["governance:incident:semantic-ambiguity"],
+      }),
+      integrity: createGovernanceProjectionIntegrity({
+        level: "degraded",
+        issueLabels: ["semantic timeline requires meaning consistency review"],
+        signalLabels: ["semantic timeline is highlighted for review"],
       }),
       id: "timeline-semantic-001",
       occurredAtLabel: "Mock day 1 10:30",
@@ -849,6 +931,11 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
         projectionId: "governance:timeline:timeline-evidence-001",
         dependencies: ["governance:evidence:partial-evidence"],
       }),
+      integrity: createGovernanceProjectionIntegrity({
+        level: "limited",
+        issueLabels: ["evidence timeline has partial lineage"],
+        signalLabels: ["evidence limitation remains visible"],
+      }),
       id: "timeline-evidence-001",
       occurredAtLabel: "Mock day 1 11:15",
       category: "evidence",
@@ -912,6 +999,11 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
         projectionId: "governance:timeline:timeline-attention-001",
         dependencies: ["governance:incident:attention-backlog"],
       }),
+      integrity: createGovernanceProjectionIntegrity({
+        level: "limited",
+        issueLabels: ["attention timeline can be misread as priority"],
+        signalLabels: ["attention remains human-review only"],
+      }),
       id: "timeline-attention-001",
       occurredAtLabel: "Mock day 1 13:00",
       category: "attention",
@@ -974,6 +1066,10 @@ const governanceDashboardMockData: GovernanceDashboardMockContract = {
       lineage: createGovernanceProjectionLineage({
         projectionId: "governance:timeline:timeline-integrity-001",
         dependencies: ["governance:operation:lifecycle-limitation"],
+      }),
+      integrity: createGovernanceProjectionIntegrity({
+        level: "stable",
+        signalLabels: ["integrity lineage remains visible"],
       }),
       id: "timeline-integrity-001",
       occurredAtLabel: "Mock day 1 14:20",
