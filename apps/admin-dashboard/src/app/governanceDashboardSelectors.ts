@@ -28,6 +28,10 @@ import type {
   GovernanceProjectionIdentity,
   GovernanceProjectionIdentityMap,
   GovernanceProjectionDependencyEdge,
+  GovernanceProjectionIntegrityIssueEntry,
+  GovernanceProjectionIntegrityLevel,
+  GovernanceProjectionIntegritySignalEntry,
+  GovernanceProjectionIntegritySummary,
   GovernanceProjectionLineageEdge,
   GovernanceProjectionNamespace,
   GovernanceProjectionNamespaceGroup,
@@ -505,6 +509,48 @@ export function getGovernanceProjectionTraceMap(
       item.lineage.trace,
     ]),
   ) as GovernanceProjectionTraceMap;
+}
+
+export function getGovernanceProjectionIntegritySummary(
+  data: GovernanceDashboardReadOnlyData,
+): readonly GovernanceProjectionIntegritySummary[] {
+  const levelOrder: readonly GovernanceProjectionIntegrityLevel[] = [
+    "degraded",
+    "limited",
+    "unknown",
+    "stable",
+  ];
+
+  return levelOrder
+    .map((level) => ({
+      level,
+      count: getGovernanceCrossProjections(data).filter(
+        (item) => item.integrity.level === level,
+      ).length,
+    }))
+    .filter((summary) => summary.count > 0);
+}
+
+export function getGovernanceProjectionIntegrityIssues(
+  data: GovernanceDashboardReadOnlyData,
+): readonly GovernanceProjectionIntegrityIssueEntry[] {
+  return getGovernanceCrossProjections(data).flatMap((item) =>
+    item.integrity.issues.map((issue) => ({
+      projectionId: item.identity.projectionId,
+      issue,
+    })),
+  );
+}
+
+export function getGovernanceProjectionIntegritySignals(
+  data: GovernanceDashboardReadOnlyData,
+): readonly GovernanceProjectionIntegritySignalEntry[] {
+  return getGovernanceCrossProjections(data).flatMap((item) =>
+    item.integrity.signals.map((signal) => ({
+      projectionId: item.identity.projectionId,
+      signal,
+    })),
+  );
 }
 
 export function getGovernanceRenderingState(

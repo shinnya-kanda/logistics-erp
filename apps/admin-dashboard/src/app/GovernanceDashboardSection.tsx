@@ -24,6 +24,9 @@ import {
   getGovernanceProjectionAttentionGraph,
   getGovernanceProjectionIdentities,
   getGovernanceProjectionDependencies,
+  getGovernanceProjectionIntegrityIssues,
+  getGovernanceProjectionIntegritySignals,
+  getGovernanceProjectionIntegritySummary,
   getGovernanceProjectionLineageGraph,
   getGovernanceProjectionNamespaceGroups,
   getGovernanceProjectionRelations,
@@ -105,6 +108,9 @@ export function GovernanceDashboardSection() {
   const projectionLineageGraph = getGovernanceProjectionLineageGraph(governanceData);
   const projectionDependencies = getGovernanceProjectionDependencies(governanceData);
   const projectionTraceMap = getGovernanceProjectionTraceMap(governanceData);
+  const projectionIntegritySummary = getGovernanceProjectionIntegritySummary(governanceData);
+  const projectionIntegrityIssues = getGovernanceProjectionIntegrityIssues(governanceData);
+  const projectionIntegritySignals = getGovernanceProjectionIntegritySignals(governanceData);
   const stateNotice = getGovernanceStateNotice(governanceData);
 
   return (
@@ -145,6 +151,14 @@ export function GovernanceDashboardSection() {
         Projection lineage graph: Lineage nodes {projectionLineageGraph.length} / Dependencies{" "}
         {projectionDependencies.length} / Trace map {Object.keys(projectionTraceMap).length}. This
         is static lineage visibility and does not create replay, rebuild, retry, or trace mutation.
+      </GovernanceReadOnlyNotice>
+
+      <GovernanceReadOnlyNotice tone="neutral">
+        Projection integrity: Summary{" "}
+        {projectionIntegritySummary.map((item) => `${item.level} ${item.count}`).join(", ")} /
+        Issues {projectionIntegrityIssues.length} / Signals {projectionIntegritySignals.length}.
+        This is read-only integrity visibility and does not start correction, rebuild, replay, or
+        mutation.
       </GovernanceReadOnlyNotice>
 
       <section aria-label="ガバナンス概要">
