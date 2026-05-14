@@ -134,6 +134,36 @@ export type GovernanceOperationRelation =
 
 export type GovernanceProjectionType = "incident" | "evidence" | "timeline" | "operation";
 
+export type GovernanceProjectionId = `governance:${GovernanceProjectionType}:${string}`;
+
+export type GovernanceProjectionScope =
+  | "incident_summary"
+  | "operation_queue"
+  | "evidence_summary"
+  | "timeline";
+
+export type GovernanceProjectionNamespace =
+  | "governance.dashboard.incident"
+  | "governance.dashboard.operation"
+  | "governance.dashboard.evidence"
+  | "governance.dashboard.timeline";
+
+export type GovernanceProjectionSource =
+  | "static_mock"
+  | "policy_reference"
+  | "lineage_policy"
+  | "semantic_review";
+
+export type GovernanceProjectionIdentity = {
+  readonly projectionId: GovernanceProjectionId;
+  readonly projectionType: GovernanceProjectionType;
+  readonly scope: GovernanceProjectionScope;
+  readonly namespace: GovernanceProjectionNamespace;
+  readonly source: GovernanceProjectionSource;
+  readonly label: string;
+  readonly parentTraceId: string;
+};
+
 export type GovernanceProjectionRelationType =
   | "supports_reasoning"
   | "explains_context"
@@ -244,6 +274,7 @@ export type GovernanceSummaryRow = GovernanceContractMetadata & {
 };
 
 export type GovernanceTimelineProjection = GovernanceContractMetadata & {
+  readonly identity: GovernanceProjectionIdentity;
   readonly id: string;
   readonly occurredAtLabel: string;
   readonly category: GovernanceTimelineCategory;
@@ -268,6 +299,7 @@ export type GovernanceTimelineProjection = GovernanceContractMetadata & {
 export type GovernanceTimelineItem = GovernanceTimelineProjection;
 
 export type GovernanceIncidentProjection = GovernanceSummaryRow & {
+  readonly identity: GovernanceProjectionIdentity;
   readonly incidentCategory: GovernanceIncidentCategory;
   readonly incidentSeverity: GovernanceIncidentSeverity;
   readonly incidentStatus: GovernanceIncidentStatus;
@@ -285,6 +317,7 @@ export type GovernanceIncidentProjection = GovernanceSummaryRow & {
 export type GovernanceIncidentSummaryRow = GovernanceIncidentProjection;
 
 export type GovernanceOperationProjection = GovernanceSummaryRow & {
+  readonly identity: GovernanceProjectionIdentity;
   readonly operationCategory: GovernanceOperationCategory;
   readonly operationPriority: GovernanceOperationPriority;
   readonly operationState: GovernanceOperationState;
@@ -301,6 +334,7 @@ export type GovernanceOperationProjection = GovernanceSummaryRow & {
 export type GovernanceOperationQueueSummaryRow = GovernanceOperationProjection;
 
 export type GovernanceEvidenceProjection = GovernanceSummaryRow & {
+  readonly identity: GovernanceProjectionIdentity;
   readonly evidenceCategory: GovernanceEvidenceCategory;
   readonly confidence: GovernanceEvidenceConfidence;
   readonly evidenceVisibility: GovernanceEvidenceVisibility;
@@ -449,6 +483,18 @@ export type GovernanceProjectionAttentionEdge = {
   readonly sourceId: string;
   readonly sourceType: GovernanceProjectionType;
   readonly attentionSignal: GovernanceProjectionAttentionSignal;
+};
+
+export type GovernanceProjectionIdentityMap = Readonly<Record<GovernanceProjectionId, GovernanceProjectionIdentity>>;
+
+export type GovernanceProjectionScopeGroup = {
+  readonly scope: GovernanceProjectionScope;
+  readonly identities: readonly GovernanceProjectionIdentity[];
+};
+
+export type GovernanceProjectionNamespaceGroup = {
+  readonly namespace: GovernanceProjectionNamespace;
+  readonly identities: readonly GovernanceProjectionIdentity[];
 };
 
 export type GovernanceRenderingState = {

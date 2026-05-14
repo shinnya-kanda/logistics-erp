@@ -25,7 +25,13 @@ import type {
   GovernanceOperationStateSummary,
   GovernanceProjectionAnchorNode,
   GovernanceProjectionAttentionEdge,
+  GovernanceProjectionIdentity,
+  GovernanceProjectionIdentityMap,
+  GovernanceProjectionNamespace,
+  GovernanceProjectionNamespaceGroup,
   GovernanceProjectionRelationEdge,
+  GovernanceProjectionScope,
+  GovernanceProjectionScopeGroup,
   GovernanceProjectionType,
   GovernanceSemanticBadge,
   GovernanceSemanticNoteItem,
@@ -421,6 +427,49 @@ export function getGovernanceProjectionAttentionGraph(
       attentionSignal,
     })),
   );
+}
+
+export function getGovernanceProjectionIdentities(
+  data: GovernanceDashboardReadOnlyData,
+): readonly GovernanceProjectionIdentity[] {
+  return getGovernanceCrossProjections(data).map((item) => item.identity);
+}
+
+export function getGovernanceProjectionIdentityMap(
+  data: GovernanceDashboardReadOnlyData,
+): GovernanceProjectionIdentityMap {
+  return Object.fromEntries(
+    getGovernanceProjectionIdentities(data).map((identity) => [
+      identity.projectionId,
+      identity,
+    ]),
+  ) as GovernanceProjectionIdentityMap;
+}
+
+export function getGovernanceProjectionScopeGroups(
+  data: GovernanceDashboardReadOnlyData,
+): readonly GovernanceProjectionScopeGroup[] {
+  const groups = new Map<GovernanceProjectionScope, GovernanceProjectionIdentity[]>();
+
+  for (const identity of getGovernanceProjectionIdentities(data)) {
+    const existingGroup = groups.get(identity.scope) ?? [];
+    groups.set(identity.scope, [...existingGroup, identity]);
+  }
+
+  return [...groups.entries()].map(([scope, identities]) => ({ scope, identities }));
+}
+
+export function getGovernanceProjectionNamespaceGroups(
+  data: GovernanceDashboardReadOnlyData,
+): readonly GovernanceProjectionNamespaceGroup[] {
+  const groups = new Map<GovernanceProjectionNamespace, GovernanceProjectionIdentity[]>();
+
+  for (const identity of getGovernanceProjectionIdentities(data)) {
+    const existingGroup = groups.get(identity.namespace) ?? [];
+    groups.set(identity.namespace, [...existingGroup, identity]);
+  }
+
+  return [...groups.entries()].map(([namespace, identities]) => ({ namespace, identities }));
 }
 
 export function getGovernanceRenderingState(

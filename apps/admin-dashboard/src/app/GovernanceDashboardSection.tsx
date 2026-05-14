@@ -22,7 +22,10 @@ import {
   getGovernanceIncidentSeveritySummary,
   getGovernanceProjectionAnchors,
   getGovernanceProjectionAttentionGraph,
+  getGovernanceProjectionIdentities,
+  getGovernanceProjectionNamespaceGroups,
   getGovernanceProjectionRelations,
+  getGovernanceProjectionScopeGroups,
   getGovernanceStateNotice,
   getGovernanceIncidentSummaries,
   getGovernanceOperationGroups,
@@ -93,6 +96,9 @@ export function GovernanceDashboardSection() {
   const projectionRelations = getGovernanceProjectionRelations(governanceData);
   const projectionAnchors = getGovernanceProjectionAnchors(governanceData);
   const projectionAttentionGraph = getGovernanceProjectionAttentionGraph(governanceData);
+  const projectionIdentities = getGovernanceProjectionIdentities(governanceData);
+  const projectionScopeGroups = getGovernanceProjectionScopeGroups(governanceData);
+  const projectionNamespaceGroups = getGovernanceProjectionNamespaceGroups(governanceData);
   const stateNotice = getGovernanceStateNotice(governanceData);
 
   return (
@@ -121,6 +127,12 @@ export function GovernanceDashboardSection() {
         {projectionAnchors.length} / Attention signals {projectionAttentionGraph.length}. This is
         static read-only visibility and does not trigger coordination, assignment, correction, or
         execution.
+      </GovernanceReadOnlyNotice>
+
+      <GovernanceReadOnlyNotice tone="neutral">
+        Projection identity map: Identities {projectionIdentities.length} / Scopes{" "}
+        {projectionScopeGroups.length} / Namespaces {projectionNamespaceGroups.length}. Identity is
+        read-only reasoning metadata and does not create API, trace mutation, or execution behavior.
       </GovernanceReadOnlyNotice>
 
       <section aria-label="ガバナンス概要">
