@@ -17,6 +17,12 @@ import type {
   GovernanceIncidentSummaryItem,
   GovernanceOperationQueueItem,
   GovernanceOverviewItem,
+  GovernanceOperationGroup,
+  GovernanceOperationPriority,
+  GovernanceOperationPrioritySummary,
+  GovernanceOperationProjection,
+  GovernanceOperationState,
+  GovernanceOperationStateSummary,
   GovernanceSemanticBadge,
   GovernanceSemanticNoteItem,
   GovernanceStateNotice,
@@ -181,7 +187,70 @@ export function getGovernanceIncidentAttentionSummary(
 export function getGovernanceOperationQueueItems(
   data: GovernanceDashboardReadOnlyData,
 ): readonly GovernanceOperationQueueItem[] {
+  return getGovernanceOperationProjections(data);
+}
+
+export function getGovernanceOperationProjections(
+  data: GovernanceDashboardReadOnlyData,
+): readonly GovernanceOperationProjection[] {
   return data.operationQueueSummary.map(keepReadOnlyItem);
+}
+
+export function getGovernanceOperationGroups(
+  data: GovernanceDashboardReadOnlyData,
+): readonly GovernanceOperationGroup[] {
+  const groups = new Map<string, GovernanceOperationProjection[]>();
+
+  for (const item of getGovernanceOperationProjections(data)) {
+    const existingGroup = groups.get(item.groupKey) ?? [];
+    groups.set(item.groupKey, [...existingGroup, item]);
+  }
+
+  return [...groups.entries()].map(([groupKey, items]) => ({
+    groupKey,
+    groupLabel: items[0]?.groupLabel ?? groupKey,
+    items,
+  }));
+}
+
+export function getGovernanceOperationPrioritySummary(
+  data: GovernanceDashboardReadOnlyData,
+): readonly GovernanceOperationPrioritySummary[] {
+  const priorityOrder: readonly GovernanceOperationPriority[] = [
+    "critical",
+    "high",
+    "normal",
+    "low",
+  ];
+
+  return priorityOrder
+    .map((priority) => ({
+      priority,
+      count: getGovernanceOperationProjections(data).filter(
+        (item) => item.operationPriority === priority,
+      ).length,
+    }))
+    .filter((summary) => summary.count > 0);
+}
+
+export function getGovernanceOperationStateSummary(
+  data: GovernanceDashboardReadOnlyData,
+): readonly GovernanceOperationStateSummary[] {
+  const stateOrder: readonly GovernanceOperationState[] = [
+    "coordination_needed",
+    "review_reference",
+    "classified",
+    "visible",
+  ];
+
+  return stateOrder
+    .map((state) => ({
+      state,
+      count: getGovernanceOperationProjections(data).filter(
+        (item) => item.operationState === state,
+      ).length,
+    }))
+    .filter((summary) => summary.count > 0);
 }
 
 export function getGovernanceEvidenceSummaries(

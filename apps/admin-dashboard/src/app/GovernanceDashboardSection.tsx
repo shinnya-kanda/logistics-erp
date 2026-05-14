@@ -22,7 +22,10 @@ import {
   getGovernanceIncidentSeveritySummary,
   getGovernanceStateNotice,
   getGovernanceIncidentSummaries,
+  getGovernanceOperationGroups,
   getGovernanceOperationQueueItems,
+  getGovernanceOperationPrioritySummary,
+  getGovernanceOperationStateSummary,
   getGovernanceOverviewItems,
   getGovernanceSemanticNotes,
   getGovernanceTimelineAttentionItems,
@@ -72,6 +75,9 @@ export function GovernanceDashboardSection() {
   const incidentSeveritySummary = getGovernanceIncidentSeveritySummary(governanceData);
   const incidentAttentionSummary = getGovernanceIncidentAttentionSummary(governanceData);
   const operationQueueItems = getGovernanceOperationQueueItems(governanceData);
+  const operationGroups = getGovernanceOperationGroups(governanceData);
+  const operationPrioritySummary = getGovernanceOperationPrioritySummary(governanceData);
+  const operationStateSummary = getGovernanceOperationStateSummary(governanceData);
   const evidenceSummaries = getGovernanceEvidenceSummaries(governanceData);
   const evidenceGroups = getGovernanceEvidenceGroups(governanceData);
   const evidenceAttentionItems = getGovernanceEvidenceAttentionItems(governanceData);
@@ -133,6 +139,7 @@ export function GovernanceDashboardSection() {
         title="Operation queue サマリー"
         description="governance review 用の静的な queue summary です。queue state は execution lifecycle ではありません。"
         rows={operationQueueItems}
+        projectionSummary={`Operation projection groups: ${operationGroups.length} / Priority: ${operationPrioritySummary.map((item) => `${item.priority} ${item.count}`).join(", ")} / State: ${operationStateSummary.map((item) => `${item.state} ${item.count}`).join(", ")}`}
       />
 
       <GovernanceSummarySection
