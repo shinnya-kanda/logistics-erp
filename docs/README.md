@@ -8,3 +8,4 @@
 - [全体像・詳細版（ChatGPT 共有）](./LOGISTICS_ERP_OVERVIEW_FOR_CHATGPT.md) — モノレポ・Ledger 在庫・migrations・API・認証まで一通り
 - [Phase 2 Scan 基盤](./phase2-scan-foundation.md) — scan_events / progress / issues / `processScanInput`
 - [Phase 2.1 Scan 冪等性](./phase2-1-scan-idempotency.md) — `idempotency_key` / 部分 UNIQUE / replay
+- [Supabase Data API grants baseline](./supabase-data-api-grants.md) — 新規 `public` table 作成時の GRANT / RLS / policy 標準方針
