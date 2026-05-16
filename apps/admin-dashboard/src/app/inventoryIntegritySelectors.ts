@@ -28,6 +28,12 @@ import type {
   InventoryIntegrityReviewPrioritySummary,
   InventoryIntegrityReviewSignalGraphItem,
   InventoryIntegritySignal,
+  InventoryIntegritySource,
+  InventoryIntegritySourceConfidence,
+  InventoryIntegritySourceConfidenceSummary,
+  InventoryIntegritySourceGapGraphItem,
+  InventoryIntegritySourceRelation,
+  InventoryIntegritySourceRelationSummary,
   InventoryIntegrityStatus,
   InventoryIntegrityStatusSummary,
   InventoryIntegritySummary,
@@ -67,6 +73,12 @@ export function getInventoryIntegrityEvidence(
   data: InventoryIntegrityReadOnlyData,
 ): readonly InventoryIntegrityEvidence[] {
   return data.evidenceProjections;
+}
+
+export function getInventoryIntegritySources(
+  data: InventoryIntegrityReadOnlyData,
+): readonly InventoryIntegritySource[] {
+  return data.sourceMappings;
 }
 
 export function getInventoryIntegrityLevelSummary(
@@ -318,6 +330,55 @@ export function getInventoryIntegrityEvidenceGaps(
     evidence.gaps.map((gap) => ({
       evidenceId: evidence.id,
       projectionId: evidence.projectionId,
+      gap,
+    })),
+  );
+}
+
+export function getInventoryIntegritySourceRelationSummary(
+  data: InventoryIntegrityReadOnlyData,
+): readonly InventoryIntegritySourceRelationSummary[] {
+  const relationOrder: readonly InventoryIntegritySourceRelation[] = [
+    "truth_source",
+    "compare_target",
+    "derived_context",
+    "review_context",
+    "limitation_context",
+  ];
+
+  return relationOrder
+    .map((relation) => ({
+      relation,
+      count: data.sourceMappings.filter((source) => source.relation === relation).length,
+    }))
+    .filter((summary) => summary.count > 0);
+}
+
+export function getInventoryIntegritySourceConfidenceSummary(
+  data: InventoryIntegrityReadOnlyData,
+): readonly InventoryIntegritySourceConfidenceSummary[] {
+  const confidenceOrder: readonly InventoryIntegritySourceConfidence[] = [
+    "unknown",
+    "low",
+    "medium",
+    "high",
+  ];
+
+  return confidenceOrder
+    .map((confidence) => ({
+      confidence,
+      count: data.sourceMappings.filter((source) => source.confidence === confidence).length,
+    }))
+    .filter((summary) => summary.count > 0);
+}
+
+export function getInventoryIntegritySourceGaps(
+  data: InventoryIntegrityReadOnlyData,
+): readonly InventoryIntegritySourceGapGraphItem[] {
+  return data.sourceMappings.flatMap((source) =>
+    source.gaps.map((gap) => ({
+      sourceId: source.id,
+      projectionId: source.projectionId,
       gap,
     })),
   );

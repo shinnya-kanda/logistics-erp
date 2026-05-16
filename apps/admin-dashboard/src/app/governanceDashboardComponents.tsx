@@ -197,34 +197,34 @@ function cardToneStyle(tone: GovernanceOverviewTone | undefined): CSSProperties 
 }
 
 function severityLabel(severity: GovernanceSeverity): string {
-  if (severity === "critical") return "Severity: critical";
-  if (severity === "high") return "Severity: high";
-  if (severity === "warning") return "Severity: warning";
-  return "Severity: info";
+  if (severity === "critical") return "重要度: 重大";
+  if (severity === "high") return "重要度: 高";
+  if (severity === "warning") return "重要度: 注意";
+  return "重要度: 参考";
 }
 
 function lifecycleLabel(lifecycleState: GovernanceLifecycleState): string {
-  if (lifecycleState === "detected") return "Lifecycle: detected";
-  if (lifecycleState === "reviewing") return "Lifecycle: reviewing";
-  if (lifecycleState === "classified") return "Lifecycle: classified";
-  return "Lifecycle: reaffirmed";
+  if (lifecycleState === "detected") return "確認状態: 検知";
+  if (lifecycleState === "reviewing") return "確認状態: 確認中";
+  if (lifecycleState === "classified") return "確認状態: 分類済み";
+  return "確認状態: 再確認";
 }
 
 function displayStateLabel(displayState: GovernanceDisplayState): string {
-  if (displayState === "loading") return "Display state: loading";
-  if (displayState === "empty") return "Display state: empty";
-  if (displayState === "stale") return "Display state: stale";
-  if (displayState === "partial") return "Display state: partial";
-  if (displayState === "degraded") return "Display state: degraded";
-  return "Display state: ready";
+  if (displayState === "loading") return "表示状態: 読み込み中";
+  if (displayState === "empty") return "表示状態: 空";
+  if (displayState === "stale") return "表示状態: 古い可能性";
+  if (displayState === "partial") return "表示状態: 一部表示";
+  if (displayState === "degraded") return "表示状態: 低下";
+  return "表示状態: 準備済み";
 }
 
 function renderStateLabel(renderState: GovernanceRenderState): string {
-  if (renderState === "readonly") return "Render state: readonly";
-  if (renderState === "partial") return "Render state: partial";
-  if (renderState === "stale") return "Render state: stale";
-  if (renderState === "degraded") return "Render state: degraded";
-  return "Render state: ready";
+  if (renderState === "readonly") return "描画状態: 参照のみ";
+  if (renderState === "partial") return "描画状態: 一部表示";
+  if (renderState === "stale") return "描画状態: 古い可能性";
+  if (renderState === "degraded") return "描画状態: 低下";
+  return "描画状態: 準備済み";
 }
 
 function badgeToneStyle(tone: GovernanceBadgeTone): CSSProperties {
@@ -338,8 +338,8 @@ export function GovernanceReadOnlyNotice({
 export function GovernanceReadOnlyBoundaryBadges() {
   return (
     <div style={styles.badgeRow} aria-label="Read-only governance badges">
-      <span style={{ ...styles.badge, ...styles.readOnlyBadge }}>READ ONLY</span>
-      <span style={{ ...styles.badge, ...styles.noExecutionBadge }}>NO EXECUTION</span>
+      <span style={{ ...styles.badge, ...styles.readOnlyBadge }}>参照のみ(READ ONLY)</span>
+      <span style={{ ...styles.badge, ...styles.noExecutionBadge }}>実行なし(NO EXECUTION)</span>
     </div>
   );
 }
@@ -455,11 +455,11 @@ export function GovernanceTimelineSection({
             <h4 style={{ margin: "0.45rem 0 0.35rem" }}>{item.title}</h4>
             <p style={{ margin: 0 }}>{item.description}</p>
             <p style={{ margin: "0.45rem 0 0", color: "#555" }}>
-              Source: {item.sourceLabel}
+              source: {item.sourceLabel}
             </p>
             <p style={styles.projectionMeta}>
-              Projection: {item.projectionLabel} / Group: {item.groupLabel} / Relation:{" "}
-              {item.relation} / Evidence: {item.evidenceState}
+              表示モデル: {item.projectionLabel} / group: {item.groupLabel} / 関係:{" "}
+              {item.relation} / 証跡: {item.evidenceState}
             </p>
             <div style={styles.metadataRow}>
               <GovernanceSeverityBadge severity={item.severity} />
@@ -469,7 +469,7 @@ export function GovernanceTimelineSection({
                   badge={{
                     id: `${item.id}-highlight`,
                     category: "visibility",
-                    label: "Timeline highlight",
+                    label: "時系列の強調表示",
                     tone: "warning",
                     visibility: "timeline",
                     semanticMeaning: "review visibility の強調であり、実行優先度ではありません。",
@@ -481,7 +481,7 @@ export function GovernanceTimelineSection({
                   badge={{
                     id: `${item.id}-attention`,
                     category: "review_signal",
-                    label: "Attention signal",
+                    label: "注意確認シグナル",
                     tone: item.timelineSeverity === "critical" ? "critical" : "warning",
                     visibility: "timeline",
                     semanticMeaning: "human review の見落とし防止であり、assignment ではありません。",

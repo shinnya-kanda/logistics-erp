@@ -83,7 +83,7 @@ export function getGovernanceStateNoticeBadges(
     {
       id: `state-severity-${notice.severity}`,
       category: "severity",
-      label: `Severity: ${notice.severity}`,
+      label: `重要度: ${notice.severity}`,
       tone: severityTone(notice.severity),
       visibility: "state_notice",
       semanticMeaning: "表示上の review attention level であり、処理優先度ではありません。",
@@ -91,7 +91,7 @@ export function getGovernanceStateNoticeBadges(
     {
       id: `state-lifecycle-${notice.lifecycleState}`,
       category: "lifecycle",
-      label: `Lifecycle: ${notice.lifecycleState}`,
+      label: `確認状態: ${notice.lifecycleState}`,
       tone: "neutral",
       visibility: "state_notice",
       semanticMeaning: "read-only review lifecycle の表示であり、operation lifecycle 遷移ではありません。",
@@ -99,7 +99,7 @@ export function getGovernanceStateNoticeBadges(
     {
       id: `state-freshness-${notice.freshnessState}`,
       category: "freshness",
-      label: `Freshness: ${notice.freshnessState}`,
+      label: `鮮度: ${notice.freshnessState}`,
       tone: notice.freshnessState === "stale" ? "warning" : "info",
       visibility: "state_notice",
       semanticMeaning: "表示情報の freshness signal であり、同期や再取得を開始しません。",
@@ -107,7 +107,7 @@ export function getGovernanceStateNoticeBadges(
     {
       id: `state-degradation-${notice.degradationState}`,
       category: "degradation",
-      label: `Degradation: ${notice.degradationState}`,
+      label: `低下状態: ${notice.degradationState}`,
       tone: notice.degradationState === "degraded" ? "high" : "warning",
       visibility: "state_notice",
       semanticMeaning: "dashboard interpretation limitation の表示であり、remediation 実行ではありません。",
@@ -115,7 +115,7 @@ export function getGovernanceStateNoticeBadges(
     {
       id: `state-visibility-${notice.visibilityMode}`,
       category: "visibility",
-      label: `Visibility: ${notice.visibilityMode}`,
+      label: `表示範囲: ${notice.visibilityMode}`,
       tone: "neutral",
       visibility: "state_notice",
       semanticMeaning: "表示範囲の semantic mode であり、権限変更や mutation ではありません。",

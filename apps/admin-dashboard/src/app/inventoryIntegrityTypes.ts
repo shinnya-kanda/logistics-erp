@@ -1,5 +1,5 @@
 // Static read-only contract for inventory integrity visualization.
-// This scaffold models compare / lineage / attention / evidence semantics only.
+// This scaffold models compare / lineage / attention / evidence / source trace semantics only.
 // It must not grow rebuild, replay, correction, or inventory mutation contracts.
 
 export type InventoryIntegrityLevel = "stable" | "watch" | "limited" | "degraded";
@@ -169,6 +169,44 @@ export type InventoryIntegrityEvidence = {
   readonly executionBoundary: string;
 };
 
+export type InventoryIntegritySourceType =
+  | "transaction_truth"
+  | "current_cache"
+  | "lineage_metadata"
+  | "evidence_metadata"
+  | "attention_metadata"
+  | "static_policy";
+
+export type InventoryIntegritySourceRelation =
+  | "truth_source"
+  | "compare_target"
+  | "derived_context"
+  | "review_context"
+  | "limitation_context";
+
+export type InventoryIntegritySourceConfidence = "high" | "medium" | "low" | "unknown";
+
+export type InventoryIntegritySourceGap = {
+  readonly id: string;
+  readonly label: string;
+  readonly reason: string;
+  readonly limitation: string;
+};
+
+export type InventoryIntegritySource = {
+  readonly id: string;
+  readonly projectionId: string;
+  readonly sourceType: InventoryIntegritySourceType;
+  readonly relation: InventoryIntegritySourceRelation;
+  readonly confidence: InventoryIntegritySourceConfidence;
+  readonly label: string;
+  readonly sourceName: string;
+  readonly explanation: string;
+  readonly gaps: readonly InventoryIntegritySourceGap[];
+  readonly semanticBoundary: "reasoning_visualization_only";
+  readonly executionBoundary: string;
+};
+
 export type InventoryCompareProjection = {
   readonly id: string;
   readonly scope: InventoryCompareScope;
@@ -187,6 +225,7 @@ export type InventoryIntegrityReadOnlyData = {
   readonly compareProjections: readonly InventoryCompareProjection[];
   readonly attentionProjections: readonly InventoryIntegrityAttention[];
   readonly evidenceProjections: readonly InventoryIntegrityEvidence[];
+  readonly sourceMappings: readonly InventoryIntegritySource[];
 };
 
 export type InventoryIntegrityLevelSummary = {
@@ -265,4 +304,20 @@ export type InventoryIntegrityEvidenceGapGraphItem = {
   readonly evidenceId: string;
   readonly projectionId: string;
   readonly gap: InventoryIntegrityEvidenceGap;
+};
+
+export type InventoryIntegritySourceRelationSummary = {
+  readonly relation: InventoryIntegritySourceRelation;
+  readonly count: number;
+};
+
+export type InventoryIntegritySourceConfidenceSummary = {
+  readonly confidence: InventoryIntegritySourceConfidence;
+  readonly count: number;
+};
+
+export type InventoryIntegritySourceGapGraphItem = {
+  readonly sourceId: string;
+  readonly projectionId: string;
+  readonly gap: InventoryIntegritySourceGap;
 };
