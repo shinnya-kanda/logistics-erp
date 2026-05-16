@@ -682,7 +682,7 @@ export function getGovernanceStateNotice(
     degradationState: renderingState.degradationState,
     visibilityMode: renderingState.visibilityMode,
     title: "Display state: ready",
-    message: `${renderingState.message} READ ONLY / NO EXECUTION の境界を維持します。`,
+    message: `${renderingState.message} 参照のみ(READ ONLY) / 実行なし(NO EXECUTION) の境界を維持します。`,
     severity: "info",
     lifecycleState: "reaffirmed",
     visibility: "summary",

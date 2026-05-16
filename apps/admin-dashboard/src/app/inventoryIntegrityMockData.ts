@@ -8,7 +8,7 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
       level: "stable",
       status: "compare_ready",
       description:
-        "inventory_transactions が在庫の真実(truth)です。inventory_current は表示用 cache です。",
+        "inventory_transactions が在庫の真実(truth)です。inventory_current は比較対象の表示用 cache です。",
     },
     {
       label: "比較範囲",
@@ -63,7 +63,7 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
     {
       id: "inventory-integrity-read-only",
       level: "stable",
-      label: "READ ONLY",
+      label: "参照のみ(READ ONLY)",
       value: "更新なし",
       note: "inventory_current 更新、transaction 書換、再構築(rebuild)、replay、correction はできません。",
     },
@@ -77,9 +77,9 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
     {
       id: "inventory-integrity-truth",
       level: "stable",
-      label: "truth 境界",
+      label: "真実データ境界",
       value: "transactions",
-      note: "inventory_transactions が truth で、inventory_current は表示用 projection です。",
+      note: "inventory_transactions が truth で、inventory_current は比較対象の表示用 cache です。",
     },
   ],
   compareProjections: [
@@ -210,7 +210,7 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
           {
             source: "inventory_current",
             label: "在庫種別別 cache",
-            semanticMeaning: "inventory_type 別の compare target/cache です。",
+            semanticMeaning: "inventory_type 別の比較対象 cache です。",
           },
         ],
         dependencies: [
@@ -426,11 +426,11 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
       label: "transaction truth source",
       sourceName: "inventory_transactions",
       explanation:
-        "入出庫・移動・調整の履歴から期待現在庫を導出する source data です。在庫の truth として扱います。",
+        "入出庫・移動・調整の履歴から期待現在庫を導出する由来データです。在庫の truth として扱います。",
       gaps: [],
       semanticBoundary: "reasoning_visualization_only",
       executionBoundary:
-        "source mapping は説明表示のみです。source execution、compare execution、rebuild、replay、correction は実行しません。",
+        "由来データ(source mapping)は説明表示のみです。source execution、compare execution、rebuild、replay、correction は実行しません。",
     },
     {
       id: "inventory-source-current-cache",
@@ -438,7 +438,7 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
       sourceType: "current_cache",
       relation: "compare_target",
       confidence: "medium",
-      label: "compare target cache",
+      label: "比較対象 cache",
       sourceName: "inventory_current",
       explanation:
         "inventory_current は比較対象の表示用 cache です。truth ではなく、差異確認の対象として表示します。",
@@ -452,7 +452,7 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
       ],
       semanticBoundary: "reasoning_visualization_only",
       executionBoundary:
-        "source mapping は説明表示のみです。source execution、compare execution、rebuild、replay、correction は実行しません。",
+        "由来データ(source mapping)は説明表示のみです。source execution、compare execution、rebuild、replay、correction は実行しません。",
     },
     {
       id: "inventory-source-lineage-evidence",
@@ -461,20 +461,20 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
       relation: "derived_context",
       confidence: "low",
       label: "差異由来 metadata",
-      sourceName: "lineage projection",
+      sourceName: "差異由来(lineage)表示モデル",
       explanation:
         "project / mrp 境界と集計範囲の由来を説明する metadata です。source data の変更根拠ではありません。",
       gaps: [
         {
           id: "source-gap-lineage-resolution",
           label: "由来解決不足",
-          reason: "lineage は静的表示で、live source trace resolution は行っていません。",
+          reason: "lineage は静的表示で、由来データ解決(source trace resolution)は行っていません。",
           limitation: "由来不足は review limitation であり、source 修正や correction を開始しません。",
         },
       ],
       semanticBoundary: "reasoning_visualization_only",
       executionBoundary:
-        "source mapping は説明表示のみです。source execution、compare execution、rebuild、replay、correction は実行しません。",
+        "由来データ(source mapping)は説明表示のみです。source execution、compare execution、rebuild、replay、correction は実行しません。",
     },
     {
       id: "inventory-source-static-policy",
@@ -490,13 +490,13 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
         {
           id: "source-gap-live-compare",
           label: "live compare 未実装",
-          reason: "Supabase や API に接続していないため、実データの source trace は解決していません。",
+          reason: "Supabase や API に接続していないため、実データの由来データ(source trace)は解決していません。",
           limitation: "未実行 gap は説明用であり、通知、担当割当、比較実行には接続しません。",
         },
       ],
       semanticBoundary: "reasoning_visualization_only",
       executionBoundary:
-        "source mapping は説明表示のみです。source execution、compare execution、rebuild、replay、correction は実行しません。",
+        "由来データ(source mapping)は説明表示のみです。source execution、compare execution、rebuild、replay、correction は実行しません。",
     },
   ],
 };

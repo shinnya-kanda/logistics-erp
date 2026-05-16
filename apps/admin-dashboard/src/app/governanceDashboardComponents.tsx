@@ -244,7 +244,7 @@ function severityBadge(severity: GovernanceSeverity): GovernanceSemanticBadge {
     label: severityLabel(severity),
     tone: severity === "critical" ? "critical" : severity === "high" ? "high" : severity,
     visibility: "summary",
-    semanticMeaning: "review attention level の表示であり、処理優先度ではありません。",
+    semanticMeaning: "確認上の注意度(review attention level)の表示であり、処理優先度ではありません。",
   };
 }
 
@@ -255,7 +255,7 @@ function lifecycleBadge(lifecycleState: GovernanceLifecycleState): GovernanceSem
     label: lifecycleLabel(lifecycleState),
     tone: "neutral",
     visibility: "summary",
-    semanticMeaning: "read-only review lifecycle の表示であり、実行状態遷移ではありません。",
+    semanticMeaning: "参照のみの確認状態(review lifecycle)の表示であり、実行状態遷移ではありません。",
   };
 }
 
@@ -455,10 +455,10 @@ export function GovernanceTimelineSection({
             <h4 style={{ margin: "0.45rem 0 0.35rem" }}>{item.title}</h4>
             <p style={{ margin: 0 }}>{item.description}</p>
             <p style={{ margin: "0.45rem 0 0", color: "#555" }}>
-              source: {item.sourceLabel}
+              source(由来): {item.sourceLabel}
             </p>
             <p style={styles.projectionMeta}>
-              表示モデル: {item.projectionLabel} / group: {item.groupLabel} / 関係:{" "}
+              表示モデル: {item.projectionLabel} / 分類(group): {item.groupLabel} / 関係:{" "}
               {item.relation} / 証跡: {item.evidenceState}
             </p>
             <div style={styles.metadataRow}>
@@ -472,7 +472,7 @@ export function GovernanceTimelineSection({
                     label: "時系列の強調表示",
                     tone: "warning",
                     visibility: "timeline",
-                    semanticMeaning: "review visibility の強調であり、実行優先度ではありません。",
+                    semanticMeaning: "確認上の可視化(review visibility)の強調であり、実行優先度ではありません。",
                   }}
                 />
               ) : null}
@@ -484,7 +484,7 @@ export function GovernanceTimelineSection({
                     label: "注意確認シグナル",
                     tone: item.timelineSeverity === "critical" ? "critical" : "warning",
                     visibility: "timeline",
-                    semanticMeaning: "human review の見落とし防止であり、assignment ではありません。",
+                    semanticMeaning: "人による確認(human review)の見落とし防止であり、担当割当(assignment)ではありません。",
                   }}
                 />
               ) : null}
