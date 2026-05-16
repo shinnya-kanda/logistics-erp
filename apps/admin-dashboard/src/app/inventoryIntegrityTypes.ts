@@ -92,6 +92,42 @@ export type InventoryCompareLineage = {
   readonly semanticBoundary: "reasoning_visualization_only";
 };
 
+export type InventoryIntegrityAttentionLevel =
+  | "audit_required"
+  | "tracking_required"
+  | "review_required"
+  | "reference";
+
+export type InventoryIntegrityReviewPriority = "high" | "medium" | "low";
+
+export type InventoryIntegrityEscalation = {
+  readonly candidate: "audit_review_candidate" | "manager_review_candidate" | "none";
+  readonly label: string;
+  readonly semanticMeaning: string;
+  readonly executionBoundary: string;
+};
+
+export type InventoryIntegrityReviewSignal = {
+  readonly id: string;
+  readonly label: string;
+  readonly reason: string;
+  readonly evidenceHint: string;
+};
+
+export type InventoryIntegrityAttention = {
+  readonly id: string;
+  readonly projectionId: string;
+  readonly attentionLevel: InventoryIntegrityAttentionLevel;
+  readonly reviewPriority: InventoryIntegrityReviewPriority;
+  readonly title: string;
+  readonly reason: string;
+  readonly reviewFocus: string;
+  readonly escalation: InventoryIntegrityEscalation;
+  readonly reviewSignals: readonly InventoryIntegrityReviewSignal[];
+  readonly semanticBoundary: "reasoning_visualization_only";
+  readonly executionBoundary: string;
+};
+
 export type InventoryCompareProjection = {
   readonly id: string;
   readonly scope: InventoryCompareScope;
@@ -108,6 +144,7 @@ export type InventoryIntegrityReadOnlyData = {
   readonly issues: readonly InventoryIntegrityIssue[];
   readonly signals: readonly InventoryIntegritySignal[];
   readonly compareProjections: readonly InventoryCompareProjection[];
+  readonly attentionProjections: readonly InventoryIntegrityAttention[];
 };
 
 export type InventoryIntegrityLevelSummary = {
@@ -149,4 +186,25 @@ export type InventoryCompareDependencyGraphItem = {
 export type InventoryCompareEvidenceGraphItem = {
   readonly projectionId: string;
   readonly evidence: InventoryCompareEvidence;
+};
+
+export type InventoryIntegrityAttentionLevelSummary = {
+  readonly attentionLevel: InventoryIntegrityAttentionLevel;
+  readonly count: number;
+};
+
+export type InventoryIntegrityReviewPrioritySummary = {
+  readonly reviewPriority: InventoryIntegrityReviewPriority;
+  readonly count: number;
+};
+
+export type InventoryIntegrityEscalationSummary = {
+  readonly candidate: InventoryIntegrityEscalation["candidate"];
+  readonly count: number;
+};
+
+export type InventoryIntegrityReviewSignalGraphItem = {
+  readonly attentionId: string;
+  readonly projectionId: string;
+  readonly reviewSignal: InventoryIntegrityReviewSignal;
 };
