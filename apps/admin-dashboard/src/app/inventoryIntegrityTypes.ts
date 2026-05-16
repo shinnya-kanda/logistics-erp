@@ -36,10 +36,45 @@ export type InventoryIntegritySummary = {
   readonly description: string;
 };
 
+export type InventoryCompareSeverity = "info" | "watch" | "warning" | "critical";
+
+export type InventoryCompareReason =
+  | "read_model_cache_gap"
+  | "transaction_aggregation_gap"
+  | "location_scope_gap"
+  | "project_scope_gap"
+  | "not_compared";
+
+export type InventoryCompareScope =
+  | "part"
+  | "location"
+  | "project"
+  | "inventory_type"
+  | "warehouse";
+
+export type InventoryCompareDifference = {
+  readonly currentReadModelQuantity: string;
+  readonly transactionAggregationQuantity: string;
+  readonly differenceQuantity: string;
+  readonly reason: InventoryCompareReason;
+  readonly severity: InventoryCompareSeverity;
+};
+
+export type InventoryCompareProjection = {
+  readonly id: string;
+  readonly scope: InventoryCompareScope;
+  readonly label: string;
+  readonly description: string;
+  readonly difference: InventoryCompareDifference;
+  readonly truthStatement: string;
+  readonly executionBoundary: string;
+};
+
 export type InventoryIntegrityReadOnlyData = {
   readonly summaries: readonly InventoryIntegritySummary[];
   readonly issues: readonly InventoryIntegrityIssue[];
   readonly signals: readonly InventoryIntegritySignal[];
+  readonly compareProjections: readonly InventoryCompareProjection[];
 };
 
 export type InventoryIntegrityLevelSummary = {
@@ -49,5 +84,20 @@ export type InventoryIntegrityLevelSummary = {
 
 export type InventoryIntegrityStatusSummary = {
   readonly status: InventoryIntegrityStatus;
+  readonly count: number;
+};
+
+export type InventoryCompareSeveritySummary = {
+  readonly severity: InventoryCompareSeverity;
+  readonly count: number;
+};
+
+export type InventoryCompareReasonSummary = {
+  readonly reason: InventoryCompareReason;
+  readonly count: number;
+};
+
+export type InventoryCompareScopeSummary = {
+  readonly scope: InventoryCompareScope;
   readonly count: number;
 };

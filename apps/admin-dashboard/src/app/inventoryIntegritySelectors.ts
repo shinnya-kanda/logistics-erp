@@ -1,4 +1,11 @@
 import type {
+  InventoryCompareProjection,
+  InventoryCompareReason,
+  InventoryCompareReasonSummary,
+  InventoryCompareScope,
+  InventoryCompareScopeSummary,
+  InventoryCompareSeverity,
+  InventoryCompareSeveritySummary,
   InventoryIntegrityIssue,
   InventoryIntegrityLevel,
   InventoryIntegrityLevelSummary,
@@ -25,6 +32,12 @@ export function getInventoryIntegritySignals(
   data: InventoryIntegrityReadOnlyData,
 ): readonly InventoryIntegritySignal[] {
   return data.signals;
+}
+
+export function getInventoryCompareProjections(
+  data: InventoryIntegrityReadOnlyData,
+): readonly InventoryCompareProjection[] {
+  return data.compareProjections;
 }
 
 export function getInventoryIntegrityLevelSummary(
@@ -61,6 +74,66 @@ export function getInventoryIntegrityStatusSummary(
     .map((status) => ({
       status,
       count: statusItems.filter((item) => item.status === status).length,
+    }))
+    .filter((summary) => summary.count > 0);
+}
+
+export function getInventoryCompareSeveritySummary(
+  data: InventoryIntegrityReadOnlyData,
+): readonly InventoryCompareSeveritySummary[] {
+  const severityOrder: readonly InventoryCompareSeverity[] = [
+    "critical",
+    "warning",
+    "watch",
+    "info",
+  ];
+
+  return severityOrder
+    .map((severity) => ({
+      severity,
+      count: data.compareProjections.filter(
+        (projection) => projection.difference.severity === severity,
+      ).length,
+    }))
+    .filter((summary) => summary.count > 0);
+}
+
+export function getInventoryCompareReasonSummary(
+  data: InventoryIntegrityReadOnlyData,
+): readonly InventoryCompareReasonSummary[] {
+  const reasonOrder: readonly InventoryCompareReason[] = [
+    "read_model_cache_gap",
+    "transaction_aggregation_gap",
+    "location_scope_gap",
+    "project_scope_gap",
+    "not_compared",
+  ];
+
+  return reasonOrder
+    .map((reason) => ({
+      reason,
+      count: data.compareProjections.filter(
+        (projection) => projection.difference.reason === reason,
+      ).length,
+    }))
+    .filter((summary) => summary.count > 0);
+}
+
+export function getInventoryCompareScopeSummary(
+  data: InventoryIntegrityReadOnlyData,
+): readonly InventoryCompareScopeSummary[] {
+  const scopeOrder: readonly InventoryCompareScope[] = [
+    "warehouse",
+    "project",
+    "location",
+    "part",
+    "inventory_type",
+  ];
+
+  return scopeOrder
+    .map((scope) => ({
+      scope,
+      count: data.compareProjections.filter((projection) => projection.scope === scope).length,
     }))
     .filter((summary) => summary.count > 0);
 }
