@@ -47,7 +47,7 @@ import {
 } from "./governanceDashboardSelectors";
 
 const noExecutionText =
-  "No correction, rebuild, replay, approval, retry, assignment, or sync is executed here.";
+  "correction、rebuild、replay、approval、retry、assignment、sync はこの画面から実行されません。";
 
 const styles: Record<string, CSSProperties> = {
   panel: {
@@ -117,10 +117,10 @@ export function GovernanceDashboardSection() {
     <section style={styles.panel} aria-labelledby="governance-dashboard-heading">
       <div style={styles.header}>
         <div>
-          <h2 id="governance-dashboard-heading">Governance Dashboard</h2>
+          <h2 id="governance-dashboard-heading">ガバナンス確認</h2>
           <p style={styles.lead}>
-            recovery governance、integrity review、semantic safety、attention quality を
-            確認するための read-only static dashboard です。この表示は mock data のみを使い、
+            recovery governance、整合性(integrity)確認、semantic safety、注意確認(attention)を
+            説明表示として確認するための read-only static dashboard です。この表示は mock data のみを使い、
             API、Edge Function、DB、RPC には接続しません。
           </p>
         </div>
@@ -128,37 +128,35 @@ export function GovernanceDashboardSection() {
       </div>
 
       <GovernanceReadOnlyNotice>
-        Review signal only. 表示された内容は人による確認のための signal です。
+        確認用シグナルのみです。表示された内容は人による確認のための signal です。
         {noExecutionText}
       </GovernanceReadOnlyNotice>
 
       <GovernanceStateNotice notice={stateNotice} />
 
       <GovernanceReadOnlyNotice tone="neutral">
-        Cross-projection reasoning graph: Relations {projectionRelations.length} / Anchors{" "}
-        {projectionAnchors.length} / Attention signals {projectionAttentionGraph.length}. This is
-        static read-only visibility and does not trigger coordination, assignment, correction, or
-        execution.
+        表示モデル間の説明 graph: 関係 {projectionRelations.length} / anchor{" "}
+        {projectionAnchors.length} / 注意シグナル {projectionAttentionGraph.length}。これは
+        read-only の説明表示であり、coordination、assignment、correction、execution は開始しません。
       </GovernanceReadOnlyNotice>
 
       <GovernanceReadOnlyNotice tone="neutral">
-        Projection identity map: Identities {projectionIdentities.length} / Scopes{" "}
-        {projectionScopeGroups.length} / Namespaces {projectionNamespaceGroups.length}. Identity is
-        read-only reasoning metadata and does not create API, trace mutation, or execution behavior.
+        表示モデル identity map: identity {projectionIdentities.length} / scope{" "}
+        {projectionScopeGroups.length} / namespace {projectionNamespaceGroups.length}。identity は
+        read-only の説明 metadata であり、API、trace mutation、execution は作りません。
       </GovernanceReadOnlyNotice>
 
       <GovernanceReadOnlyNotice tone="neutral">
-        Projection lineage graph: Lineage nodes {projectionLineageGraph.length} / Dependencies{" "}
-        {projectionDependencies.length} / Trace map {Object.keys(projectionTraceMap).length}. This
-        is static lineage visibility and does not create replay, rebuild, retry, or trace mutation.
+        表示モデルの由来(lineage): lineage node {projectionLineageGraph.length} / 依存関係{" "}
+        {projectionDependencies.length} / trace map {Object.keys(projectionTraceMap).length}。これは
+        静的な由来表示であり、replay、rebuild、retry、trace mutation は作りません。
       </GovernanceReadOnlyNotice>
 
       <GovernanceReadOnlyNotice tone="neutral">
-        Projection integrity: Summary{" "}
+        表示モデル整合性(integrity): summary{" "}
         {projectionIntegritySummary.map((item) => `${item.level} ${item.count}`).join(", ")} /
-        Issues {projectionIntegrityIssues.length} / Signals {projectionIntegritySignals.length}.
-        This is read-only integrity visibility and does not start correction, rebuild, replay, or
-        mutation.
+        issue {projectionIntegrityIssues.length} / signal {projectionIntegritySignals.length}。
+        これは read-only の整合性表示であり、correction、rebuild、replay、mutation は開始しません。
       </GovernanceReadOnlyNotice>
 
       <section aria-label="ガバナンス概要">
@@ -180,39 +178,39 @@ export function GovernanceDashboardSection() {
       </section>
 
       <GovernanceSummarySection
-        title="Incident サマリー"
-        description="read-only の調査と audit context のために、incident の状態を静的に表示します。"
+        title="要確認事項サマリー"
+        description="read-only の調査と audit context のために、要確認事項(incident)の状態を静的に表示します。"
         rows={incidentSummaries}
-        projectionSummary={`Incident projection groups: ${incidentGroups.length} / Severity: ${incidentSeveritySummary.map((item) => `${item.severity} ${item.count}`).join(", ")} / Attention: ${incidentAttentionSummary.map((item) => `${item.attentionLevel} ${item.count}`).join(", ")}`}
+        projectionSummary={`要確認事項の表示モデル groups: ${incidentGroups.length} / 重要度: ${incidentSeveritySummary.map((item) => `${item.severity} ${item.count}`).join(", ")} / 注意確認: ${incidentAttentionSummary.map((item) => `${item.attentionLevel} ${item.count}`).join(", ")}`}
       />
 
       <GovernanceSummarySection
-        title="Operation queue サマリー"
-        description="governance review 用の静的な queue summary です。queue state は execution lifecycle ではありません。"
+        title="確認キューサマリー"
+        description="governance review 用の静的な確認キュー summary です。queue state は execution lifecycle ではありません。"
         rows={operationQueueItems}
-        projectionSummary={`Operation projection groups: ${operationGroups.length} / Priority: ${operationPrioritySummary.map((item) => `${item.priority} ${item.count}`).join(", ")} / State: ${operationStateSummary.map((item) => `${item.state} ${item.count}`).join(", ")}`}
+        projectionSummary={`確認キューの表示モデル groups: ${operationGroups.length} / 確認優先度: ${operationPrioritySummary.map((item) => `${item.priority} ${item.count}`).join(", ")} / 状態: ${operationStateSummary.map((item) => `${item.state} ${item.count}`).join(", ")}`}
       />
 
       <GovernanceSummarySection
         title="証跡サマリー"
-        description="audit limitation を見える状態にするための静的な evidence summary です。"
+        description="audit limitation を見える状態にするための静的な証跡(evidence) summary です。"
         rows={evidenceSummaries}
-        projectionSummary={`Evidence projection groups: ${evidenceGroups.length} / Attention: ${evidenceAttentionItems.length} / Confidence: ${evidenceConfidenceSummary.map((item) => `${item.confidence} ${item.count}`).join(", ")}`}
+        projectionSummary={`証跡の表示モデル groups: ${evidenceGroups.length} / 注意確認: ${evidenceAttentionItems.length} / 説明信頼度: ${evidenceConfidenceSummary.map((item) => `${item.confidence} ${item.count}`).join(", ")}`}
       />
 
       <GovernanceTimelineSection
-        title="Read-only timeline"
+        title="read-only 時系列"
         description="review / observability purpose の timeline です。時系列表示は visibility のためだけに扱います。"
         items={timelineItems}
-        projectionSummary={`Projection groups: ${timelineGroups.length} / Highlights: ${timelineHighlights.length} / Attention: ${timelineAttentionItems.length}`}
+        projectionSummary={`表示モデル groups: ${timelineGroups.length} / 強調表示: ${timelineHighlights.length} / 注意確認: ${timelineAttentionItems.length}`}
       />
 
       <section style={governanceComponentStyles.section}>
         <h3 style={governanceComponentStyles.sectionTitle}>
-          Semantic safety / Integrity / Attention note
+          意味安全・整合性・注意確認 note
         </h3>
         <p style={governanceComponentStyles.lead}>
-          ここに表示する内容は read-only note です。correction、rebuild、replay、
+          ここに表示する内容は read-only の確認 note です。correction、rebuild、replay、
           approval、retry、assignment、sync の操作は含みません。
         </p>
         <div style={styles.noteGrid}>
@@ -223,7 +221,7 @@ export function GovernanceDashboardSection() {
       </section>
 
       <GovernanceReadOnlyNotice tone="neutral">
-        READ ONLY / NO EXECUTION: {noExecutionText} この static dashboard は実データを取得せず、
+        参照のみ(READ ONLY) / 実行なし(NO EXECUTION): {noExecutionText} この static dashboard は実データを取得せず、
         assignment、approval、incident、operation、evidence、timeline、projection を変更しません。
       </GovernanceReadOnlyNotice>
     </section>

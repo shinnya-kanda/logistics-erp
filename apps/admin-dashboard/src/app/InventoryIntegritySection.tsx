@@ -23,6 +23,10 @@ import {
   getInventoryIntegrityReviewPrioritySummary,
   getInventoryIntegrityReviewSignals,
   getInventoryIntegritySignals,
+  getInventoryIntegritySourceConfidenceSummary,
+  getInventoryIntegritySourceGaps,
+  getInventoryIntegritySourceRelationSummary,
+  getInventoryIntegritySources,
   getInventoryIntegrityStatusSummary,
   getInventoryIntegritySummaries,
 } from "./inventoryIntegritySelectors";
@@ -34,6 +38,8 @@ import type {
   InventoryIntegrityEvidenceConfidence,
   InventoryIntegrityEvidenceQuality,
   InventoryIntegrityLevel,
+  InventoryIntegritySourceConfidence,
+  InventoryIntegritySourceRelation,
   InventoryIntegrityStatus,
   InventoryIntegrityReviewPriority,
 } from "./inventoryIntegrityTypes";
@@ -130,6 +136,21 @@ function evidenceQualityStyle(quality: InventoryIntegrityEvidenceQuality): CSSPr
     return { borderColor: "#ef6c00", background: "#fff3e0" };
   }
   return { borderColor: "#2e7d32", background: "#e8f5e9" };
+}
+
+function sourceRelationLabel(relation: InventoryIntegritySourceRelation): string {
+  if (relation === "truth_source") return "truth source";
+  if (relation === "compare_target") return "比較対象";
+  if (relation === "derived_context") return "由来 context";
+  if (relation === "review_context") return "確認 context";
+  return "制限 context";
+}
+
+function sourceConfidenceLabel(confidence: InventoryIntegritySourceConfidence): string {
+  if (confidence === "high") return "source 信頼度: 高";
+  if (confidence === "medium") return "source 信頼度: 中";
+  if (confidence === "low") return "source 信頼度: 低";
+  return "source 信頼度: 不明";
 }
 
 function semanticBoundaryLabel(boundary: "reasoning_visualization_only"): string {
@@ -249,6 +270,10 @@ export function InventoryIntegritySection() {
   const evidenceQualitySummary = getInventoryIntegrityEvidenceQualitySummary(data);
   const evidenceConfidenceSummary = getInventoryIntegrityEvidenceConfidenceSummary(data);
   const evidenceGaps = getInventoryIntegrityEvidenceGaps(data);
+  const sourceMappings = getInventoryIntegritySources(data);
+  const sourceRelationSummary = getInventoryIntegritySourceRelationSummary(data);
+  const sourceConfidenceSummary = getInventoryIntegritySourceConfidenceSummary(data);
+  const sourceGaps = getInventoryIntegritySourceGaps(data);
 
   return (
     <section style={styles.panel} aria-labelledby="inventory-integrity-heading">
@@ -268,6 +293,7 @@ export function InventoryIntegritySection() {
           <span style={styles.badge}>差異由来は表示のみ</span>
           <span style={styles.badge}>注意シグナルは表示のみ</span>
           <span style={styles.badge}>証跡は表示のみ</span>
+          <span style={styles.badge}>source trace は表示のみ</span>
           <span style={styles.badge}>再構築なし</span>
           <span style={styles.badge}>更新なし</span>
         </div>
@@ -293,6 +319,12 @@ export function InventoryIntegritySection() {
       <div style={styles.notice}>
         証跡(evidence) と説明(explainability) は、判断材料を読みやすくするための説明表示です。
         証跡解決(evidence resolution)、auto-fix、再構築(rebuild) は未実装で、この画面から開始されません。
+      </div>
+
+      <div style={styles.notice}>
+        source mapping / source trace は、差異・由来・証跡がどの source data に基づくかを説明する
+        静的な参照表示です。source execution、compare execution、rebuild、replay、correction は
+        この画面から開始されません。
       </div>
 
       <div style={{ ...styles.notice, ...styles.neutralNotice }}>
@@ -336,6 +368,18 @@ export function InventoryIntegritySection() {
           .map((item) => `${evidenceConfidenceLabel(item.confidence)} ${item.count}`)
           .join(", ")}
         {" / "}証跡不足 {evidenceGaps.length}.
+      </div>
+
+      <div style={{ ...styles.notice, ...styles.neutralNotice }}>
+        source trace サマリー: 関係{" "}
+        {sourceRelationSummary
+          .map((item) => `${sourceRelationLabel(item.relation)} ${item.count}`)
+          .join(", ")}
+        {" / "}信頼度{" "}
+        {sourceConfidenceSummary
+          .map((item) => `${sourceConfidenceLabel(item.confidence)} ${item.count}`)
+          .join(", ")}
+        {" / "}source gap {sourceGaps.length}.
       </div>
 
       <section style={styles.section}>
@@ -535,6 +579,40 @@ export function InventoryIntegritySection() {
                 {evidence.gaps.map((gap) => (
                   <div key={gap.id} style={styles.card}>
                     <strong>証跡不足: {gap.label}</strong>
+                    <p style={styles.description}>理由: {gap.reason}</p>
+                    <p style={styles.description}>制限: {gap.limitation}</p>
+                  </div>
+                ))}
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section style={styles.section}>
+        <h3 style={{ marginTop: 0 }}>source trace・由来データ</h3>
+        <p style={styles.lead}>
+          差異、差異由来(lineage)、証跡が、どの source data に由来するかを静的に整理します。
+          inventory_transactions は truth、inventory_current は比較対象 cache です。source mapping は
+          説明表示のみで、source 実行やデータ更新には接続しません。
+        </p>
+        <div style={styles.list}>
+          {sourceMappings.map((source) => (
+            <article key={source.id} style={styles.card}>
+              <strong>{source.label}</strong>
+              <p style={styles.description}>source data: {source.sourceName}</p>
+              <p style={styles.description}>説明: {source.explanation}</p>
+              <p style={styles.description}>実行しないこと: {source.executionBoundary}</p>
+              <div style={styles.badgeRow}>
+                <span style={styles.badge}>SOURCE TRACE ONLY</span>
+                <span style={styles.badge}>{sourceRelationLabel(source.relation)}</span>
+                <span style={styles.badge}>{sourceConfidenceLabel(source.confidence)}</span>
+                <span style={styles.badge}>{semanticBoundaryLabel(source.semanticBoundary)}</span>
+              </div>
+              <div style={styles.list}>
+                {source.gaps.map((gap) => (
+                  <div key={gap.id} style={styles.card}>
+                    <strong>source gap: {gap.label}</strong>
                     <p style={styles.description}>理由: {gap.reason}</p>
                     <p style={styles.description}>制限: {gap.limitation}</p>
                   </div>
