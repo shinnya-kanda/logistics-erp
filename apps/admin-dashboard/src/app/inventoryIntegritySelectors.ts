@@ -9,10 +9,18 @@ import type {
   InventoryCompareScopeSummary,
   InventoryCompareSeverity,
   InventoryCompareSeveritySummary,
+  InventoryIntegrityAttention,
+  InventoryIntegrityAttentionLevel,
+  InventoryIntegrityAttentionLevelSummary,
+  InventoryIntegrityEscalation,
+  InventoryIntegrityEscalationSummary,
   InventoryIntegrityIssue,
   InventoryIntegrityLevel,
   InventoryIntegrityLevelSummary,
   InventoryIntegrityReadOnlyData,
+  InventoryIntegrityReviewPriority,
+  InventoryIntegrityReviewPrioritySummary,
+  InventoryIntegrityReviewSignalGraphItem,
   InventoryIntegritySignal,
   InventoryIntegrityStatus,
   InventoryIntegrityStatusSummary,
@@ -41,6 +49,12 @@ export function getInventoryCompareProjections(
   data: InventoryIntegrityReadOnlyData,
 ): readonly InventoryCompareProjection[] {
   return data.compareProjections;
+}
+
+export function getInventoryIntegrityAttention(
+  data: InventoryIntegrityReadOnlyData,
+): readonly InventoryIntegrityAttention[] {
+  return data.attentionProjections;
 }
 
 export function getInventoryIntegrityLevelSummary(
@@ -169,6 +183,80 @@ export function getInventoryCompareEvidenceItems(
     projection.lineage.evidence.map((evidence) => ({
       projectionId: projection.id,
       evidence,
+    })),
+  );
+}
+
+export function getInventoryIntegrityAttentionLevelSummary(
+  data: InventoryIntegrityReadOnlyData,
+): readonly InventoryIntegrityAttentionLevelSummary[] {
+  const attentionLevelOrder: readonly InventoryIntegrityAttentionLevel[] = [
+    "audit_required",
+    "tracking_required",
+    "review_required",
+    "reference",
+  ];
+
+  return attentionLevelOrder
+    .map((attentionLevel) => ({
+      attentionLevel,
+      count: data.attentionProjections.filter(
+        (attention) => attention.attentionLevel === attentionLevel,
+      ).length,
+    }))
+    .filter((summary) => summary.count > 0);
+}
+
+export function getInventoryIntegrityReviewPrioritySummary(
+  data: InventoryIntegrityReadOnlyData,
+): readonly InventoryIntegrityReviewPrioritySummary[] {
+  const priorityOrder: readonly InventoryIntegrityReviewPriority[] = ["high", "medium", "low"];
+
+  return priorityOrder
+    .map((reviewPriority) => ({
+      reviewPriority,
+      count: data.attentionProjections.filter(
+        (attention) => attention.reviewPriority === reviewPriority,
+      ).length,
+    }))
+    .filter((summary) => summary.count > 0);
+}
+
+export function getInventoryIntegrityEscalationCandidates(
+  data: InventoryIntegrityReadOnlyData,
+): readonly InventoryIntegrityAttention[] {
+  return data.attentionProjections.filter(
+    (attention) => attention.escalation.candidate !== "none",
+  );
+}
+
+export function getInventoryIntegrityEscalationSummary(
+  data: InventoryIntegrityReadOnlyData,
+): readonly InventoryIntegrityEscalationSummary[] {
+  const escalationOrder: readonly InventoryIntegrityEscalation["candidate"][] = [
+    "audit_review_candidate",
+    "manager_review_candidate",
+    "none",
+  ];
+
+  return escalationOrder
+    .map((candidate) => ({
+      candidate,
+      count: data.attentionProjections.filter(
+        (attention) => attention.escalation.candidate === candidate,
+      ).length,
+    }))
+    .filter((summary) => summary.count > 0);
+}
+
+export function getInventoryIntegrityReviewSignals(
+  data: InventoryIntegrityReadOnlyData,
+): readonly InventoryIntegrityReviewSignalGraphItem[] {
+  return data.attentionProjections.flatMap((attention) =>
+    attention.reviewSignals.map((reviewSignal) => ({
+      attentionId: attention.id,
+      projectionId: attention.projectionId,
+      reviewSignal,
     })),
   );
 }

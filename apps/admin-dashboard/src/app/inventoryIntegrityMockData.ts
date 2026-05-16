@@ -235,6 +235,98 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
         "No rebuild/replay/correction. Boundary review is represented as read-only reasoning metadata.",
     },
   ],
+  attentionProjections: [
+    {
+      id: "inventory-attention-part-location-gap",
+      projectionId: "inventory-compare-part-location-gap",
+      attentionLevel: "review_required",
+      reviewPriority: "high",
+      title: "部品・棚別差異の優先確認",
+      reason:
+        "inventory_current と inventory_transactions aggregation の差異が +2 で、cache gap の可能性があります。",
+      reviewFocus:
+        "部品番号・棚・直近の入出庫/移動 transaction を確認し、inventory_current を truth と誤読しないこと。",
+      escalation: {
+        candidate: "manager_review_candidate",
+        label: "所長確認候補",
+        semanticMeaning:
+          "現場説明が必要になる可能性を示す review routing です。assignment ではありません。",
+        executionBoundary:
+          "エスカレーション、通知、担当割当、修正処理は実行しません。",
+      },
+      reviewSignals: [
+        {
+          id: "review-signal-cache-gap",
+          label: "要確認 cache gap",
+          reason: "read model cache と transaction truth の差異が見える可能性があります。",
+          evidenceHint: "lineage の cache gap evidence と部品・棚 dependency を確認します。",
+        },
+      ],
+      semanticBoundary: "reasoning_visualization_only",
+      executionBoundary:
+        "review prioritization only. No attention execution, notification, assignment, compare execution, rebuild, replay, or correction is executed.",
+    },
+    {
+      id: "inventory-attention-project-scope-gap",
+      projectionId: "inventory-compare-project-scope-gap",
+      attentionLevel: "reference",
+      reviewPriority: "low",
+      title: "project_no 境界の参考確認",
+      reason:
+        "差異 0 の mock は正しさの証明ではなく、未比較状態を説明するための参考 signal です。",
+      reviewFocus:
+        "project_no scope が compare 対象として理解できるかを確認します。safe 判定ではありません。",
+      escalation: {
+        candidate: "none",
+        label: "エスカレーションなし",
+        semanticMeaning:
+          "現時点では監査・所長確認候補ではなく、理解補助の attention です。",
+        executionBoundary:
+          "通知、担当割当、完了処理、safe 判定は行いません。",
+      },
+      reviewSignals: [
+        {
+          id: "review-signal-not-compared",
+          label: "未比較の注意シグナル",
+          reason: "差異 0 が correctness guarantee に見えないようにするための signal です。",
+          evidenceHint: "not compared evidence と static policy 由来を確認します。",
+        },
+      ],
+      semanticBoundary: "reasoning_visualization_only",
+      executionBoundary:
+        "review prioritization only. No attention execution, notification, assignment, compare execution, rebuild, replay, or correction is executed.",
+    },
+    {
+      id: "inventory-attention-inventory-type-gap",
+      projectionId: "inventory-compare-inventory-type-gap",
+      attentionLevel: "tracking_required",
+      reviewPriority: "medium",
+      title: "在庫種別境界の要追跡",
+      reason:
+        "project / mrp 境界で transaction aggregation gap が見える可能性があります。",
+      reviewFocus:
+        "在庫種別の取り違え、aggregation scope、transaction truth の由来を確認します。",
+      escalation: {
+        candidate: "audit_review_candidate",
+        label: "要監査候補",
+        semanticMeaning:
+          "監査観点で追跡が必要になる可能性を示す候補です。監査開始ではありません。",
+        executionBoundary:
+          "監査通知、担当割当、correction、rebuild、replay は実行しません。",
+      },
+      reviewSignals: [
+        {
+          id: "review-signal-inventory-type-boundary",
+          label: "在庫種別 boundary signal",
+          reason: "inventory_type 境界の差異理由を優先して読むための signal です。",
+          evidenceHint: "aggregation boundary evidence と project / mrp dependency を確認します。",
+        },
+      ],
+      semanticBoundary: "reasoning_visualization_only",
+      executionBoundary:
+        "review prioritization only. No attention execution, notification, assignment, compare execution, rebuild, replay, or correction is executed.",
+    },
+  ],
 };
 
 export function getInventoryIntegrityMockData(): InventoryIntegrityReadOnlyData {

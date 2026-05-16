@@ -10,13 +10,24 @@ import {
   getInventoryCompareReasonSummary,
   getInventoryCompareScopeSummary,
   getInventoryCompareSeveritySummary,
+  getInventoryIntegrityAttention,
+  getInventoryIntegrityAttentionLevelSummary,
+  getInventoryIntegrityEscalationCandidates,
+  getInventoryIntegrityEscalationSummary,
   getInventoryIntegrityIssues,
   getInventoryIntegrityLevelSummary,
+  getInventoryIntegrityReviewPrioritySummary,
+  getInventoryIntegrityReviewSignals,
   getInventoryIntegritySignals,
   getInventoryIntegrityStatusSummary,
   getInventoryIntegritySummaries,
 } from "./inventoryIntegritySelectors";
-import type { InventoryCompareSeverity, InventoryIntegrityLevel } from "./inventoryIntegrityTypes";
+import type {
+  InventoryCompareSeverity,
+  InventoryIntegrityAttentionLevel,
+  InventoryIntegrityLevel,
+  InventoryIntegrityReviewPriority,
+} from "./inventoryIntegrityTypes";
 
 function levelLabel(level: InventoryIntegrityLevel): string {
   if (level === "degraded") return "整合性: degraded";
@@ -45,6 +56,25 @@ function severityStyle(severity: InventoryCompareSeverity): CSSProperties {
   if (severity === "warning" || severity === "watch") {
     return { borderColor: "#ef6c00", background: "#fff3e0" };
   }
+  return { borderColor: "#90caf9", background: "#e3f2fd" };
+}
+
+function attentionLevelLabel(level: InventoryIntegrityAttentionLevel): string {
+  if (level === "audit_required") return "要監査";
+  if (level === "tracking_required") return "要追跡";
+  if (level === "review_required") return "要確認";
+  return "参考";
+}
+
+function reviewPriorityLabel(priority: InventoryIntegrityReviewPriority): string {
+  if (priority === "high") return "高優先";
+  if (priority === "medium") return "中優先";
+  return "低優先";
+}
+
+function reviewPriorityStyle(priority: InventoryIntegrityReviewPriority): CSSProperties {
+  if (priority === "high") return { borderColor: "#c62828", background: "#ffebee" };
+  if (priority === "medium") return { borderColor: "#ef6c00", background: "#fff3e0" };
   return { borderColor: "#90caf9", background: "#e3f2fd" };
 }
 
@@ -151,6 +181,12 @@ export function InventoryIntegritySection() {
   const compareLineageGraph = getInventoryCompareLineageGraph(data);
   const compareDependencies = getInventoryCompareDependencies(data);
   const compareEvidenceItems = getInventoryCompareEvidenceItems(data);
+  const attentionProjections = getInventoryIntegrityAttention(data);
+  const attentionLevelSummary = getInventoryIntegrityAttentionLevelSummary(data);
+  const reviewPrioritySummary = getInventoryIntegrityReviewPrioritySummary(data);
+  const escalationCandidates = getInventoryIntegrityEscalationCandidates(data);
+  const escalationSummary = getInventoryIntegrityEscalationSummary(data);
+  const reviewSignals = getInventoryIntegrityReviewSignals(data);
 
   return (
     <section style={styles.panel} aria-labelledby="inventory-integrity-heading">
@@ -161,13 +197,14 @@ export function InventoryIntegritySection() {
             inventory_current と inventory_transactions の整合性を将来 compare するための静的な
             read-only scaffold です。inventory_current は source of truth ではなく、
             inventory_transactions が在庫の truth です。lineage は差異理由を説明するための
-            reasoning visualization であり、execution ではありません。
+            reasoning visualization であり、attention / review も execution ではありません。
           </p>
         </div>
         <div style={styles.badgeRow} aria-label="Inventory integrity boundary">
           <span style={styles.badge}>READ ONLY</span>
           <span style={styles.badge}>COMPARE SEMANTICS ONLY</span>
           <span style={styles.badge}>LINEAGE SEMANTICS ONLY</span>
+          <span style={styles.badge}>ATTENTION SEMANTICS ONLY</span>
           <span style={styles.badge}>NO REBUILD</span>
           <span style={styles.badge}>NO MUTATION</span>
         </div>
@@ -183,6 +220,12 @@ export function InventoryIntegritySection() {
         compare projection と lineage は reasoning visualization であり execution ではありません。
         inventory_transactions は truth aggregation source、inventory_current は compare target/cache
         です。
+      </div>
+
+      <div style={styles.notice}>
+        attention / review prioritization は「どれを先に確認するか」を整理する reasoning
+        visualization です。escalation、notification、assignment、attention execution は未実装で、
+        この画面から開始されません。
       </div>
 
       <div style={{ ...styles.notice, ...styles.neutralNotice }}>
@@ -203,6 +246,19 @@ export function InventoryIntegritySection() {
         dependency は説明用 metadata であり、live compare や rebuild を開始しません。
       </div>
 
+      <div style={{ ...styles.notice, ...styles.neutralNotice }}>
+        attention サマリー: 確認種別{" "}
+        {attentionLevelSummary
+          .map((item) => `${attentionLevelLabel(item.attentionLevel)} ${item.count}`)
+          .join(", ")}
+        {" / "}確認優先度{" "}
+        {reviewPrioritySummary
+          .map((item) => `${reviewPriorityLabel(item.reviewPriority)} ${item.count}`)
+          .join(", ")}
+        {" / "}エスカレーション候補 {escalationCandidates.length} / 注意シグナル{" "}
+        {reviewSignals.length}.
+      </div>
+
       <section style={styles.section}>
         <h3 style={{ marginTop: 0 }}>整合性サマリー</h3>
         <div style={styles.grid}>
@@ -221,7 +277,7 @@ export function InventoryIntegritySection() {
       </section>
 
       <section style={styles.section}>
-        <h3 style={{ marginTop: 0 }}>差異理由 / compare semantics</h3>
+        <h3 style={{ marginTop: 0 }}>差異確認 / compare semantics</h3>
         <p style={styles.lead}>
           compare は inventory_current を truth として扱わず、inventory_transactions から導出した
           expected current quantity と read model を照合する考え方です。
@@ -243,7 +299,7 @@ export function InventoryIntegritySection() {
       </section>
 
       <section style={styles.section}>
-        <h3 style={{ marginTop: 0 }}>compare projection</h3>
+        <h3 style={{ marginTop: 0 }}>差異 projection</h3>
         <p style={styles.lead}>
           静的な projection として、inventory_current を inventory_transactions aggregation と将来どう
           比較できるかを説明します。compare execution は実行せず、rebuild、replay、correction
@@ -275,7 +331,7 @@ export function InventoryIntegritySection() {
       </section>
 
       <section style={styles.section}>
-        <h3 style={{ marginTop: 0 }}>lineage / trace / 依存関係 / 証跡</h3>
+        <h3 style={{ marginTop: 0 }}>由来・トレース(trace)・依存関係・証跡</h3>
         <p style={styles.lead}>
           lineage は「なぜ差異が見える可能性があるか」を説明する静的な reasoning graph です。
           trace、由来、dependency、証跡はいずれも説明用であり、compare execution や correction
@@ -305,6 +361,66 @@ export function InventoryIntegritySection() {
                 <span style={styles.badge}>LINEAGE SEMANTICS ONLY</span>
                 <span style={styles.badge}>{projection.lineage.semanticBoundary}</span>
               </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section style={styles.section}>
+        <h3 style={{ marginTop: 0 }}>優先確認・注意シグナル</h3>
+        <p style={styles.lead}>
+          差異、lineage、証跡をもとに「どれを先に確認するか」を静的に整理します。
+          高優先は実行許可ではなく、低優先も safe 判定ではありません。通知、担当割当、
+          エスカレーション実行は行いません。
+        </p>
+        <div style={styles.list}>
+          {attentionProjections.map((attention) => (
+            <article
+              key={attention.id}
+              style={{ ...styles.card, ...reviewPriorityStyle(attention.reviewPriority) }}
+            >
+              <strong>{attention.title}</strong>
+              <p style={styles.description}>差異理由: {attention.reason}</p>
+              <p style={styles.description}>確認観点: {attention.reviewFocus}</p>
+              <p style={styles.description}>
+                エスカレーション候補: {attention.escalation.label} /{" "}
+                {attention.escalation.semanticMeaning}
+              </p>
+              <p style={styles.description}>境界: {attention.executionBoundary}</p>
+              <div style={styles.badgeRow}>
+                <span style={styles.badge}>{attentionLevelLabel(attention.attentionLevel)}</span>
+                <span style={styles.badge}>{reviewPriorityLabel(attention.reviewPriority)}</span>
+                <span style={styles.badge}>ATTENTION SEMANTICS ONLY</span>
+                <span style={styles.badge}>{attention.semanticBoundary}</span>
+              </div>
+              <div style={styles.list}>
+                {attention.reviewSignals.map((signal) => (
+                  <div key={signal.id} style={styles.card}>
+                    <strong>注意シグナル: {signal.label}</strong>
+                    <p style={styles.description}>理由: {signal.reason}</p>
+                    <p style={styles.description}>証跡: {signal.evidenceHint}</p>
+                  </div>
+                ))}
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section style={styles.section}>
+        <h3 style={{ marginTop: 0 }}>エスカレーション候補</h3>
+        <p style={styles.lead}>
+          ここでのエスカレーションは review routing の候補表示のみです。通知、担当割当、
+          承認、監査開始、修正処理には接続しません。
+        </p>
+        <div style={styles.grid}>
+          {escalationSummary.map((summary) => (
+            <article key={summary.candidate} style={styles.card}>
+              <strong>{summary.candidate}</strong>
+              <span style={styles.value}>{summary.count}</span>
+              <p style={styles.description}>
+                エスカレーション候補の件数です。execution priority ではありません。
+              </p>
             </article>
           ))}
         </div>
