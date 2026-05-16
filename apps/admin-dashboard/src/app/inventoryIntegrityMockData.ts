@@ -82,6 +82,62 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
       note: "inventory_transactions is the source of truth; inventory_current is a projection/read model.",
     },
   ],
+  compareProjections: [
+    {
+      id: "inventory-compare-part-location-gap",
+      scope: "location",
+      label: "Part/location quantity comparison",
+      description:
+        "Static projection of how a future comparison could reason about inventory_current quantity by part and location.",
+      difference: {
+        currentReadModelQuantity: "120",
+        transactionAggregationQuantity: "118",
+        differenceQuantity: "+2",
+        reason: "read_model_cache_gap",
+        severity: "warning",
+      },
+      truthStatement:
+        "inventory_transactions aggregation is the truth input; inventory_current is the compare target/cache.",
+      executionBoundary:
+        "Reasoning visualization only. No live compare, rebuild, replay, correction, or inventory mutation is executed.",
+    },
+    {
+      id: "inventory-compare-project-scope-gap",
+      scope: "project",
+      label: "Project scoped aggregation comparison",
+      description:
+        "Static projection of future project_no scoped comparison between read model and transaction aggregation.",
+      difference: {
+        currentReadModelQuantity: "64",
+        transactionAggregationQuantity: "64",
+        differenceQuantity: "0",
+        reason: "not_compared",
+        severity: "info",
+      },
+      truthStatement:
+        "A zero difference in this mock does not prove correctness; transactions remain the source of truth.",
+      executionBoundary:
+        "Compare semantics only. This scaffold does not query Supabase or execute comparison logic.",
+    },
+    {
+      id: "inventory-compare-inventory-type-gap",
+      scope: "inventory_type",
+      label: "Inventory type boundary comparison",
+      description:
+        "Static projection for future project / mrp inventory type boundary review before any rebuild reasoning.",
+      difference: {
+        currentReadModelQuantity: "31",
+        transactionAggregationQuantity: "28",
+        differenceQuantity: "+3",
+        reason: "transaction_aggregation_gap",
+        severity: "watch",
+      },
+      truthStatement:
+        "inventory_current is not truth even when grouped by inventory_type; transaction aggregation defines the expected quantity.",
+      executionBoundary:
+        "No rebuild/replay/correction. Boundary review is represented as read-only reasoning metadata.",
+    },
+  ],
 };
 
 export function getInventoryIntegrityMockData(): InventoryIntegrityReadOnlyData {

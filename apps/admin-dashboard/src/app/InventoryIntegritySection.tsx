@@ -3,13 +3,17 @@
 import type { CSSProperties } from "react";
 import { getInventoryIntegrityMockData } from "./inventoryIntegrityMockData";
 import {
+  getInventoryCompareProjections,
+  getInventoryCompareReasonSummary,
+  getInventoryCompareScopeSummary,
+  getInventoryCompareSeveritySummary,
   getInventoryIntegrityIssues,
   getInventoryIntegrityLevelSummary,
   getInventoryIntegritySignals,
   getInventoryIntegrityStatusSummary,
   getInventoryIntegritySummaries,
 } from "./inventoryIntegritySelectors";
-import type { InventoryIntegrityLevel } from "./inventoryIntegrityTypes";
+import type { InventoryCompareSeverity, InventoryIntegrityLevel } from "./inventoryIntegrityTypes";
 
 function levelLabel(level: InventoryIntegrityLevel): string {
   if (level === "degraded") return "Integrity: degraded";
@@ -24,6 +28,21 @@ function levelStyle(level: InventoryIntegrityLevel): CSSProperties {
     return { borderColor: "#ef6c00", background: "#fff3e0" };
   }
   return { borderColor: "#2e7d32", background: "#e8f5e9" };
+}
+
+function severityLabel(severity: InventoryCompareSeverity): string {
+  if (severity === "critical") return "Compare severity: critical";
+  if (severity === "warning") return "Compare severity: warning";
+  if (severity === "watch") return "Compare severity: watch";
+  return "Compare severity: info";
+}
+
+function severityStyle(severity: InventoryCompareSeverity): CSSProperties {
+  if (severity === "critical") return { borderColor: "#c62828", background: "#ffebee" };
+  if (severity === "warning" || severity === "watch") {
+    return { borderColor: "#ef6c00", background: "#fff3e0" };
+  }
+  return { borderColor: "#90caf9", background: "#e3f2fd" };
 }
 
 const styles: Record<string, CSSProperties> = {
@@ -120,8 +139,12 @@ export function InventoryIntegritySection() {
   const summaries = getInventoryIntegritySummaries(data);
   const issues = getInventoryIntegrityIssues(data);
   const signals = getInventoryIntegritySignals(data);
+  const compareProjections = getInventoryCompareProjections(data);
   const levelSummary = getInventoryIntegrityLevelSummary(data);
   const statusSummary = getInventoryIntegrityStatusSummary(data);
+  const compareSeveritySummary = getInventoryCompareSeveritySummary(data);
+  const compareReasonSummary = getInventoryCompareReasonSummary(data);
+  const compareScopeSummary = getInventoryCompareScopeSummary(data);
 
   return (
     <section style={styles.panel} aria-labelledby="inventory-integrity-heading">
@@ -136,7 +159,7 @@ export function InventoryIntegritySection() {
         </div>
         <div style={styles.badgeRow} aria-label="Inventory integrity boundary">
           <span style={styles.badge}>READ ONLY</span>
-          <span style={styles.badge}>COMPARE ONLY</span>
+          <span style={styles.badge}>COMPARE SEMANTICS ONLY</span>
           <span style={styles.badge}>NO REBUILD</span>
           <span style={styles.badge}>NO MUTATION</span>
         </div>
@@ -148,9 +171,21 @@ export function InventoryIntegritySection() {
         inventory_transactions.
       </div>
 
+      <div style={styles.notice}>
+        Compare projection is reasoning visualization, not execution. inventory_transactions is the
+        truth aggregation source; inventory_current is the compare target/cache.
+      </div>
+
       <div style={{ ...styles.notice, ...styles.neutralNotice }}>
         Integrity summary: Levels {levelSummary.map((item) => `${item.level} ${item.count}`).join(", ")}
         {" / "}Statuses {statusSummary.map((item) => `${item.status} ${item.count}`).join(", ")}.
+      </div>
+
+      <div style={{ ...styles.notice, ...styles.neutralNotice }}>
+        Compare projection summary: Severity{" "}
+        {compareSeveritySummary.map((item) => `${item.severity} ${item.count}`).join(", ")}
+        {" / "}Reason {compareReasonSummary.map((item) => `${item.reason} ${item.count}`).join(", ")}
+        {" / "}Scope {compareScopeSummary.map((item) => `${item.scope} ${item.count}`).join(", ")}.
       </div>
 
       <section style={styles.section}>
@@ -186,6 +221,38 @@ export function InventoryIntegritySection() {
               <div style={styles.badgeRow}>
                 <span style={styles.badge}>{levelLabel(issue.level)}</span>
                 <span style={styles.badge}>Status: {issue.status}</span>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section style={styles.section}>
+        <h3 style={{ marginTop: 0 }}>Compare projection</h3>
+        <p style={styles.lead}>
+          These static projections describe how inventory_current could be compared against
+          inventory_transactions aggregation in the future. They do not run compare execution and do
+          not produce rebuild, replay, or correction actions.
+        </p>
+        <div style={styles.list}>
+          {compareProjections.map((projection) => (
+            <article
+              key={projection.id}
+              style={{ ...styles.card, ...severityStyle(projection.difference.severity) }}
+            >
+              <strong>{projection.label}</strong>
+              <p style={styles.description}>{projection.description}</p>
+              <p style={styles.description}>
+                current cache: {projection.difference.currentReadModelQuantity} / transaction
+                aggregation: {projection.difference.transactionAggregationQuantity} / difference:{" "}
+                {projection.difference.differenceQuantity}
+              </p>
+              <p style={styles.description}>Truth: {projection.truthStatement}</p>
+              <p style={styles.description}>Boundary: {projection.executionBoundary}</p>
+              <div style={styles.badgeRow}>
+                <span style={styles.badge}>{severityLabel(projection.difference.severity)}</span>
+                <span style={styles.badge}>Reason: {projection.difference.reason}</span>
+                <span style={styles.badge}>Scope: {projection.scope}</span>
               </div>
             </article>
           ))}
