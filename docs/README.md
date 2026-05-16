@@ -9,3 +9,4 @@
 - [Phase 2 Scan 基盤](./phase2-scan-foundation.md) — scan_events / progress / issues / `processScanInput`
 - [Phase 2.1 Scan 冪等性](./phase2-1-scan-idempotency.md) — `idempotency_key` / 部分 UNIQUE / replay
 - [Supabase Data API grants baseline](./supabase-data-api-grants.md) — 新規 `public` table 作成時の GRANT / RLS / policy 標準方針
+- [Inventory Aggregation Semantics Review](./inventory-aggregation-semantics-review.md) — `inventory_transactions` から現在庫集計を考える semantics review
