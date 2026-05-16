@@ -8,7 +8,7 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
       level: "stable",
       status: "compare_ready",
       description:
-        "inventory_transactions が在庫の truth です。inventory_current は表示用 cache / read model です。",
+        "inventory_transactions が在庫の真実(truth)です。inventory_current は表示用 cache です。",
     },
     {
       label: "比較範囲",
@@ -16,7 +16,7 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
       level: "watch",
       status: "compare_ready",
       description:
-        "inventory_current と inventory_transactions aggregation の将来比較を静的に整理します。",
+        "inventory_current と inventory_transactions 集計の将来比較を静的に整理します。",
     },
     {
       label: "再構築ステータス",
@@ -24,7 +24,7 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
       level: "limited",
       status: "review_needed",
       description:
-        "rebuild、replay、correction はこの read-only scaffold の対象外です。",
+        "再構築(rebuild)、replay、correction はこの参照表示の対象外です。",
     },
   ],
   issues: [
@@ -34,29 +34,29 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
       status: "projection_gap",
       title: "差異候補",
       description:
-        "将来の compare で、inventory_current と transaction 由来数量が一致しない可能性があります。",
+        "将来の比較で、inventory_current と transaction 由来数量が一致しない可能性があります。",
       currentReadModelSignal: "inventory_current は古い cache の可能性があります。",
-      transactionTruthSignal: "expected current quantity は inventory_transactions から導出します。",
+      transactionTruthSignal: "期待現在庫は inventory_transactions から導出します。",
     },
     {
       id: "inventory-integrity-source-gap",
       level: "watch",
       status: "source_gap",
-      title: "transaction 網羅性確認",
+      title: "transaction 網羅性の確認",
       description:
         "入庫 / 出庫 / 移動 / 調整が transaction として残っているかを確認する候補です。",
-      currentReadModelSignal: "inventory_current だけでは event completeness を証明できません。",
-      transactionTruthSignal: "inventory_transactions が数量移動の audit trail です。",
+      currentReadModelSignal: "inventory_current だけでは履歴の網羅性を証明できません。",
+      transactionTruthSignal: "inventory_transactions が数量移動の監査証跡(audit trail)です。",
     },
     {
       id: "inventory-integrity-rebuild-boundary",
       level: "degraded",
       status: "review_needed",
-      title: "rebuild 境界は実行不可",
+      title: "再構築(rebuild)は実行不可",
       description:
-        "この画面は将来の rebuild 判断材料を説明しても、rebuild、replay、correction は実行しません。",
-      currentReadModelSignal: "inventory_current remains display-only.",
-      transactionTruthSignal: "inventory_transactions が将来の reasoning に使う唯一の truth input です。",
+        "この画面は将来の再構築判断材料を説明しても、rebuild、replay、correction は実行しません。",
+      currentReadModelSignal: "inventory_current は表示用のままです。",
+      transactionTruthSignal: "inventory_transactions が将来の説明に使う唯一の truth input です。",
     },
   ],
   signals: [
@@ -65,30 +65,30 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
       level: "stable",
       label: "READ ONLY",
       value: "更新なし",
-      note: "inventory_current 更新、transaction 書換、rebuild、replay、correction はできません。",
+      note: "inventory_current 更新、transaction 書換、再構築(rebuild)、replay、correction はできません。",
     },
     {
       id: "inventory-integrity-compare-only",
       level: "watch",
-      label: "比較 semantics のみ",
+      label: "比較は表示のみ",
       value: "静的表示",
-      note: "compare の意味を説明するだけで、live data への比較は実行しません。",
+      note: "比較(compare)の意味を説明するだけで、live data への比較は実行しません。",
     },
     {
       id: "inventory-integrity-truth",
       level: "stable",
       label: "truth 境界",
       value: "transactions",
-      note: "inventory_transactions が truth で、inventory_current は projection / read model です。",
+      note: "inventory_transactions が truth で、inventory_current は表示用 projection です。",
     },
   ],
   compareProjections: [
     {
       id: "inventory-compare-part-location-gap",
       scope: "location",
-      label: "Part/location quantity comparison",
+      label: "部品・棚別の数量差異",
       description:
-        "Static projection of how a future comparison could reason about inventory_current quantity by part and location.",
+        "部品・棚単位で inventory_current と transaction 集計を将来どう比較するかを静的に説明します。",
       difference: {
         currentReadModelQuantity: "120",
         transactionAggregationQuantity: "118",
@@ -100,47 +100,47 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
         trace: {
           traceId: "inventory-compare-trace-part-location-gap",
           parentTraceId: "static-inventory-integrity-parent-trace",
-          label: "部品・棚別 compare trace",
+          label: "部品・棚別の比較トレース(trace)",
         },
         derivedFrom: [
           {
             source: "inventory_transactions",
-            label: "transaction aggregation",
+            label: "transaction 集計",
             semanticMeaning: "入出庫・移動・調整の履歴から将来導出する truth quantity です。",
           },
           {
             source: "inventory_current",
-            label: "read model cache",
+            label: "表示用 cache",
             semanticMeaning: "比較対象の cache であり、truth ではありません。",
           },
         ],
         dependencies: [
           {
             id: "dependency-part-location-scope",
-            label: "part_no + location_code scope",
-            semanticMeaning: "差異理由を部品・棚単位で説明するための静的 dependency です。",
+            label: "部品 + 棚の範囲",
+            semanticMeaning: "差異理由を部品・棚単位で説明するための静的な依存関係です。",
           },
         ],
         evidence: [
           {
             id: "evidence-cache-gap",
-            label: "cache gap evidence",
-            semanticMeaning: "read model cache gap の可能性を示す説明用証跡です。",
+            label: "cache 差異の証跡",
+            semanticMeaning: "表示用 cache 差異の可能性を示す説明用証跡です。",
           },
         ],
         semanticBoundary: "reasoning_visualization_only",
       },
       truthStatement:
-        "inventory_transactions aggregation is the truth input; inventory_current is the compare target/cache.",
+        "inventory_transactions 集計が truth input で、inventory_current は比較対象の cache です。",
       executionBoundary:
-        "Reasoning visualization only. No live compare, rebuild, replay, correction, or inventory mutation is executed.",
+        "説明表示のみです。live compare、rebuild、replay、correction、在庫更新は実行しません。",
     },
     {
       id: "inventory-compare-project-scope-gap",
       scope: "project",
-      label: "Project scoped aggregation comparison",
+      label: "project_no 別の数量差異",
       description:
-        "Static projection of future project_no scoped comparison between read model and transaction aggregation.",
+        "project_no 単位で表示用 cache と transaction 集計を将来どう比較するかを静的に説明します。",
       difference: {
         currentReadModelQuantity: "64",
         transactionAggregationQuantity: "64",
@@ -152,42 +152,42 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
         trace: {
           traceId: "inventory-compare-trace-project-scope-gap",
           parentTraceId: "static-inventory-integrity-parent-trace",
-          label: "project_no compare trace",
+          label: "project_no の比較トレース(trace)",
         },
         derivedFrom: [
           {
             source: "static_policy",
-            label: "compare policy placeholder",
+            label: "未比較 policy",
             semanticMeaning: "まだ live compare していないことを示す静的 policy 由来の表示です。",
           },
         ],
         dependencies: [
           {
             id: "dependency-project-scope",
-            label: "project_no scope",
-            semanticMeaning: "project_no 単位の比較境界を説明するための dependency です。",
+            label: "project_no の範囲",
+            semanticMeaning: "project_no 単位の比較境界を説明するための依存関係です。",
           },
         ],
         evidence: [
           {
             id: "evidence-not-compared",
-            label: "not compared evidence",
+            label: "未比較の証跡",
             semanticMeaning: "差異 0 は正しさの証明ではなく、未実行 mock であることの証跡です。",
           },
         ],
         semanticBoundary: "reasoning_visualization_only",
       },
       truthStatement:
-        "A zero difference in this mock does not prove correctness; transactions remain the source of truth.",
+        "この mock の差異 0 は正しさの証明ではありません。inventory_transactions が truth です。",
       executionBoundary:
-        "Compare semantics only. This scaffold does not query Supabase or execute comparison logic.",
+        "比較の意味を説明するだけです。Supabase query や比較処理は実行しません。",
     },
     {
       id: "inventory-compare-inventory-type-gap",
       scope: "inventory_type",
-      label: "Inventory type boundary comparison",
+      label: "在庫種別境界の数量差異",
       description:
-        "Static projection for future project / mrp inventory type boundary review before any rebuild reasoning.",
+        "project / mrp の在庫種別境界を、再構築判断ではなく確認材料として静的に説明します。",
       difference: {
         currentReadModelQuantity: "31",
         transactionAggregationQuantity: "28",
@@ -199,40 +199,40 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
         trace: {
           traceId: "inventory-compare-trace-inventory-type-gap",
           parentTraceId: "static-inventory-integrity-parent-trace",
-          label: "inventory_type compare trace",
+          label: "在庫種別の比較トレース(trace)",
         },
         derivedFrom: [
           {
             source: "inventory_transactions",
-            label: "inventory type aggregation",
+            label: "在庫種別別 transaction 集計",
             semanticMeaning: "inventory_type 境界で将来集計される transaction truth です。",
           },
           {
             source: "inventory_current",
-            label: "inventory type cache",
+            label: "在庫種別別 cache",
             semanticMeaning: "inventory_type 別の compare target/cache です。",
           },
         ],
         dependencies: [
           {
             id: "dependency-inventory-type-boundary",
-            label: "project / mrp boundary",
-            semanticMeaning: "在庫種別境界の取り違えを説明するための dependency です。",
+            label: "project / mrp 境界",
+            semanticMeaning: "在庫種別境界の取り違えを説明するための依存関係です。",
           },
         ],
         evidence: [
           {
             id: "evidence-aggregation-boundary",
-            label: "aggregation boundary evidence",
-            semanticMeaning: "aggregation scope の差異を review するための静的証跡です。",
+            label: "集計境界の証跡",
+            semanticMeaning: "集計範囲の差異を確認するための静的証跡です。",
           },
         ],
         semanticBoundary: "reasoning_visualization_only",
       },
       truthStatement:
-        "inventory_current is not truth even when grouped by inventory_type; transaction aggregation defines the expected quantity.",
+        "inventory_type 別に見ても inventory_current は truth ではありません。transaction 集計が期待数量を定義します。",
       executionBoundary:
-        "No rebuild/replay/correction. Boundary review is represented as read-only reasoning metadata.",
+        "rebuild、replay、correction は行いません。境界確認は参照用 metadata として表示します。",
     },
   ],
   attentionProjections: [
@@ -243,28 +243,28 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
       reviewPriority: "high",
       title: "部品・棚別差異の優先確認",
       reason:
-        "inventory_current と inventory_transactions aggregation の差異が +2 で、cache gap の可能性があります。",
+        "inventory_current と inventory_transactions 集計の差異が +2 で、cache 差異の可能性があります。",
       reviewFocus:
         "部品番号・棚・直近の入出庫/移動 transaction を確認し、inventory_current を truth と誤読しないこと。",
       escalation: {
         candidate: "manager_review_candidate",
         label: "所長確認候補",
         semanticMeaning:
-          "現場説明が必要になる可能性を示す review routing です。assignment ではありません。",
+          "現場説明が必要になる可能性を示す確認ルート候補です。担当割当ではありません。",
         executionBoundary:
           "エスカレーション、通知、担当割当、修正処理は実行しません。",
       },
       reviewSignals: [
         {
           id: "review-signal-cache-gap",
-          label: "要確認 cache gap",
-          reason: "read model cache と transaction truth の差異が見える可能性があります。",
-          evidenceHint: "lineage の cache gap evidence と部品・棚 dependency を確認します。",
+          label: "cache 差異の要確認",
+          reason: "表示用 cache と transaction truth の差異が見える可能性があります。",
+          evidenceHint: "差異由来(lineage)の cache 差異証跡と部品・棚の依存関係を確認します。",
         },
       ],
       semanticBoundary: "reasoning_visualization_only",
       executionBoundary:
-        "review prioritization only. No attention execution, notification, assignment, compare execution, rebuild, replay, or correction is executed.",
+        "確認優先度の説明表示のみです。attention execution、通知、担当割当、比較実行、rebuild、replay、correction は実行しません。",
     },
     {
       id: "inventory-attention-project-scope-gap",
@@ -273,14 +273,14 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
       reviewPriority: "low",
       title: "project_no 境界の参考確認",
       reason:
-        "差異 0 の mock は正しさの証明ではなく、未比較状態を説明するための参考 signal です。",
+        "差異 0 の mock は正しさの証明ではなく、未比較状態を説明するための参考シグナルです。",
       reviewFocus:
-        "project_no scope が compare 対象として理解できるかを確認します。safe 判定ではありません。",
+        "project_no の範囲が比較対象として理解できるかを確認します。safe 判定ではありません。",
       escalation: {
         candidate: "none",
         label: "エスカレーションなし",
         semanticMeaning:
-          "現時点では監査・所長確認候補ではなく、理解補助の attention です。",
+          "現時点では監査・所長確認候補ではなく、理解補助の注意シグナルです。",
         executionBoundary:
           "通知、担当割当、完了処理、safe 判定は行いません。",
       },
@@ -288,13 +288,13 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
         {
           id: "review-signal-not-compared",
           label: "未比較の注意シグナル",
-          reason: "差異 0 が correctness guarantee に見えないようにするための signal です。",
-          evidenceHint: "not compared evidence と static policy 由来を確認します。",
+          reason: "差異 0 が正しさの保証に見えないようにするためのシグナルです。",
+          evidenceHint: "未比較の証跡と static policy 由来を確認します。",
         },
       ],
       semanticBoundary: "reasoning_visualization_only",
       executionBoundary:
-        "review prioritization only. No attention execution, notification, assignment, compare execution, rebuild, replay, or correction is executed.",
+        "確認優先度の説明表示のみです。attention execution、通知、担当割当、比較実行、rebuild、replay、correction は実行しません。",
     },
     {
       id: "inventory-attention-inventory-type-gap",
@@ -303,9 +303,9 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
       reviewPriority: "medium",
       title: "在庫種別境界の要追跡",
       reason:
-        "project / mrp 境界で transaction aggregation gap が見える可能性があります。",
+        "project / mrp 境界で transaction 集計差異が見える可能性があります。",
       reviewFocus:
-        "在庫種別の取り違え、aggregation scope、transaction truth の由来を確認します。",
+        "在庫種別の取り違え、集計範囲、transaction truth の由来を確認します。",
       escalation: {
         candidate: "audit_review_candidate",
         label: "要監査候補",
@@ -317,14 +317,14 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
       reviewSignals: [
         {
           id: "review-signal-inventory-type-boundary",
-          label: "在庫種別 boundary signal",
-          reason: "inventory_type 境界の差異理由を優先して読むための signal です。",
-          evidenceHint: "aggregation boundary evidence と project / mrp dependency を確認します。",
+          label: "在庫種別境界シグナル",
+          reason: "inventory_type 境界の差異理由を優先して読むためのシグナルです。",
+          evidenceHint: "集計境界の証跡と project / mrp 依存関係を確認します。",
         },
       ],
       semanticBoundary: "reasoning_visualization_only",
       executionBoundary:
-        "review prioritization only. No attention execution, notification, assignment, compare execution, rebuild, replay, or correction is executed.",
+        "確認優先度の説明表示のみです。attention execution、通知、担当割当、比較実行、rebuild、replay、correction は実行しません。",
     },
   ],
   evidenceProjections: [
@@ -342,9 +342,9 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
       confidence: "medium",
       quality: "partial",
       explanation:
-        "inventory_transactions aggregation と inventory_current cache の差異を説明する根拠候補です。",
+        "inventory_transactions 集計と inventory_current cache の差異を説明する根拠候補です。",
       rationale:
-        "数量差 +2 は cache gap の可能性を示しますが、live evidence resolution は行っていません。",
+        "数量差 +2 は cache 差異の可能性を示しますが、live evidence resolution は行っていません。",
       gaps: [
         {
           id: "evidence-gap-live-resolution",
@@ -355,7 +355,7 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
       ],
       semanticBoundary: "reasoning_visualization_only",
       executionBoundary:
-        "Evidence/explainability only. No evidence execution, auto-fix, rebuild, replay, correction, notification, or assignment is executed.",
+        "証跡と説明の表示のみです。evidence execution、auto-fix、rebuild、replay、correction、通知、担当割当は実行しません。",
     },
     {
       id: "inventory-evidence-project-scope-gap",
@@ -364,16 +364,16 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
       title: "project_no 境界の参考証跡",
       source: {
         source: "static_policy",
-        label: "static policy evidence",
+        label: "静的 policy 証跡",
         semanticMeaning:
           "未比較状態を正しさと誤読しないための静的な説明 source です。",
       },
       confidence: "unknown",
       quality: "limited",
       explanation:
-        "差異 0 の mock は correctness guarantee ではなく、未実行であることを説明します。",
+        "差異 0 の mock は正しさの保証ではなく、未実行であることを説明します。",
       rationale:
-        "project_no scope の読み方を補助しますが、live compare や evidence resolution はしていません。",
+        "project_no 範囲の読み方を補助しますが、live compare や evidence resolution はしていません。",
       gaps: [
         {
           id: "evidence-gap-not-compared",
@@ -384,7 +384,7 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
       ],
       semanticBoundary: "reasoning_visualization_only",
       executionBoundary:
-        "Evidence/explainability only. No evidence execution, auto-fix, rebuild, replay, correction, notification, or assignment is executed.",
+        "証跡と説明の表示のみです。evidence execution、auto-fix、rebuild、replay、correction、通知、担当割当は実行しません。",
     },
     {
       id: "inventory-evidence-inventory-type-gap",
@@ -393,16 +393,16 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
       title: "在庫種別境界の証跡不足",
       source: {
         source: "lineage_projection",
-        label: "lineage evidence",
+        label: "差異由来(lineage)証跡",
         semanticMeaning:
-          "project / mrp 境界と aggregation scope の関係を説明する lineage 由来の証跡です。",
+          "project / mrp 境界と集計範囲の関係を説明する lineage 由来の証跡です。",
       },
       confidence: "low",
       quality: "missing",
       explanation:
         "在庫種別境界の差異理由を追跡するには追加の実データ確認が必要です。",
       rationale:
-        "aggregation boundary evidence は静的説明であり、監査開始や correction 判断ではありません。",
+        "集計境界の証跡は静的説明であり、監査開始や correction 判断ではありません。",
       gaps: [
         {
           id: "evidence-gap-boundary-resolution",
@@ -413,7 +413,7 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
       ],
       semanticBoundary: "reasoning_visualization_only",
       executionBoundary:
-        "Evidence/explainability only. No evidence execution, auto-fix, rebuild, replay, correction, notification, or assignment is executed.",
+        "証跡と説明の表示のみです。evidence execution、auto-fix、rebuild、replay、correction、通知、担当割当は実行しません。",
     },
   ],
 };
