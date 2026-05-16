@@ -1,5 +1,8 @@
 import type {
   InventoryCompareProjection,
+  InventoryCompareDependencyGraphItem,
+  InventoryCompareEvidenceGraphItem,
+  InventoryCompareLineageGraphItem,
   InventoryCompareReason,
   InventoryCompareReasonSummary,
   InventoryCompareScope,
@@ -136,4 +139,36 @@ export function getInventoryCompareScopeSummary(
       count: data.compareProjections.filter((projection) => projection.scope === scope).length,
     }))
     .filter((summary) => summary.count > 0);
+}
+
+export function getInventoryCompareLineageGraph(
+  data: InventoryIntegrityReadOnlyData,
+): readonly InventoryCompareLineageGraphItem[] {
+  return data.compareProjections.map((projection) => ({
+    projectionId: projection.id,
+    trace: projection.lineage.trace,
+    derivedFrom: projection.lineage.derivedFrom,
+  }));
+}
+
+export function getInventoryCompareDependencies(
+  data: InventoryIntegrityReadOnlyData,
+): readonly InventoryCompareDependencyGraphItem[] {
+  return data.compareProjections.flatMap((projection) =>
+    projection.lineage.dependencies.map((dependency) => ({
+      projectionId: projection.id,
+      dependency,
+    })),
+  );
+}
+
+export function getInventoryCompareEvidenceItems(
+  data: InventoryIntegrityReadOnlyData,
+): readonly InventoryCompareEvidenceGraphItem[] {
+  return data.compareProjections.flatMap((projection) =>
+    projection.lineage.evidence.map((evidence) => ({
+      projectionId: projection.id,
+      evidence,
+    })),
+  );
 }
