@@ -139,18 +139,18 @@ function evidenceQualityStyle(quality: InventoryIntegrityEvidenceQuality): CSSPr
 }
 
 function sourceRelationLabel(relation: InventoryIntegritySourceRelation): string {
-  if (relation === "truth_source") return "truth source";
+  if (relation === "truth_source") return "真実データ source";
   if (relation === "compare_target") return "比較対象";
-  if (relation === "derived_context") return "由来 context";
-  if (relation === "review_context") return "確認 context";
-  return "制限 context";
+  if (relation === "derived_context") return "由来文脈";
+  if (relation === "review_context") return "確認文脈";
+  return "制限文脈";
 }
 
 function sourceConfidenceLabel(confidence: InventoryIntegritySourceConfidence): string {
-  if (confidence === "high") return "source 信頼度: 高";
-  if (confidence === "medium") return "source 信頼度: 中";
-  if (confidence === "low") return "source 信頼度: 低";
-  return "source 信頼度: 不明";
+  if (confidence === "high") return "由来信頼度: 高";
+  if (confidence === "medium") return "由来信頼度: 中";
+  if (confidence === "low") return "由来信頼度: 低";
+  return "由来信頼度: 不明";
 }
 
 function semanticBoundaryLabel(boundary: "reasoning_visualization_only"): string {
@@ -293,7 +293,7 @@ export function InventoryIntegritySection() {
           <span style={styles.badge}>差異由来は表示のみ</span>
           <span style={styles.badge}>注意シグナルは表示のみ</span>
           <span style={styles.badge}>証跡は表示のみ</span>
-          <span style={styles.badge}>source trace は表示のみ</span>
+          <span style={styles.badge}>由来データ(source trace)は表示のみ</span>
           <span style={styles.badge}>再構築なし</span>
           <span style={styles.badge}>更新なし</span>
         </div>
@@ -322,7 +322,7 @@ export function InventoryIntegritySection() {
       </div>
 
       <div style={styles.notice}>
-        source mapping / source trace は、差異・由来・証跡がどの source data に基づくかを説明する
+        由来データ(source mapping / source trace)は、差異・由来・証跡がどのデータに基づくかを説明する
         静的な参照表示です。source execution、compare execution、rebuild、replay、correction は
         この画面から開始されません。
       </div>
@@ -371,7 +371,7 @@ export function InventoryIntegritySection() {
       </div>
 
       <div style={{ ...styles.notice, ...styles.neutralNotice }}>
-        source trace サマリー: 関係{" "}
+        由来データサマリー(source trace): 関係{" "}
         {sourceRelationSummary
           .map((item) => `${sourceRelationLabel(item.relation)} ${item.count}`)
           .join(", ")}
@@ -379,7 +379,7 @@ export function InventoryIntegritySection() {
         {sourceConfidenceSummary
           .map((item) => `${sourceConfidenceLabel(item.confidence)} ${item.count}`)
           .join(", ")}
-        {" / "}source gap {sourceGaps.length}.
+        {" / "}由来不足 {sourceGaps.length}.
       </div>
 
       <section style={styles.section}>
@@ -590,21 +590,21 @@ export function InventoryIntegritySection() {
       </section>
 
       <section style={styles.section}>
-        <h3 style={{ marginTop: 0 }}>source trace・由来データ</h3>
+        <h3 style={{ marginTop: 0 }}>由来データ(source trace)</h3>
         <p style={styles.lead}>
-          差異、差異由来(lineage)、証跡が、どの source data に由来するかを静的に整理します。
-          inventory_transactions は truth、inventory_current は比較対象 cache です。source mapping は
+          差異、差異由来(lineage)、証跡が、どのデータに由来するかを静的に整理します。
+          inventory_transactions は truth、inventory_current は比較対象 cache です。由来データ(source mapping)は
           説明表示のみで、source 実行やデータ更新には接続しません。
         </p>
         <div style={styles.list}>
           {sourceMappings.map((source) => (
             <article key={source.id} style={styles.card}>
               <strong>{source.label}</strong>
-              <p style={styles.description}>source data: {source.sourceName}</p>
+              <p style={styles.description}>由来データ: {source.sourceName}</p>
               <p style={styles.description}>説明: {source.explanation}</p>
               <p style={styles.description}>実行しないこと: {source.executionBoundary}</p>
               <div style={styles.badgeRow}>
-                <span style={styles.badge}>SOURCE TRACE ONLY</span>
+                <span style={styles.badge}>由来データは表示のみ</span>
                 <span style={styles.badge}>{sourceRelationLabel(source.relation)}</span>
                 <span style={styles.badge}>{sourceConfidenceLabel(source.confidence)}</span>
                 <span style={styles.badge}>{semanticBoundaryLabel(source.semanticBoundary)}</span>
@@ -612,7 +612,7 @@ export function InventoryIntegritySection() {
               <div style={styles.list}>
                 {source.gaps.map((gap) => (
                   <div key={gap.id} style={styles.card}>
-                    <strong>source gap: {gap.label}</strong>
+                    <strong>由来不足: {gap.label}</strong>
                     <p style={styles.description}>理由: {gap.reason}</p>
                     <p style={styles.description}>制限: {gap.limitation}</p>
                   </div>
