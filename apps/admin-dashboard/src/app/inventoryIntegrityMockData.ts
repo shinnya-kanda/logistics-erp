@@ -3,28 +3,28 @@ import type { InventoryIntegrityReadOnlyData } from "./inventoryIntegrityTypes";
 const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
   summaries: [
     {
-      label: "Truth source",
+      label: "真実データ",
       value: "inventory_transactions",
       level: "stable",
       status: "compare_ready",
       description:
-        "inventory_transactions is the source of truth. inventory_current is only a read model projection.",
+        "inventory_transactions が在庫の truth です。inventory_current は表示用 cache / read model です。",
     },
     {
-      label: "Compare scope",
+      label: "比較範囲",
       value: "static mock",
       level: "watch",
       status: "compare_ready",
       description:
-        "This scaffold organizes future inventory_current vs inventory_transactions comparison semantics.",
+        "inventory_current と inventory_transactions aggregation の将来比較を静的に整理します。",
     },
     {
-      label: "Rebuild status",
-      value: "Not implemented",
+      label: "再構築ステータス",
+      value: "未実装",
       level: "limited",
       status: "review_needed",
       description:
-        "Rebuild, replay, and correction are explicitly out of scope for this read-only scaffold.",
+        "rebuild、replay、correction はこの read-only scaffold の対象外です。",
     },
   ],
   issues: [
@@ -32,31 +32,31 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
       id: "inventory-integrity-projection-gap",
       level: "limited",
       status: "projection_gap",
-      title: "Projection gap candidate",
+      title: "差異候補",
       description:
-        "A future compare may find inventory_current quantity that does not match the transaction-derived quantity.",
-      currentReadModelSignal: "inventory_current may be stale or incomplete.",
-      transactionTruthSignal: "inventory_transactions must be used to derive the expected current quantity.",
+        "将来の compare で、inventory_current と transaction 由来数量が一致しない可能性があります。",
+      currentReadModelSignal: "inventory_current は古い cache の可能性があります。",
+      transactionTruthSignal: "expected current quantity は inventory_transactions から導出します。",
     },
     {
       id: "inventory-integrity-source-gap",
       level: "watch",
       status: "source_gap",
-      title: "Transaction coverage review",
+      title: "transaction 網羅性確認",
       description:
-        "A future review should confirm whether all IN / OUT / MOVE / ADJUST events are represented as transactions.",
-      currentReadModelSignal: "inventory_current cannot prove event completeness.",
-      transactionTruthSignal: "inventory_transactions provide the audit trail for quantity movement.",
+        "入庫 / 出庫 / 移動 / 調整が transaction として残っているかを確認する候補です。",
+      currentReadModelSignal: "inventory_current だけでは event completeness を証明できません。",
+      transactionTruthSignal: "inventory_transactions が数量移動の audit trail です。",
     },
     {
       id: "inventory-integrity-rebuild-boundary",
       level: "degraded",
       status: "review_needed",
-      title: "Rebuild boundary is not executable",
+      title: "rebuild 境界は実行不可",
       description:
-        "This section may describe future rebuild eligibility, but it must not execute rebuild, replay, or correction.",
+        "この画面は将来の rebuild 判断材料を説明しても、rebuild、replay、correction は実行しません。",
       currentReadModelSignal: "inventory_current remains display-only.",
-      transactionTruthSignal: "inventory_transactions remain the only truth input for future rebuild reasoning.",
+      transactionTruthSignal: "inventory_transactions が将来の reasoning に使う唯一の truth input です。",
     },
   ],
   signals: [
@@ -64,22 +64,22 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
       id: "inventory-integrity-read-only",
       level: "stable",
       label: "READ ONLY",
-      value: "No mutation",
-      note: "No inventory_current update, transaction rewrite, rebuild, replay, or correction is available here.",
+      value: "更新なし",
+      note: "inventory_current 更新、transaction 書換、rebuild、replay、correction はできません。",
     },
     {
       id: "inventory-integrity-compare-only",
       level: "watch",
-      label: "COMPARE ONLY",
-      value: "Future semantic",
-      note: "The scaffold describes compare semantics only. It does not run a comparison against live data.",
+      label: "比較 semantics のみ",
+      value: "静的表示",
+      note: "compare の意味を説明するだけで、live data への比較は実行しません。",
     },
     {
       id: "inventory-integrity-truth",
       level: "stable",
-      label: "Truth boundary",
-      value: "Transactions",
-      note: "inventory_transactions is the source of truth; inventory_current is a projection/read model.",
+      label: "truth 境界",
+      value: "transactions",
+      note: "inventory_transactions が truth で、inventory_current は projection / read model です。",
     },
   ],
   compareProjections: [
@@ -325,6 +325,95 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
       semanticBoundary: "reasoning_visualization_only",
       executionBoundary:
         "review prioritization only. No attention execution, notification, assignment, compare execution, rebuild, replay, or correction is executed.",
+    },
+  ],
+  evidenceProjections: [
+    {
+      id: "inventory-evidence-part-location-gap",
+      projectionId: "inventory-compare-part-location-gap",
+      attentionId: "inventory-attention-part-location-gap",
+      title: "部品・棚別差異の証跡",
+      source: {
+        source: "inventory_transactions",
+        label: "transaction truth",
+        semanticMeaning:
+          "入出庫・移動・調整の履歴から差異理由を説明するための truth source です。",
+      },
+      confidence: "medium",
+      quality: "partial",
+      explanation:
+        "inventory_transactions aggregation と inventory_current cache の差異を説明する根拠候補です。",
+      rationale:
+        "数量差 +2 は cache gap の可能性を示しますが、live evidence resolution は行っていません。",
+      gaps: [
+        {
+          id: "evidence-gap-live-resolution",
+          label: "live resolution 未実装",
+          reason: "現在は static mock のため、実データの証跡解決は行いません。",
+          limitation: "この証跡は説明補助であり、正しさの確定や自動修正には使いません。",
+        },
+      ],
+      semanticBoundary: "reasoning_visualization_only",
+      executionBoundary:
+        "Evidence/explainability only. No evidence execution, auto-fix, rebuild, replay, correction, notification, or assignment is executed.",
+    },
+    {
+      id: "inventory-evidence-project-scope-gap",
+      projectionId: "inventory-compare-project-scope-gap",
+      attentionId: "inventory-attention-project-scope-gap",
+      title: "project_no 境界の参考証跡",
+      source: {
+        source: "static_policy",
+        label: "static policy evidence",
+        semanticMeaning:
+          "未比較状態を正しさと誤読しないための静的な説明 source です。",
+      },
+      confidence: "unknown",
+      quality: "limited",
+      explanation:
+        "差異 0 の mock は correctness guarantee ではなく、未実行であることを説明します。",
+      rationale:
+        "project_no scope の読み方を補助しますが、live compare や evidence resolution はしていません。",
+      gaps: [
+        {
+          id: "evidence-gap-not-compared",
+          label: "未比較 gap",
+          reason: "live compare を実行していないため、実際の一致は確認していません。",
+          limitation: "差異 0 表示を safe 判定や完了判定として扱わないでください。",
+        },
+      ],
+      semanticBoundary: "reasoning_visualization_only",
+      executionBoundary:
+        "Evidence/explainability only. No evidence execution, auto-fix, rebuild, replay, correction, notification, or assignment is executed.",
+    },
+    {
+      id: "inventory-evidence-inventory-type-gap",
+      projectionId: "inventory-compare-inventory-type-gap",
+      attentionId: "inventory-attention-inventory-type-gap",
+      title: "在庫種別境界の証跡不足",
+      source: {
+        source: "lineage_projection",
+        label: "lineage evidence",
+        semanticMeaning:
+          "project / mrp 境界と aggregation scope の関係を説明する lineage 由来の証跡です。",
+      },
+      confidence: "low",
+      quality: "missing",
+      explanation:
+        "在庫種別境界の差異理由を追跡するには追加の実データ確認が必要です。",
+      rationale:
+        "aggregation boundary evidence は静的説明であり、監査開始や correction 判断ではありません。",
+      gaps: [
+        {
+          id: "evidence-gap-boundary-resolution",
+          label: "境界解決不足",
+          reason: "inventory_type 境界の live evidence resolution は未実装です。",
+          limitation: "証跡不足は review limitation であり、rebuild や auto-fix の根拠ではありません。",
+        },
+      ],
+      semanticBoundary: "reasoning_visualization_only",
+      executionBoundary:
+        "Evidence/explainability only. No evidence execution, auto-fix, rebuild, replay, correction, notification, or assignment is executed.",
     },
   ],
 };

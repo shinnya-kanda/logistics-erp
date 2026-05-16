@@ -14,6 +14,12 @@ import type {
   InventoryIntegrityAttentionLevelSummary,
   InventoryIntegrityEscalation,
   InventoryIntegrityEscalationSummary,
+  InventoryIntegrityEvidence,
+  InventoryIntegrityEvidenceConfidence,
+  InventoryIntegrityEvidenceConfidenceSummary,
+  InventoryIntegrityEvidenceGapGraphItem,
+  InventoryIntegrityEvidenceQuality,
+  InventoryIntegrityEvidenceQualitySummary,
   InventoryIntegrityIssue,
   InventoryIntegrityLevel,
   InventoryIntegrityLevelSummary,
@@ -55,6 +61,12 @@ export function getInventoryIntegrityAttention(
   data: InventoryIntegrityReadOnlyData,
 ): readonly InventoryIntegrityAttention[] {
   return data.attentionProjections;
+}
+
+export function getInventoryIntegrityEvidence(
+  data: InventoryIntegrityReadOnlyData,
+): readonly InventoryIntegrityEvidence[] {
+  return data.evidenceProjections;
 }
 
 export function getInventoryIntegrityLevelSummary(
@@ -257,6 +269,56 @@ export function getInventoryIntegrityReviewSignals(
       attentionId: attention.id,
       projectionId: attention.projectionId,
       reviewSignal,
+    })),
+  );
+}
+
+export function getInventoryIntegrityEvidenceQualitySummary(
+  data: InventoryIntegrityReadOnlyData,
+): readonly InventoryIntegrityEvidenceQualitySummary[] {
+  const qualityOrder: readonly InventoryIntegrityEvidenceQuality[] = [
+    "missing",
+    "limited",
+    "partial",
+    "sufficient",
+  ];
+
+  return qualityOrder
+    .map((quality) => ({
+      quality,
+      count: data.evidenceProjections.filter((evidence) => evidence.quality === quality).length,
+    }))
+    .filter((summary) => summary.count > 0);
+}
+
+export function getInventoryIntegrityEvidenceConfidenceSummary(
+  data: InventoryIntegrityReadOnlyData,
+): readonly InventoryIntegrityEvidenceConfidenceSummary[] {
+  const confidenceOrder: readonly InventoryIntegrityEvidenceConfidence[] = [
+    "unknown",
+    "low",
+    "medium",
+    "high",
+  ];
+
+  return confidenceOrder
+    .map((confidence) => ({
+      confidence,
+      count: data.evidenceProjections.filter(
+        (evidence) => evidence.confidence === confidence,
+      ).length,
+    }))
+    .filter((summary) => summary.count > 0);
+}
+
+export function getInventoryIntegrityEvidenceGaps(
+  data: InventoryIntegrityReadOnlyData,
+): readonly InventoryIntegrityEvidenceGapGraphItem[] {
+  return data.evidenceProjections.flatMap((evidence) =>
+    evidence.gaps.map((gap) => ({
+      evidenceId: evidence.id,
+      projectionId: evidence.projectionId,
+      gap,
     })),
   );
 }
