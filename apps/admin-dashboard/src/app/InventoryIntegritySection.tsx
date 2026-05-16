@@ -3,6 +3,9 @@
 import type { CSSProperties } from "react";
 import { getInventoryIntegrityMockData } from "./inventoryIntegrityMockData";
 import {
+  getInventoryCompareDependencies,
+  getInventoryCompareEvidenceItems,
+  getInventoryCompareLineageGraph,
   getInventoryCompareProjections,
   getInventoryCompareReasonSummary,
   getInventoryCompareScopeSummary,
@@ -16,10 +19,10 @@ import {
 import type { InventoryCompareSeverity, InventoryIntegrityLevel } from "./inventoryIntegrityTypes";
 
 function levelLabel(level: InventoryIntegrityLevel): string {
-  if (level === "degraded") return "Integrity: degraded";
-  if (level === "limited") return "Integrity: limited";
-  if (level === "watch") return "Integrity: watch";
-  return "Integrity: stable";
+  if (level === "degraded") return "整合性: degraded";
+  if (level === "limited") return "整合性: limited";
+  if (level === "watch") return "整合性: watch";
+  return "整合性: stable";
 }
 
 function levelStyle(level: InventoryIntegrityLevel): CSSProperties {
@@ -31,10 +34,10 @@ function levelStyle(level: InventoryIntegrityLevel): CSSProperties {
 }
 
 function severityLabel(severity: InventoryCompareSeverity): string {
-  if (severity === "critical") return "Compare severity: critical";
-  if (severity === "warning") return "Compare severity: warning";
-  if (severity === "watch") return "Compare severity: watch";
-  return "Compare severity: info";
+  if (severity === "critical") return "差異重要度: critical";
+  if (severity === "warning") return "差異重要度: warning";
+  if (severity === "watch") return "差異重要度: watch";
+  return "差異重要度: info";
 }
 
 function severityStyle(severity: InventoryCompareSeverity): CSSProperties {
@@ -145,51 +148,63 @@ export function InventoryIntegritySection() {
   const compareSeveritySummary = getInventoryCompareSeveritySummary(data);
   const compareReasonSummary = getInventoryCompareReasonSummary(data);
   const compareScopeSummary = getInventoryCompareScopeSummary(data);
+  const compareLineageGraph = getInventoryCompareLineageGraph(data);
+  const compareDependencies = getInventoryCompareDependencies(data);
+  const compareEvidenceItems = getInventoryCompareEvidenceItems(data);
 
   return (
     <section style={styles.panel} aria-labelledby="inventory-integrity-heading">
       <div style={styles.header}>
         <div>
-          <h2 id="inventory-integrity-heading">Inventory Integrity</h2>
+          <h2 id="inventory-integrity-heading">在庫整合性 Inventory Integrity</h2>
           <p style={styles.lead}>
-            inventory_current と inventory_transactions の整合性を将来 compare するための
-            static read-only scaffold です。inventory_current は source of truth ではなく、
-            inventory_transactions が在庫の truth です。
+            inventory_current と inventory_transactions の整合性を将来 compare するための静的な
+            read-only scaffold です。inventory_current は source of truth ではなく、
+            inventory_transactions が在庫の truth です。lineage は差異理由を説明するための
+            reasoning visualization であり、execution ではありません。
           </p>
         </div>
         <div style={styles.badgeRow} aria-label="Inventory integrity boundary">
           <span style={styles.badge}>READ ONLY</span>
           <span style={styles.badge}>COMPARE SEMANTICS ONLY</span>
+          <span style={styles.badge}>LINEAGE SEMANTICS ONLY</span>
           <span style={styles.badge}>NO REBUILD</span>
           <span style={styles.badge}>NO MUTATION</span>
         </div>
       </div>
 
       <div style={styles.notice}>
-        This section does not fetch data, compare live rows, update inventory_current, rebuild,
-        replay, or correct inventory. Future comparison must derive expected current quantity from
-        inventory_transactions.
+        この画面はデータ取得、live compare、inventory_current 更新、rebuild、replay、correction
+        を行いません。将来の比較では inventory_transactions から expected current quantity を
+        導出する前提です。
       </div>
 
       <div style={styles.notice}>
-        Compare projection is reasoning visualization, not execution. inventory_transactions is the
-        truth aggregation source; inventory_current is the compare target/cache.
+        compare projection と lineage は reasoning visualization であり execution ではありません。
+        inventory_transactions は truth aggregation source、inventory_current は compare target/cache
+        です。
       </div>
 
       <div style={{ ...styles.notice, ...styles.neutralNotice }}>
-        Integrity summary: Levels {levelSummary.map((item) => `${item.level} ${item.count}`).join(", ")}
-        {" / "}Statuses {statusSummary.map((item) => `${item.status} ${item.count}`).join(", ")}.
+        整合性サマリー: level {levelSummary.map((item) => `${item.level} ${item.count}`).join(", ")}
+        {" / "}status {statusSummary.map((item) => `${item.status} ${item.count}`).join(", ")}.
       </div>
 
       <div style={{ ...styles.notice, ...styles.neutralNotice }}>
-        Compare projection summary: Severity{" "}
+        compare projection サマリー: 重要度{" "}
         {compareSeveritySummary.map((item) => `${item.severity} ${item.count}`).join(", ")}
-        {" / "}Reason {compareReasonSummary.map((item) => `${item.reason} ${item.count}`).join(", ")}
-        {" / "}Scope {compareScopeSummary.map((item) => `${item.scope} ${item.count}`).join(", ")}.
+        {" / "}差異理由 {compareReasonSummary.map((item) => `${item.reason} ${item.count}`).join(", ")}
+        {" / "}scope {compareScopeSummary.map((item) => `${item.scope} ${item.count}`).join(", ")}.
+      </div>
+
+      <div style={{ ...styles.notice, ...styles.neutralNotice }}>
+        lineage サマリー: trace {compareLineageGraph.length} / dependency{" "}
+        {compareDependencies.length} / 証跡 {compareEvidenceItems.length}. lineage / trace /
+        dependency は説明用 metadata であり、live compare や rebuild を開始しません。
       </div>
 
       <section style={styles.section}>
-        <h3 style={{ marginTop: 0 }}>Integrity summary</h3>
+        <h3 style={{ marginTop: 0 }}>整合性サマリー</h3>
         <div style={styles.grid}>
           {summaries.map((summary) => (
             <article key={summary.label} style={{ ...styles.card, ...levelStyle(summary.level) }}>
@@ -198,7 +213,7 @@ export function InventoryIntegritySection() {
               <p style={styles.description}>{summary.description}</p>
               <div style={styles.badgeRow}>
                 <span style={styles.badge}>{levelLabel(summary.level)}</span>
-                <span style={styles.badge}>Status: {summary.status}</span>
+                <span style={styles.badge}>状態: {summary.status}</span>
               </div>
             </article>
           ))}
@@ -206,7 +221,7 @@ export function InventoryIntegritySection() {
       </section>
 
       <section style={styles.section}>
-        <h3 style={{ marginTop: 0 }}>Compare semantics / issues</h3>
+        <h3 style={{ marginTop: 0 }}>差異理由 / compare semantics</h3>
         <p style={styles.lead}>
           compare は inventory_current を truth として扱わず、inventory_transactions から導出した
           expected current quantity と read model を照合する考え方です。
@@ -216,11 +231,11 @@ export function InventoryIntegritySection() {
             <article key={issue.id} style={{ ...styles.card, ...levelStyle(issue.level) }}>
               <strong>{issue.title}</strong>
               <p style={styles.description}>{issue.description}</p>
-              <p style={styles.description}>Read model signal: {issue.currentReadModelSignal}</p>
-              <p style={styles.description}>Truth signal: {issue.transactionTruthSignal}</p>
+              <p style={styles.description}>read model signal: {issue.currentReadModelSignal}</p>
+              <p style={styles.description}>truth signal: {issue.transactionTruthSignal}</p>
               <div style={styles.badgeRow}>
                 <span style={styles.badge}>{levelLabel(issue.level)}</span>
-                <span style={styles.badge}>Status: {issue.status}</span>
+                <span style={styles.badge}>状態: {issue.status}</span>
               </div>
             </article>
           ))}
@@ -228,11 +243,11 @@ export function InventoryIntegritySection() {
       </section>
 
       <section style={styles.section}>
-        <h3 style={{ marginTop: 0 }}>Compare projection</h3>
+        <h3 style={{ marginTop: 0 }}>compare projection</h3>
         <p style={styles.lead}>
-          These static projections describe how inventory_current could be compared against
-          inventory_transactions aggregation in the future. They do not run compare execution and do
-          not produce rebuild, replay, or correction actions.
+          静的な projection として、inventory_current を inventory_transactions aggregation と将来どう
+          比較できるかを説明します。compare execution は実行せず、rebuild、replay、correction
+          action も生成しません。
         </p>
         <div style={styles.list}>
           {compareProjections.map((projection) => (
@@ -243,16 +258,16 @@ export function InventoryIntegritySection() {
               <strong>{projection.label}</strong>
               <p style={styles.description}>{projection.description}</p>
               <p style={styles.description}>
-                current cache: {projection.difference.currentReadModelQuantity} / transaction
-                aggregation: {projection.difference.transactionAggregationQuantity} / difference:{" "}
+                現在庫 cache: {projection.difference.currentReadModelQuantity} / transaction
+                aggregation: {projection.difference.transactionAggregationQuantity} / 差異:{" "}
                 {projection.difference.differenceQuantity}
               </p>
-              <p style={styles.description}>Truth: {projection.truthStatement}</p>
-              <p style={styles.description}>Boundary: {projection.executionBoundary}</p>
+              <p style={styles.description}>truth: {projection.truthStatement}</p>
+              <p style={styles.description}>境界: {projection.executionBoundary}</p>
               <div style={styles.badgeRow}>
                 <span style={styles.badge}>{severityLabel(projection.difference.severity)}</span>
-                <span style={styles.badge}>Reason: {projection.difference.reason}</span>
-                <span style={styles.badge}>Scope: {projection.scope}</span>
+                <span style={styles.badge}>差異理由: {projection.difference.reason}</span>
+                <span style={styles.badge}>scope: {projection.scope}</span>
               </div>
             </article>
           ))}
@@ -260,7 +275,43 @@ export function InventoryIntegritySection() {
       </section>
 
       <section style={styles.section}>
-        <h3 style={{ marginTop: 0 }}>Integrity signals</h3>
+        <h3 style={{ marginTop: 0 }}>lineage / trace / 依存関係 / 証跡</h3>
+        <p style={styles.lead}>
+          lineage は「なぜ差異が見える可能性があるか」を説明する静的な reasoning graph です。
+          trace、由来、dependency、証跡はいずれも説明用であり、compare execution や correction
+          は行いません。
+        </p>
+        <div style={styles.list}>
+          {compareProjections.map((projection) => (
+            <article key={`${projection.id}-lineage`} style={styles.card}>
+              <strong>{projection.label}</strong>
+              <p style={styles.description}>
+                trace: {projection.lineage.trace.traceId} / parent:{" "}
+                {projection.lineage.trace.parentTraceId}
+              </p>
+              <p style={styles.description}>
+                由来:{" "}
+                {projection.lineage.derivedFrom
+                  .map((source) => `${source.label} (${source.source})`)
+                  .join(" / ")}
+              </p>
+              <p style={styles.description}>
+                依存関係: {projection.lineage.dependencies.map((item) => item.label).join(" / ")}
+              </p>
+              <p style={styles.description}>
+                証跡: {projection.lineage.evidence.map((item) => item.label).join(" / ")}
+              </p>
+              <div style={styles.badgeRow}>
+                <span style={styles.badge}>LINEAGE SEMANTICS ONLY</span>
+                <span style={styles.badge}>{projection.lineage.semanticBoundary}</span>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section style={styles.section}>
+        <h3 style={{ marginTop: 0 }}>整合性シグナル</h3>
         <div style={styles.grid}>
           {signals.map((signal) => (
             <article key={signal.id} style={{ ...styles.card, ...levelStyle(signal.level) }}>

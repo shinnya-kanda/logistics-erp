@@ -60,12 +60,45 @@ export type InventoryCompareDifference = {
   readonly severity: InventoryCompareSeverity;
 };
 
+export type InventoryCompareTrace = {
+  readonly traceId: string;
+  readonly parentTraceId: string;
+  readonly label: string;
+};
+
+export type InventoryCompareDerivedFrom = {
+  readonly source: "inventory_transactions" | "inventory_current" | "static_policy";
+  readonly label: string;
+  readonly semanticMeaning: string;
+};
+
+export type InventoryCompareDependency = {
+  readonly id: string;
+  readonly label: string;
+  readonly semanticMeaning: string;
+};
+
+export type InventoryCompareEvidence = {
+  readonly id: string;
+  readonly label: string;
+  readonly semanticMeaning: string;
+};
+
+export type InventoryCompareLineage = {
+  readonly trace: InventoryCompareTrace;
+  readonly derivedFrom: readonly InventoryCompareDerivedFrom[];
+  readonly dependencies: readonly InventoryCompareDependency[];
+  readonly evidence: readonly InventoryCompareEvidence[];
+  readonly semanticBoundary: "reasoning_visualization_only";
+};
+
 export type InventoryCompareProjection = {
   readonly id: string;
   readonly scope: InventoryCompareScope;
   readonly label: string;
   readonly description: string;
   readonly difference: InventoryCompareDifference;
+  readonly lineage: InventoryCompareLineage;
   readonly truthStatement: string;
   readonly executionBoundary: string;
 };
@@ -100,4 +133,20 @@ export type InventoryCompareReasonSummary = {
 export type InventoryCompareScopeSummary = {
   readonly scope: InventoryCompareScope;
   readonly count: number;
+};
+
+export type InventoryCompareLineageGraphItem = {
+  readonly projectionId: string;
+  readonly trace: InventoryCompareTrace;
+  readonly derivedFrom: readonly InventoryCompareDerivedFrom[];
+};
+
+export type InventoryCompareDependencyGraphItem = {
+  readonly projectionId: string;
+  readonly dependency: InventoryCompareDependency;
+};
+
+export type InventoryCompareEvidenceGraphItem = {
+  readonly projectionId: string;
+  readonly evidence: InventoryCompareEvidence;
 };

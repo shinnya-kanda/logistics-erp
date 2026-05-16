@@ -96,6 +96,40 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
         reason: "read_model_cache_gap",
         severity: "warning",
       },
+      lineage: {
+        trace: {
+          traceId: "inventory-compare-trace-part-location-gap",
+          parentTraceId: "static-inventory-integrity-parent-trace",
+          label: "部品・棚別 compare trace",
+        },
+        derivedFrom: [
+          {
+            source: "inventory_transactions",
+            label: "transaction aggregation",
+            semanticMeaning: "入出庫・移動・調整の履歴から将来導出する truth quantity です。",
+          },
+          {
+            source: "inventory_current",
+            label: "read model cache",
+            semanticMeaning: "比較対象の cache であり、truth ではありません。",
+          },
+        ],
+        dependencies: [
+          {
+            id: "dependency-part-location-scope",
+            label: "part_no + location_code scope",
+            semanticMeaning: "差異理由を部品・棚単位で説明するための静的 dependency です。",
+          },
+        ],
+        evidence: [
+          {
+            id: "evidence-cache-gap",
+            label: "cache gap evidence",
+            semanticMeaning: "read model cache gap の可能性を示す説明用証跡です。",
+          },
+        ],
+        semanticBoundary: "reasoning_visualization_only",
+      },
       truthStatement:
         "inventory_transactions aggregation is the truth input; inventory_current is the compare target/cache.",
       executionBoundary:
@@ -114,6 +148,35 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
         reason: "not_compared",
         severity: "info",
       },
+      lineage: {
+        trace: {
+          traceId: "inventory-compare-trace-project-scope-gap",
+          parentTraceId: "static-inventory-integrity-parent-trace",
+          label: "project_no compare trace",
+        },
+        derivedFrom: [
+          {
+            source: "static_policy",
+            label: "compare policy placeholder",
+            semanticMeaning: "まだ live compare していないことを示す静的 policy 由来の表示です。",
+          },
+        ],
+        dependencies: [
+          {
+            id: "dependency-project-scope",
+            label: "project_no scope",
+            semanticMeaning: "project_no 単位の比較境界を説明するための dependency です。",
+          },
+        ],
+        evidence: [
+          {
+            id: "evidence-not-compared",
+            label: "not compared evidence",
+            semanticMeaning: "差異 0 は正しさの証明ではなく、未実行 mock であることの証跡です。",
+          },
+        ],
+        semanticBoundary: "reasoning_visualization_only",
+      },
       truthStatement:
         "A zero difference in this mock does not prove correctness; transactions remain the source of truth.",
       executionBoundary:
@@ -131,6 +194,40 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
         differenceQuantity: "+3",
         reason: "transaction_aggregation_gap",
         severity: "watch",
+      },
+      lineage: {
+        trace: {
+          traceId: "inventory-compare-trace-inventory-type-gap",
+          parentTraceId: "static-inventory-integrity-parent-trace",
+          label: "inventory_type compare trace",
+        },
+        derivedFrom: [
+          {
+            source: "inventory_transactions",
+            label: "inventory type aggregation",
+            semanticMeaning: "inventory_type 境界で将来集計される transaction truth です。",
+          },
+          {
+            source: "inventory_current",
+            label: "inventory type cache",
+            semanticMeaning: "inventory_type 別の compare target/cache です。",
+          },
+        ],
+        dependencies: [
+          {
+            id: "dependency-inventory-type-boundary",
+            label: "project / mrp boundary",
+            semanticMeaning: "在庫種別境界の取り違えを説明するための dependency です。",
+          },
+        ],
+        evidence: [
+          {
+            id: "evidence-aggregation-boundary",
+            label: "aggregation boundary evidence",
+            semanticMeaning: "aggregation scope の差異を review するための静的証跡です。",
+          },
+        ],
+        semanticBoundary: "reasoning_visualization_only",
       },
       truthStatement:
         "inventory_current is not truth even when grouped by inventory_type; transaction aggregation defines the expected quantity.",
