@@ -1,5 +1,7 @@
 import { normalizeInventoryIntegrityReadOnlyData } from "./inventoryIntegrityAdapter";
+import { createInventoryIntegrityProjectionRegistry } from "./inventoryIntegrityProjectionRegistry";
 import type {
+  InventoryIntegrityProjectionRegistry,
   InventoryIntegrityReadOnlyData,
   InventoryIntegrityReadOnlySource,
   ProjectionSourceMetadata,
@@ -24,10 +26,19 @@ const staticMockSourceMetadata: ProjectionSourceMetadata = {
 export function createInventoryIntegrityStaticMockSource(
   rawData: InventoryIntegrityReadOnlyData,
 ): InventoryIntegrityReadOnlySource {
+  const registry = createInventoryIntegrityProjectionRegistry(staticMockSourceMetadata);
+
   return {
     metadata: staticMockSourceMetadata,
+    registry,
     read: () => normalizeInventoryIntegrityReadOnlyData(rawData),
   };
+}
+
+export function getInventoryIntegrityProjectionRegistry(
+  source: InventoryIntegrityReadOnlySource,
+): InventoryIntegrityProjectionRegistry {
+  return source.registry;
 }
 
 export function readInventoryIntegritySource(

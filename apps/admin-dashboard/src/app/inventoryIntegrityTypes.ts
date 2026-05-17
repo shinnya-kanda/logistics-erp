@@ -41,8 +41,60 @@ export type InventoryIntegrityProjectionSource<TOutput> = {
   readonly read: () => TOutput;
 };
 
+export type InventoryIntegrityRegisteredProjectionKind =
+  | "inventory_summary_projection"
+  | "inventory_compare_projection"
+  | "inventory_integrity_projection"
+  | "governance_review_projection"
+  | "snapshot_projection";
+
+export type ProjectionDefinitionIdentity = {
+  readonly definitionId: string;
+  readonly projectionKind: InventoryIntegrityRegisteredProjectionKind;
+  readonly projectionName: string;
+  readonly projectionVersion: string;
+  readonly contractVersion: string;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
+export type ProjectionAdapterBoundary = {
+  readonly adapterId: string;
+  readonly label: string;
+  readonly semanticMeaning: string;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
+export type ProjectionSelectorBoundary = {
+  readonly selectorIds: readonly string[];
+  readonly label: string;
+  readonly semanticMeaning: string;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
+export type ProjectionDefinition = {
+  readonly identity: ProjectionDefinitionIdentity;
+  readonly source: ProjectionSourceMetadata;
+  readonly adapter: ProjectionAdapterBoundary;
+  readonly selectorBoundary: ProjectionSelectorBoundary;
+  readonly truthSource: InventoryIntegrityTruthSource;
+  readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
+  readonly semanticMeaning: string;
+};
+
+export type InventoryIntegrityProjectionRegistry = {
+  readonly registryId: string;
+  readonly label: string;
+  readonly semanticMeaning: string;
+  readonly definitions: readonly ProjectionDefinition[];
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
 export type InventoryIntegrityReadOnlySource =
-  InventoryIntegrityProjectionSource<InventoryIntegrityReadOnlyData>;
+  InventoryIntegrityProjectionSource<InventoryIntegrityReadOnlyData> & {
+    readonly registry: InventoryIntegrityProjectionRegistry;
+  };
 
 export type InventoryIntegrityConfidenceLevel = "high" | "medium" | "low" | "unknown";
 
