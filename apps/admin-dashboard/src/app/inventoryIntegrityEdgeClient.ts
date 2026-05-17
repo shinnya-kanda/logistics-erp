@@ -1,10 +1,12 @@
 import { mapEdgeProjectionResponse } from "./inventoryIntegrityEdgeResponseMapper";
+import { adaptFetchResponseToPayload } from "./inventoryIntegrityFetchAdapter";
 import type {
   InventoryIntegrityEdgeClient,
   InventoryIntegrityEdgeClientSummary,
   InventoryIntegrityEdgeProjectionResponse,
   InventoryIntegrityEdgeRequest,
   InventoryIntegrityFetchPolicy,
+  InventoryIntegrityFetchResult,
   InventoryIntegrityFetchSemantics,
   InventoryIntegrityRawEdgeProjectionResponse,
   InventoryIntegrityReadOnlyData,
@@ -101,38 +103,44 @@ export function createInventoryIntegrityMockEdgeClient(
     semanticMeaning:
       "static mock data を future Edge payload と同じ境界で読む read-only client scaffold です。",
     fetchSemantics: inventoryIntegrityFetchSemantics,
-    readProjectionPayload: (request = defaultInventoryIntegrityEdgeRequest) => ({
-      metadata: {
-        payloadId: `${request.requestId}-payload`,
-        payloadKind: "static_read_only_response",
-        source,
-        payloadVersion: "inventory-integrity-raw-projection-payload-v1",
-        readability:
-          `static mock source を future raw Edge payload abstraction として読むための metadata payload です。request と ${request.fetchSemantics.semanticsId} は読み方の境界であり実行条件ではありません。`,
-        adapterInputBoundary:
-          "mock raw payload は mapper input boundary の simulation です。Edge API implementation、fetch、network access、Supabase 接続は含みません。",
-        truthSource: "inventory_transactions",
-        cacheCompareTarget: "inventory_current",
+    readProjectionPayload: (request = defaultInventoryIntegrityEdgeRequest) => {
+      const fetchResult: InventoryIntegrityFetchResult = {
+        metadata: {
+          resultId: `${request.requestId}-fetch-result`,
+          resultKind: "static_mock_fetch_result",
+          source,
+          request,
+          fetchSemantics: request.fetchSemantics,
+          resultVersion: "inventory-integrity-static-fetch-result-v1",
+          readability:
+            `static mock source を future fetch result と同じ語彙で読むための metadata です。request と ${request.fetchSemantics.semanticsId} は読み方の境界であり実行条件ではありません。`,
+          adapterInputBoundary:
+            "mock fetch result は fetch adapter input boundary の simulation です。Edge API implementation、fetch、network access、Supabase 接続は含みません。",
+          truthSource: "inventory_transactions",
+          cacheCompareTarget: "inventory_current",
+          semanticBoundary: "reasoning_visualization_only",
+          executionBoundary:
+            `fetch result semantics は real network response ではありません。request ${request.requestId} は compare execution、rebuild、replay、correction、mutation、workflow を実行しません。`,
+        },
+        lifecycle: {
+          state: "projection_normalized",
+          label: "mock fetch result payload 変換対象",
+          readability:
+            "static mock data が fetch adapter を経由して raw payload abstraction に変換される状態です。",
+          interpretation:
+            "fetch result lifecycle は将来 fetch result の読み方であり、実データ取得完了や Edge 呼び出し完了を意味しません。",
+          semanticBoundary: "reasoning_visualization_only",
+          executionBoundary:
+            "fetch result lifecycle は lifecycle engine ではありません。fetch、network access、compare execution、rebuild、mutation は実行しません。",
+        },
+        data: rawData,
         semanticBoundary: "reasoning_visualization_only",
         executionBoundary:
-          `raw payload semantics は real Edge payload ではありません。request ${request.requestId} は compare execution、rebuild、replay、correction、mutation、workflow を実行しません。`,
-      },
-      lifecycle: {
-        state: "projection_normalized",
-        label: "mock raw payload 正規化対象",
-        readability:
-          "static mock data が mapper に渡される raw payload abstraction として構成された状態です。",
-        interpretation:
-          "raw payload は将来 payload contract の読み方であり、実データ取得完了や Edge 呼び出し完了を意味しません。",
-        semanticBoundary: "reasoning_visualization_only",
-        executionBoundary:
-          "payload lifecycle は lifecycle engine ではありません。fetch、network access、compare execution、rebuild、mutation は実行しません。",
-      },
-      data: rawData,
-      semanticBoundary: "reasoning_visualization_only",
-      executionBoundary:
-        "RawProjectionPayload は read-only payload semantics です。Edge Function 呼び出し、network access、mutation は実行しません。",
-    }),
+          "InventoryIntegrityFetchResult は read-only fetch result semantics です。Edge Function 呼び出し、network access、mutation は実行しません。",
+      };
+
+      return adaptFetchResponseToPayload(fetchResult);
+    },
     truthSource: "inventory_transactions",
     cacheCompareTarget: "inventory_current",
     semanticBoundary: "reasoning_visualization_only",
