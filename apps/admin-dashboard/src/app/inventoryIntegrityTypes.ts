@@ -121,6 +121,16 @@ export type InventoryIntegritySelectorNormalizationBoundary = {
   readonly executionBoundary: InventoryIntegrityExecutionBoundary;
 };
 
+export type InventoryIntegrityProjectionServiceBoundary = {
+  readonly serviceId: string;
+  readonly label: string;
+  readonly semanticMeaning: string;
+  readonly truthSource: InventoryIntegrityTruthSource;
+  readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
 export type InventoryIntegrityConfidenceLevel = "high" | "medium" | "low" | "unknown";
 
 export type InventoryIntegrityFreshnessLevel =
@@ -469,6 +479,29 @@ export type InventoryIntegrityReadOnlyData = {
   readonly attentionProjections: readonly InventoryIntegrityAttention[];
   readonly evidenceProjections: readonly InventoryIntegrityEvidence[];
   readonly sourceMappings: readonly InventoryIntegritySource[];
+};
+
+export type InventoryIntegrityProjectionServiceView = {
+  readonly data: InventoryIntegrityReadOnlyData;
+  readonly resolution?: ProjectionResolution;
+  readonly projectionSummaries: readonly InventoryProjectionSummaryView[];
+  readonly projectionMetadata: readonly InventoryProjectionMetadataView[];
+  readonly projectionReviewReadiness: readonly InventoryProjectionReviewReadinessView[];
+  readonly serviceBoundary: InventoryIntegrityProjectionServiceBoundary;
+};
+
+export type InventoryIntegritySummaryProjectionView = {
+  readonly summaries: readonly InventoryIntegritySummary[];
+  readonly issues: readonly InventoryIntegrityIssue[];
+  readonly signals: readonly InventoryIntegritySignal[];
+  readonly projectionSummaries: readonly InventoryProjectionSummaryView[];
+  readonly serviceBoundary: InventoryIntegrityProjectionServiceBoundary;
+};
+
+export type InventoryIntegrityReviewProjectionView = {
+  readonly attentionProjections: readonly InventoryIntegrityAttention[];
+  readonly projectionReviewReadiness: readonly InventoryProjectionReviewReadinessView[];
+  readonly serviceBoundary: InventoryIntegrityProjectionServiceBoundary;
 };
 
 export type InventoryIntegrityLevelSummary = {
