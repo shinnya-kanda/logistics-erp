@@ -14,3 +14,4 @@
 - [Inventory Snapshot Semantics Review](./inventory-snapshot-semantics-review.md) — aggregation / compare / integrity visualization の snapshot boundary
 - [Inventory Compare Consistency Semantics Review](./inventory-compare-consistency-semantics-review.md) — compare consistency / confidence / mismatch の semantics review
 - [Inventory Integrity Review Lifecycle Semantics](./inventory-integrity-review-lifecycle-semantics.md) — integrity / compare review state の lifecycle semantics
+- [Inventory Integrity Escalation Semantics](./inventory-integrity-escalation-semantics.md) — escalation / audit / manager review の semantics review
