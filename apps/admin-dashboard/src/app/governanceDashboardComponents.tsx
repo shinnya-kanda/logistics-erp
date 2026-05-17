@@ -32,7 +32,9 @@ const styles: Record<string, CSSProperties> = {
   badge: {
     display: "inline-flex",
     alignItems: "center",
-    border: "1px solid #90a4ae",
+    borderWidth: "1px",
+    borderStyle: "solid",
+    borderColor: "#90a4ae",
     borderRadius: "999px",
     padding: "0.2rem 0.5rem",
     background: "#f5f7fb",
@@ -104,7 +106,9 @@ const styles: Record<string, CSSProperties> = {
   },
   card: {
     padding: "0.9rem",
-    border: "1px solid #ddd",
+    borderWidth: "1px",
+    borderStyle: "solid",
+    borderColor: "#ddd",
     borderRadius: "12px",
     background: "#fff",
   },
