@@ -13,6 +13,7 @@ import type {
   ProjectionEndpoint,
   ProjectionEndpointPolicy,
   ProjectionFetchExecutionSemantics,
+  ProjectionResponseStatusSemantics,
   ProjectionSourceMetadata,
   RawProjectionPayload,
 } from "./inventoryIntegrityTypes";
@@ -120,6 +121,25 @@ export const inventoryIntegrityFetchExecutionSemantics: ProjectionFetchExecution
     "ProjectionFetchExecutionSemantics は execution implementation ではありません。fetch、network access、Supabase 接続、compare execution、mutation は実行しません。",
 };
 
+export const inventoryIntegrityResponseStatusSemantics: ProjectionResponseStatusSemantics = {
+  semanticsId: "inventory-integrity-static-read-only-response-status-semantics",
+  status: "response_accepted",
+  label: "read-only response accepted semantics",
+  readability:
+    "response_accepted は static mock response を read-only interpretation boundary として読める状態を示します。network response success ではありません。",
+  interpretation:
+    "normalized response envelope に変換できる静的 metadata であり、Edge response handling 完了や live data 到達を意味しません。",
+  limitation:
+    "response_partial / response_degraded / response_unavailable は将来の解釈状態であり、error 確定、retry、auto-fix、workflow 開始条件ではありません。",
+  noExecutionMeaning:
+    "response status semantics は network response handling ではありません。fetch、Supabase 接続、rebuild、replay、correction、mutation は実行しません。",
+  truthSource: "inventory_transactions",
+  cacheCompareTarget: "inventory_current",
+  semanticBoundary: "reasoning_visualization_only",
+  executionBoundary:
+    "ProjectionResponseStatusSemantics は execution authority を持ちません。network access、response handling 実装、compare execution、mutation は実行しません。",
+};
+
 export const defaultInventoryIntegrityEdgeRequest: InventoryIntegrityEdgeRequest = {
   requestId: "inventory-integrity-static-mock-edge-request",
   requestKind: "static_mock_edge_request",
@@ -169,6 +189,7 @@ export function createInventoryIntegrityMockEdgeClient(
     endpoint: inventoryIntegrityProjectionEndpoint,
     fetchSemantics: inventoryIntegrityFetchSemantics,
     fetchExecution: inventoryIntegrityFetchExecutionSemantics,
+    responseStatus: inventoryIntegrityResponseStatusSemantics,
     readProjectionPayload: (request = defaultInventoryIntegrityEdgeRequest) => {
       const fetchResult: InventoryIntegrityFetchResult = {
         metadata: {
@@ -179,9 +200,10 @@ export function createInventoryIntegrityMockEdgeClient(
           request,
           fetchSemantics: request.fetchSemantics,
           fetchExecution: request.fetchExecution,
+          responseStatus: inventoryIntegrityResponseStatusSemantics,
           resultVersion: "inventory-integrity-static-fetch-result-v1",
           readability:
-            `static mock source を future fetch result と同じ語彙で読むための metadata です。request、${request.endpoint.endpointId}、${request.fetchSemantics.semanticsId}、${request.fetchExecution.state} は読み方の境界であり実行結果ではありません。`,
+            `static mock source を future fetch result と同じ語彙で読むための metadata です。request、${request.endpoint.endpointId}、${request.fetchSemantics.semanticsId}、${request.fetchExecution.state}、${inventoryIntegrityResponseStatusSemantics.status} は読み方の境界であり network response result ではありません。`,
           adapterInputBoundary:
             "mock fetch result は fetch adapter input boundary の simulation です。endpoint implementation、Edge API implementation、fetch、network access、Supabase 接続は含みません。",
           truthSource: "inventory_transactions",
@@ -246,6 +268,7 @@ export function readProjectionSummary(
     fetchSemanticsId: request.fetchSemantics.semanticsId,
     fetchCapability: request.fetchSemantics.capability,
     fetchExecutionState: request.fetchExecution.state,
+    responseStatus: client.responseStatus.status,
     payloadId: payload.metadata.payloadId,
     payloadVersion: payload.metadata.payloadVersion,
     readability:
