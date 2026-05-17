@@ -27,3 +27,4 @@
 - [Inventory Integrity Semantic Glossary Review](./inventory-integrity-semantic-glossary-review.md) — Japanese-first glossary / prohibited interpretation / shared semantic language review
 - [Inventory Integrity UI Wording Consistency Review](./inventory-integrity-ui-wording-consistency-review.md) — Japanese-first UI wording / warning / status consistency review
 - [Inventory Integrity Warning Semantics Review](./inventory-integrity-warning-semantics-review.md) — warning / attention / escalation / review required semantics review
+- [Inventory Integrity State Semantics Review](./inventory-integrity-state-semantics-review.md) — ready / stale / partial / degraded / reviewing state semantics review
