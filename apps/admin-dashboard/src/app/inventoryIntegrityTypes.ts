@@ -91,10 +91,25 @@ export type InventoryIntegrityProjectionRegistry = {
   readonly executionBoundary: InventoryIntegrityExecutionBoundary;
 };
 
+export type ProjectionResolutionTarget = {
+  readonly definitionId?: string;
+  readonly projectionName?: string;
+  readonly projectionKind?: InventoryIntegrityRegisteredProjectionKind;
+};
+
 export type InventoryIntegrityReadOnlySource =
   InventoryIntegrityProjectionSource<InventoryIntegrityReadOnlyData> & {
     readonly registry: InventoryIntegrityProjectionRegistry;
   };
+
+export type ProjectionResolution = {
+  readonly registry: InventoryIntegrityProjectionRegistry;
+  readonly definition: ProjectionDefinition;
+  readonly source: InventoryIntegrityReadOnlySource;
+  readonly adapter: ProjectionAdapterBoundary;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
 
 export type InventoryIntegrityConfidenceLevel = "high" | "medium" | "low" | "unknown";
 
