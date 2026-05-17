@@ -34,3 +34,4 @@
 - [Inventory Integrity Confidence Semantics Review](./inventory-integrity-confidence-semantics-review.md) — high / medium / low / unknown confidence semantics review
 - [Inventory Integrity Freshness Semantics Review](./inventory-integrity-freshness-semantics-review.md) — fresh / stale / delayed / expired / unknown freshness semantics review
 - [Inventory Integrity Completeness Semantics Review](./inventory-integrity-completeness-semantics-review.md) — complete / partial / missing / unknown completeness semantics review
+- [Inventory Integrity Traceability Semantics Review](./inventory-integrity-traceability-semantics-review.md) — source lineage / source chain / projection traceability semantics review
