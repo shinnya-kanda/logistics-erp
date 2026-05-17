@@ -15,3 +15,4 @@
 - [Inventory Compare Consistency Semantics Review](./inventory-compare-consistency-semantics-review.md) — compare consistency / confidence / mismatch の semantics review
 - [Inventory Integrity Review Lifecycle Semantics](./inventory-integrity-review-lifecycle-semantics.md) — integrity / compare review state の lifecycle semantics
 - [Inventory Integrity Escalation Semantics](./inventory-integrity-escalation-semantics.md) — escalation / audit / manager review の semantics review
+- [Inventory Integrity Governance Boundary Review](./inventory-integrity-governance-boundary-review.md) — review / execution / mutation boundary の semantics review
