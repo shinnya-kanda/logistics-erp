@@ -252,6 +252,15 @@ export type ProjectionLifecycleState =
   | "projection_review_required"
   | "projection_resolved";
 
+export type ProjectionResponseLifecycle = {
+  readonly state: ProjectionLifecycleState;
+  readonly label: string;
+  readonly readability: string;
+  readonly interpretation: string;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
 export type InventoryIntegrityLevel = "stable" | "watch" | "limited" | "degraded";
 
 export type InventoryIntegrityStatus =
@@ -596,8 +605,33 @@ export type InventoryIntegrityReadOnlyData = {
   readonly sourceMappings: readonly InventoryIntegritySource[];
 };
 
+export type ProjectionResponseMetadata = {
+  readonly responseId: string;
+  readonly responseKind:
+    | "static_read_only_response"
+    | "future_edge_projection_response"
+    | "future_snapshot_projection_response";
+  readonly source: ProjectionSourceMetadata;
+  readonly responseContractVersion: string;
+  readonly readability: string;
+  readonly adapterInputBoundary: string;
+  readonly truthSource: InventoryIntegrityTruthSource;
+  readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
+export type InventoryIntegrityEdgeProjectionResponse = {
+  readonly metadata: ProjectionResponseMetadata;
+  readonly lifecycle: ProjectionResponseLifecycle;
+  readonly normalizedData: InventoryIntegrityReadOnlyData;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
 export type InventoryIntegrityProjectionServiceView = {
   readonly query: InventoryIntegrityProjectionQuery;
+  readonly response: InventoryIntegrityEdgeProjectionResponse;
   readonly data: InventoryIntegrityReadOnlyData;
   readonly resolution?: ProjectionResolution;
   readonly projectionSummaries: readonly InventoryProjectionSummaryView[];
