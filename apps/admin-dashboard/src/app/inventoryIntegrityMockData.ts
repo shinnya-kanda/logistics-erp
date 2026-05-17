@@ -1,5 +1,8 @@
 import type { InventoryIntegrityReadOnlyData } from "./inventoryIntegrityTypes";
-import { normalizeInventoryIntegrityReadOnlyData } from "./inventoryIntegrityAdapter";
+import {
+  createInventoryIntegrityStaticMockSource,
+  readInventoryIntegritySource,
+} from "./inventoryIntegritySource";
 
 const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
   summaries: [
@@ -853,6 +856,10 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
   ],
 };
 
+const inventoryIntegrityMockSource = createInventoryIntegrityStaticMockSource(
+  inventoryIntegrityMockData,
+);
+
 export function getInventoryIntegrityMockData(): InventoryIntegrityReadOnlyData {
-  return normalizeInventoryIntegrityReadOnlyData(inventoryIntegrityMockData);
+  return readInventoryIntegritySource(inventoryIntegrityMockSource);
 }
