@@ -1,5 +1,9 @@
 import { normalizeInventoryIntegrityReadOnlyData } from "./inventoryIntegrityAdapter";
 import { createInventoryIntegrityProjectionRegistry } from "./inventoryIntegrityProjectionRegistry";
+import {
+  defaultInventoryIntegrityProjectionTarget,
+  resolveInventoryIntegrityProjection,
+} from "./inventoryIntegrityProjectionResolver";
 import type {
   InventoryIntegrityProjectionRegistry,
   InventoryIntegrityReadOnlyData,
@@ -44,5 +48,10 @@ export function getInventoryIntegrityProjectionRegistry(
 export function readInventoryIntegritySource(
   source: InventoryIntegrityReadOnlySource,
 ): InventoryIntegrityReadOnlyData {
-  return source.read();
+  const resolution = resolveInventoryIntegrityProjection(
+    source,
+    defaultInventoryIntegrityProjectionTarget,
+  );
+
+  return (resolution?.source ?? source).read();
 }
