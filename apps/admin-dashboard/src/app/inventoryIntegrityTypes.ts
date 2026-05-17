@@ -21,19 +21,37 @@ export type InventoryIntegrityProjectionType =
 export type InventoryIntegrityProjectionSourceKind =
   | "static_mock_source"
   | "edge_function_source"
+  | "future_edge_projection_source"
   | "snapshot_source"
+  | "future_snapshot_projection_source"
   | "compare_source"
   | "governance_visualization_source";
+
+export type ProjectionSourceCapability =
+  | "static_read_only"
+  | "future_edge_response"
+  | "future_snapshot_projection"
+  | "future_governance_visualization"
+  | "no_network_access"
+  | "no_execution_authority";
 
 export type ProjectionSourceMetadata = {
   readonly sourceId: string;
   readonly sourceKind: InventoryIntegrityProjectionSourceKind;
   readonly label: string;
   readonly semanticMeaning: string;
+  readonly capabilities: readonly ProjectionSourceCapability[];
   readonly truthSource: InventoryIntegrityTruthSource;
   readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
   readonly semanticBoundary: InventoryIntegritySemanticBoundary;
   readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
+export type EdgeProjectionSourceMetadata = ProjectionSourceMetadata & {
+  readonly sourceKind: "edge_function_source" | "future_edge_projection_source";
+  readonly edgeFunctionName: string;
+  readonly responseContract: string;
+  readonly networkBoundary: string;
 };
 
 export type InventoryIntegrityProjectionSource<TOutput> = {
