@@ -17,3 +17,4 @@
 - [Inventory Integrity Escalation Semantics](./inventory-integrity-escalation-semantics.md) — escalation / audit / manager review の semantics review
 - [Inventory Integrity Governance Boundary Review](./inventory-integrity-governance-boundary-review.md) — review / execution / mutation boundary の semantics review
 - [Inventory Integrity Projection Contract Design](./inventory-integrity-projection-contract-design.md) — projection metadata / limitation / consistency の contract review
+- [Inventory Integrity Projection Adapter Contract Review](./inventory-integrity-projection-adapter-contract-review.md) — raw source / adapter / projection boundary の contract review
