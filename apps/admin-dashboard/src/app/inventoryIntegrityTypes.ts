@@ -688,6 +688,32 @@ export type RawProjectionPayload = {
   readonly executionBoundary: InventoryIntegrityExecutionBoundary;
 };
 
+export type InventoryIntegrityFetchResultMetadata = {
+  readonly resultId: string;
+  readonly resultKind:
+    | "static_mock_fetch_result"
+    | "future_edge_fetch_result"
+    | "future_snapshot_fetch_result";
+  readonly source: ProjectionSourceMetadata;
+  readonly request: InventoryIntegrityEdgeRequest;
+  readonly fetchSemantics: InventoryIntegrityFetchSemantics;
+  readonly resultVersion: string;
+  readonly readability: string;
+  readonly adapterInputBoundary: string;
+  readonly truthSource: InventoryIntegrityTruthSource;
+  readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
+export type InventoryIntegrityFetchResult = {
+  readonly metadata: InventoryIntegrityFetchResultMetadata;
+  readonly lifecycle: RawProjectionLifecyclePayload;
+  readonly data: InventoryIntegrityReadOnlyData;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
 export type ProjectionRequestScope = {
   readonly scope: InventoryCompareScope | "all";
   readonly warehouseId?: string;
