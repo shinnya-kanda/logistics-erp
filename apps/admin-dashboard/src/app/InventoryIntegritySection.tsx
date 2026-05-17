@@ -252,7 +252,9 @@ const styles: Record<string, CSSProperties> = {
   },
   card: {
     padding: "0.9rem",
-    border: "1px solid #ddd",
+    borderWidth: "1px",
+    borderStyle: "solid",
+    borderColor: "#ddd",
     borderRadius: "12px",
     background: "#fff",
   },

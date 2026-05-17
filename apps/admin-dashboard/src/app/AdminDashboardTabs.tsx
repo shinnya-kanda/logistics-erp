@@ -58,7 +58,9 @@ const styles = {
   },
   tabButton: {
     padding: "0.65rem 1rem",
-    border: "1px solid #bbb",
+    borderWidth: "1px",
+    borderStyle: "solid",
+    borderColor: "#bbb",
     borderRadius: "999px",
     background: "#fff",
     cursor: "pointer",
