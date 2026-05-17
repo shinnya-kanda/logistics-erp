@@ -19,3 +19,4 @@
 - [Inventory Integrity Projection Contract Design](./inventory-integrity-projection-contract-design.md) — projection metadata / limitation / consistency の contract review
 - [Inventory Integrity Projection Adapter Contract Review](./inventory-integrity-projection-adapter-contract-review.md) — raw source / adapter / projection boundary の contract review
 - [Inventory Integrity Reasoning Graph Contract Review](./inventory-integrity-reasoning-graph-contract-review.md) — evidence / lineage / attention / review / escalation relation の graph contract review
+- [Inventory Integrity Reasoning Graph Visualization Semantics](./inventory-integrity-reasoning-graph-visualization-semantics.md) — reasoning graph の node / edge / readability / comprehension semantics review
