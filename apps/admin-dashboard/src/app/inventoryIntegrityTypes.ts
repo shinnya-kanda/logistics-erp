@@ -227,6 +227,13 @@ export type InventoryIntegrityReviewReadinessLevel =
   | "not_ready"
   | "blocked_review";
 
+export type ProjectionLifecycleState =
+  | "projection_created"
+  | "projection_normalized"
+  | "projection_stale"
+  | "projection_review_required"
+  | "projection_resolved";
+
 export type InventoryIntegrityLevel = "stable" | "watch" | "limited" | "degraded";
 
 export type InventoryIntegrityStatus =
@@ -319,6 +326,15 @@ export type InventoryIntegrityReviewReadinessMetadata = {
   readonly caveat: string;
 };
 
+export type InventoryIntegrityProjectionLifecycleMetadata = {
+  readonly state: ProjectionLifecycleState;
+  readonly label: string;
+  readonly readability: string;
+  readonly interpretation: string;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
 export type InventoryIntegrityTraceabilityMetadata = {
   readonly sourceTraceLabel: string;
   readonly sourceChain: readonly string[];
@@ -351,6 +367,7 @@ export type InventoryIntegrityProjectionMetadata = {
   readonly traceability: InventoryIntegrityTraceabilityMetadata;
   readonly lineage: InventoryIntegrityLineageMetadata;
   readonly reviewReadiness: InventoryIntegrityReviewReadinessMetadata;
+  readonly lifecycle: InventoryIntegrityProjectionLifecycleMetadata;
   readonly semanticBoundary: InventoryIntegritySemanticBoundary;
   readonly executionBoundary: InventoryIntegrityExecutionBoundary;
 };
@@ -544,6 +561,7 @@ export type InventoryProjectionMetadataView = {
 export type InventoryProjectionReviewReadinessView = {
   readonly projectionId: string;
   readonly reviewReadiness: InventoryIntegrityReviewReadinessMetadata;
+  readonly lifecycle: InventoryIntegrityProjectionLifecycleMetadata;
   readonly freshness: InventoryIntegrityFreshnessMetadata;
   readonly completeness: InventoryIntegrityCompletenessMetadata;
   readonly confidence: InventoryIntegrityConfidenceMetadata;

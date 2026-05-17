@@ -51,6 +51,7 @@ export function selectProjectionReviewReadiness(
   return {
     projectionId: projection.id,
     reviewReadiness: projection.metadata.reviewReadiness,
+    lifecycle: projection.metadata.lifecycle,
     freshness: projection.metadata.freshness,
     completeness: projection.metadata.completeness,
     confidence: projection.metadata.confidence,
