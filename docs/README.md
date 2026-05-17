@@ -13,3 +13,4 @@
 - [Inventory Aggregation Projection Adapter Design](./inventory-aggregation-projection-adapter-design.md) — raw transaction と UI projection の adapter / snapshot boundary
 - [Inventory Snapshot Semantics Review](./inventory-snapshot-semantics-review.md) — aggregation / compare / integrity visualization の snapshot boundary
 - [Inventory Compare Consistency Semantics Review](./inventory-compare-consistency-semantics-review.md) — compare consistency / confidence / mismatch の semantics review
+- [Inventory Integrity Review Lifecycle Semantics](./inventory-integrity-review-lifecycle-semantics.md) — integrity / compare review state の lifecycle semantics
