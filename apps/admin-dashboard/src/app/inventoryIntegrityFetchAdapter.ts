@@ -25,9 +25,9 @@ export function adaptFetchMetadataToPayload(
     },
     payloadVersion: metadata.resultVersion,
     readability:
-      `${metadata.readability} fetch adapter は future fetch result を payload semantics として読む境界であり、network response handling の実装ではありません。`,
+      `${metadata.readability} fetch adapter は future fetch result を payload semantics として読む境界であり、${metadata.endpoint.endpointId} の network response handling 実装ではありません。`,
     adapterInputBoundary:
-      `${metadata.adapterInputBoundary} request ${metadata.request.requestId} と ${metadata.fetchSemantics.semanticsId} は read-only metadata であり、fetch 実行条件ではありません。`,
+      `${metadata.adapterInputBoundary} request ${metadata.request.requestId}、endpoint ${metadata.endpoint.endpointId}、${metadata.fetchSemantics.semanticsId} は read-only metadata であり、fetch 実行条件ではありません。`,
     truthSource: metadata.truthSource,
     cacheCompareTarget: metadata.cacheCompareTarget,
     semanticBoundary: metadata.semanticBoundary,
