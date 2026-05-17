@@ -3,6 +3,7 @@ import type {
   InventoryIntegrityEdgeClient,
   InventoryIntegrityEdgeClientSummary,
   InventoryIntegrityEdgeProjectionResponse,
+  InventoryIntegrityEdgeRequest,
   InventoryIntegrityRawEdgeProjectionResponse,
   InventoryIntegrityReadOnlyData,
   ProjectionSourceMetadata,
@@ -11,6 +12,39 @@ import type {
 
 // Read-only Edge client scaffold for future Edge projection access.
 // This is not a real network client: no fetch, network access, Supabase, execution, or mutation.
+
+export const defaultInventoryIntegrityEdgeRequest: InventoryIntegrityEdgeRequest = {
+  requestId: "inventory-integrity-static-mock-edge-request",
+  requestKind: "static_mock_edge_request",
+  scope: {
+    scope: "all",
+    readability:
+      "request scope は read-only 表示範囲の意味境界であり、実データ検索や倉庫切替を実行しません。",
+    semanticBoundary: "reasoning_visualization_only",
+    executionBoundary:
+      "ProjectionRequestScope は DB query、network access、live data 絞り込み、mutation を実行しません。",
+  },
+  context: {
+    contextId: "inventory-integrity-static-mock-edge-request-context",
+    viewMode: "integrity_view",
+    reviewMode: "read_only_review",
+    readability:
+      "request context は projection をどう読むかの指定であり、runtime auth context や workflow state ではありません。",
+    semanticBoundary: "reasoning_visualization_only",
+    executionBoundary:
+      "ProjectionRequestContext は認可、承認、担当割当、通知、execution workflow を実行しません。",
+  },
+  target: {
+    projectionKind: "inventory_integrity_projection",
+  },
+  readability:
+    "Edge request contract は future Edge access request boundary であり、real network request ではありません。",
+  truthSource: "inventory_transactions",
+  cacheCompareTarget: "inventory_current",
+  semanticBoundary: "reasoning_visualization_only",
+  executionBoundary:
+    "InventoryIntegrityEdgeRequest は read-only request semantics です。fetch、network access、Supabase 接続、compare execution、mutation は実行しません。",
+};
 
 export function createInventoryIntegrityMockEdgeClient(
   source: ProjectionSourceMetadata,
@@ -22,21 +56,21 @@ export function createInventoryIntegrityMockEdgeClient(
     source,
     semanticMeaning:
       "static mock data を future Edge payload と同じ境界で読む read-only client scaffold です。",
-    readProjectionPayload: () => ({
+    readProjectionPayload: (request = defaultInventoryIntegrityEdgeRequest) => ({
       metadata: {
-        payloadId: "inventory-integrity-static-mock-edge-payload",
+        payloadId: `${request.requestId}-payload`,
         payloadKind: "static_read_only_response",
         source,
         payloadVersion: "inventory-integrity-raw-projection-payload-v1",
         readability:
-          "static mock source を future raw Edge payload abstraction として読むための metadata payload です。",
+          "static mock source を future raw Edge payload abstraction として読むための metadata payload です。request は読み方の境界であり実行条件ではありません。",
         adapterInputBoundary:
           "mock raw payload は mapper input boundary の simulation です。Edge API implementation、fetch、network access、Supabase 接続は含みません。",
         truthSource: "inventory_transactions",
         cacheCompareTarget: "inventory_current",
         semanticBoundary: "reasoning_visualization_only",
         executionBoundary:
-          "raw payload semantics は real Edge payload ではありません。compare execution、rebuild、replay、correction、mutation、workflow は実行しません。",
+          `raw payload semantics は real Edge payload ではありません。request ${request.requestId} は compare execution、rebuild、replay、correction、mutation、workflow を実行しません。`,
       },
       lifecycle: {
         state: "projection_normalized",
@@ -64,8 +98,9 @@ export function createInventoryIntegrityMockEdgeClient(
 
 export function readProjectionResponse(
   client: InventoryIntegrityEdgeClient,
+  request: InventoryIntegrityEdgeRequest = defaultInventoryIntegrityEdgeRequest,
 ): InventoryIntegrityEdgeProjectionResponse {
-  const payload = client.readProjectionPayload();
+  const payload = client.readProjectionPayload(request);
   const rawResponse: InventoryIntegrityRawEdgeProjectionResponse = {
     payload,
     semanticBoundary: payload.semanticBoundary,
@@ -77,12 +112,14 @@ export function readProjectionResponse(
 
 export function readProjectionSummary(
   client: InventoryIntegrityEdgeClient,
+  request: InventoryIntegrityEdgeRequest = defaultInventoryIntegrityEdgeRequest,
 ): InventoryIntegrityEdgeClientSummary {
-  const payload: RawProjectionPayload = client.readProjectionPayload();
+  const payload: RawProjectionPayload = client.readProjectionPayload(request);
 
   return {
     clientId: client.clientId,
     sourceId: client.source.sourceId,
+    requestId: request.requestId,
     payloadId: payload.metadata.payloadId,
     payloadVersion: payload.metadata.payloadVersion,
     readability:

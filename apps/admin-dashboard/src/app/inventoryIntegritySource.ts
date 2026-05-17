@@ -1,5 +1,6 @@
 import {
   createInventoryIntegrityMockEdgeClient,
+  defaultInventoryIntegrityEdgeRequest,
   readProjectionResponse,
 } from "./inventoryIntegrityEdgeClient";
 import { createInventoryIntegrityProjectionRegistry } from "./inventoryIntegrityProjectionRegistry";
@@ -80,7 +81,7 @@ export function createInventoryIntegrityMockEdgeProjectionResponse(
 ): InventoryIntegrityEdgeProjectionResponse {
   const client = createInventoryIntegrityMockEdgeClient(staticMockSourceMetadata, rawData);
 
-  return readProjectionResponse(client);
+  return readProjectionResponse(client, defaultInventoryIntegrityEdgeRequest);
 }
 
 export function createInventoryIntegrityStaticMockSource(

@@ -654,12 +654,48 @@ export type RawProjectionPayload = {
   readonly executionBoundary: InventoryIntegrityExecutionBoundary;
 };
 
+export type ProjectionRequestScope = {
+  readonly scope: InventoryCompareScope | "all";
+  readonly warehouseId?: string;
+  readonly projectId?: string;
+  readonly locationId?: string;
+  readonly partId?: string;
+  readonly readability: string;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
+export type ProjectionRequestContext = {
+  readonly contextId: string;
+  readonly viewMode: ProjectionViewMode;
+  readonly reviewMode: ProjectionReviewMode;
+  readonly readability: string;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
+export type InventoryIntegrityEdgeRequest = {
+  readonly requestId: string;
+  readonly requestKind:
+    | "static_mock_edge_request"
+    | "future_edge_projection_request"
+    | "future_snapshot_projection_request";
+  readonly scope: ProjectionRequestScope;
+  readonly context: ProjectionRequestContext;
+  readonly target: ProjectionResolutionTarget;
+  readonly readability: string;
+  readonly truthSource: InventoryIntegrityTruthSource;
+  readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
 export type InventoryIntegrityEdgeClient = {
   readonly clientId: string;
   readonly label: string;
   readonly source: ProjectionSourceMetadata;
   readonly semanticMeaning: string;
-  readonly readProjectionPayload: () => RawProjectionPayload;
+  readonly readProjectionPayload: (request?: InventoryIntegrityEdgeRequest) => RawProjectionPayload;
   readonly truthSource: InventoryIntegrityTruthSource;
   readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
   readonly semanticBoundary: InventoryIntegritySemanticBoundary;
@@ -669,6 +705,7 @@ export type InventoryIntegrityEdgeClient = {
 export type InventoryIntegrityEdgeClientSummary = {
   readonly clientId: string;
   readonly sourceId: string;
+  readonly requestId: string;
   readonly payloadId: string;
   readonly payloadVersion: string;
   readonly readability: string;
