@@ -1,4 +1,4 @@
-import { normalizeInventoryIntegrityReadOnlyData } from "./inventoryIntegrityAdapter";
+import { mapEdgeProjectionResponse } from "./inventoryIntegrityEdgeResponseMapper";
 import { createInventoryIntegrityProjectionRegistry } from "./inventoryIntegrityProjectionRegistry";
 import {
   defaultInventoryIntegrityProjectionTarget,
@@ -8,6 +8,7 @@ import type {
   EdgeProjectionSourceMetadata,
   InventoryIntegrityEdgeProjectionResponse,
   InventoryIntegrityProjectionRegistry,
+  InventoryIntegrityRawEdgeProjectionResponse,
   InventoryIntegrityReadOnlyData,
   InventoryIntegrityReadOnlySource,
   ProjectionSourceMetadata,
@@ -75,9 +76,7 @@ export const futureSnapshotProjectionSourceMetadata: ProjectionSourceMetadata = 
 export function createInventoryIntegrityMockEdgeProjectionResponse(
   rawData: InventoryIntegrityReadOnlyData,
 ): InventoryIntegrityEdgeProjectionResponse {
-  const normalizedData = normalizeInventoryIntegrityReadOnlyData(rawData);
-
-  return {
+  const rawResponse: InventoryIntegrityRawEdgeProjectionResponse = {
     metadata: {
       responseId: "inventory-integrity-static-mock-edge-response",
       responseKind: "static_read_only_response",
@@ -104,11 +103,13 @@ export function createInventoryIntegrityMockEdgeProjectionResponse(
       executionBoundary:
         "response lifecycle は lifecycle engine ではありません。fetch、network access、compare execution、rebuild、mutation は実行しません。",
     },
-    normalizedData,
+    rawData,
     semanticBoundary: "reasoning_visualization_only",
     executionBoundary:
       "InventoryIntegrityEdgeProjectionResponse は read-only response contract です。Edge Function 呼び出し、network access、mutation は実行しません。",
   };
+
+  return mapEdgeProjectionResponse(rawResponse);
 }
 
 export function createInventoryIntegrityStaticMockSource(

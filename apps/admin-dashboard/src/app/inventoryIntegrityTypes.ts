@@ -629,6 +629,14 @@ export type InventoryIntegrityEdgeProjectionResponse = {
   readonly executionBoundary: InventoryIntegrityExecutionBoundary;
 };
 
+export type InventoryIntegrityRawEdgeProjectionResponse = {
+  readonly metadata: ProjectionResponseMetadata;
+  readonly lifecycle: ProjectionResponseLifecycle;
+  readonly rawData: InventoryIntegrityReadOnlyData;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
 export type InventoryIntegrityProjectionServiceView = {
   readonly query: InventoryIntegrityProjectionQuery;
   readonly response: InventoryIntegrityEdgeProjectionResponse;
