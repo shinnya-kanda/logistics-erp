@@ -6,6 +6,7 @@ import {
 } from "./inventoryIntegrityProjectionResolver";
 import type {
   EdgeProjectionSourceMetadata,
+  InventoryIntegrityEdgeProjectionResponse,
   InventoryIntegrityProjectionRegistry,
   InventoryIntegrityReadOnlyData,
   InventoryIntegrityReadOnlySource,
@@ -71,6 +72,45 @@ export const futureSnapshotProjectionSourceMetadata: ProjectionSourceMetadata = 
     "snapshot projection source scaffold は snapshot fetch や rebuild authority ではありません。live data 接続、compare execution、replay、correction、mutation は実行しません。",
 };
 
+export function createInventoryIntegrityMockEdgeProjectionResponse(
+  rawData: InventoryIntegrityReadOnlyData,
+): InventoryIntegrityEdgeProjectionResponse {
+  const normalizedData = normalizeInventoryIntegrityReadOnlyData(rawData);
+
+  return {
+    metadata: {
+      responseId: "inventory-integrity-static-mock-edge-response",
+      responseKind: "static_read_only_response",
+      source: staticMockSourceMetadata,
+      responseContractVersion: "inventory-integrity-edge-projection-response-v1",
+      readability:
+        "static mock source を future Edge response flow と同じ response envelope として読むための metadata です。",
+      adapterInputBoundary:
+        "mock edge response は adapter input boundary の simulation です。Edge API implementation、fetch、network access、Supabase 接続は含みません。",
+      truthSource: "inventory_transactions",
+      cacheCompareTarget: "inventory_current",
+      semanticBoundary: "reasoning_visualization_only",
+      executionBoundary:
+        "mock edge response source は Edge implementation ではありません。compare execution、rebuild、replay、correction、mutation、workflow は実行しません。",
+    },
+    lifecycle: {
+      state: "projection_normalized",
+      label: "mock edge response 正規化済み",
+      readability:
+        "static mock data が adapter output として normalized response envelope に入った状態として読みます。",
+      interpretation:
+        "normalized mock edge response は将来 response contract の読み方であり、実データ取得完了や Edge 呼び出し完了を意味しません。",
+      semanticBoundary: "reasoning_visualization_only",
+      executionBoundary:
+        "response lifecycle は lifecycle engine ではありません。fetch、network access、compare execution、rebuild、mutation は実行しません。",
+    },
+    normalizedData,
+    semanticBoundary: "reasoning_visualization_only",
+    executionBoundary:
+      "InventoryIntegrityEdgeProjectionResponse は read-only response contract です。Edge Function 呼び出し、network access、mutation は実行しません。",
+  };
+}
+
 export function createInventoryIntegrityStaticMockSource(
   rawData: InventoryIntegrityReadOnlyData,
 ): InventoryIntegrityReadOnlySource {
@@ -79,7 +119,7 @@ export function createInventoryIntegrityStaticMockSource(
   return {
     metadata: staticMockSourceMetadata,
     registry,
-    read: () => normalizeInventoryIntegrityReadOnlyData(rawData),
+    read: () => createInventoryIntegrityMockEdgeProjectionResponse(rawData),
   };
 }
 
@@ -97,5 +137,5 @@ export function readInventoryIntegritySource(
     defaultInventoryIntegrityProjectionTarget,
   );
 
-  return (resolution?.source ?? source).read();
+  return (resolution?.source ?? source).read().normalizedData;
 }

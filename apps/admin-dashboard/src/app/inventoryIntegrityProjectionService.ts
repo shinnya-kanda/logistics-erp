@@ -8,11 +8,9 @@ import {
   selectProjectionSummary,
 } from "./inventoryIntegritySelectorNormalization";
 import type {
-  InventoryIntegrityEdgeProjectionResponse,
   InventoryIntegrityProjectionQuery,
   InventoryIntegrityProjectionServiceBoundary,
   InventoryIntegrityProjectionServiceView,
-  InventoryIntegrityReadOnlyData,
   InventoryIntegrityReadOnlySource,
   InventoryIntegrityReviewProjectionView,
   InventoryIntegritySummaryProjectionView,
@@ -88,51 +86,12 @@ export const defaultInventoryIntegrityProjectionQuery: InventoryIntegrityProject
     "query contract は query engine ではありません。fetch、Supabase 接続、compare execution、rebuild、replay、correction、mutation、workflow は実行しません。",
 };
 
-function createStaticReadOnlyProjectionResponse(
-  source: InventoryIntegrityReadOnlySource,
-  data: InventoryIntegrityReadOnlyData,
-): InventoryIntegrityEdgeProjectionResponse {
-  return {
-    metadata: {
-      responseId: "inventory-integrity-static-read-only-response",
-      responseKind: "static_read_only_response",
-      source: source.metadata,
-      responseContractVersion: "inventory-integrity-edge-projection-response-v1",
-      readability:
-        "static read-only data を future Edge response と同じ normalized response boundary として読むための metadata です。",
-      adapterInputBoundary:
-        "adapter input boundary の意味整理のみです。Edge API implementation、fetch、network access、Supabase 接続は含みません。",
-      truthSource: "inventory_transactions",
-      cacheCompareTarget: "inventory_current",
-      semanticBoundary: "reasoning_visualization_only",
-      executionBoundary:
-        "response metadata は future edge response boundary であり、compare execution、rebuild、replay、correction、mutation、workflow は実行しません。",
-    },
-    lifecycle: {
-      state: "projection_normalized",
-      label: "正規化済み static response",
-      readability:
-        "static mock source 由来の normalized response として読めますが、live response や実データ取得完了ではありません。",
-      interpretation:
-        "normalized response は表示用 contract の成立を示すだけで、正しさ保証、Edge 呼び出し完了、実行許可を意味しません。",
-      semanticBoundary: "reasoning_visualization_only",
-      executionBoundary:
-        "response lifecycle は lifecycle engine ではありません。fetch、network access、compare execution、rebuild、mutation は実行しません。",
-    },
-    normalizedData: data,
-    semanticBoundary: "reasoning_visualization_only",
-    executionBoundary:
-      "InventoryIntegrityEdgeProjectionResponse は read-only response contract です。Edge Function 呼び出し、network access、mutation は実行しません。",
-  };
-}
-
 export function getInventoryIntegrityProjection(
   source: InventoryIntegrityReadOnlySource,
   query: InventoryIntegrityProjectionQuery = defaultInventoryIntegrityProjectionQuery,
 ): InventoryIntegrityProjectionServiceView {
   const resolution = resolveInventoryIntegrityProjection(source, query.target);
-  const data = (resolution?.source ?? source).read();
-  const response = createStaticReadOnlyProjectionResponse(resolution?.source ?? source, data);
+  const response = (resolution?.source ?? source).read();
 
   return {
     query,

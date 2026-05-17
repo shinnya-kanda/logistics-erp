@@ -195,7 +195,7 @@ export type InventoryIntegrityProjectionQuery = {
 };
 
 export type InventoryIntegrityReadOnlySource =
-  InventoryIntegrityProjectionSource<InventoryIntegrityReadOnlyData> & {
+  InventoryIntegrityProjectionSource<InventoryIntegrityEdgeProjectionResponse> & {
     readonly registry: InventoryIntegrityProjectionRegistry;
   };
 
