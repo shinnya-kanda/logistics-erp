@@ -24,3 +24,4 @@
 - [Inventory Integrity Audit Semantics Review](./inventory-integrity-audit-semantics-review.md) — audit visibility / evidence / lineage / confidence / traceability semantics review
 - [Inventory Integrity Operational Semantics Review](./inventory-integrity-operational-semantics-review.md) — operational visibility / attention / escalation / role-oriented semantics review
 - [Inventory Integrity Semantic Consistency Review](./inventory-integrity-semantic-consistency-review.md) — truth / cache / projection / snapshot / compare / review semantic consistency review
+- [Inventory Integrity Semantic Glossary Review](./inventory-integrity-semantic-glossary-review.md) — Japanese-first glossary / prohibited interpretation / shared semantic language review
