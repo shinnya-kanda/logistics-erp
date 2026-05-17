@@ -1,6 +1,10 @@
-import type { InventoryIntegrityReadOnlyData } from "./inventoryIntegrityTypes";
+import type {
+  InventoryIntegrityProjectionRegistry,
+  InventoryIntegrityReadOnlyData,
+} from "./inventoryIntegrityTypes";
 import {
   createInventoryIntegrityStaticMockSource,
+  getInventoryIntegrityProjectionRegistry,
   readInventoryIntegritySource,
 } from "./inventoryIntegritySource";
 
@@ -862,4 +866,8 @@ const inventoryIntegrityMockSource = createInventoryIntegrityStaticMockSource(
 
 export function getInventoryIntegrityMockData(): InventoryIntegrityReadOnlyData {
   return readInventoryIntegritySource(inventoryIntegrityMockSource);
+}
+
+export function getInventoryIntegrityMockProjectionRegistry(): InventoryIntegrityProjectionRegistry {
+  return getInventoryIntegrityProjectionRegistry(inventoryIntegrityMockSource);
 }
