@@ -654,6 +654,28 @@ export type RawProjectionPayload = {
   readonly executionBoundary: InventoryIntegrityExecutionBoundary;
 };
 
+export type InventoryIntegrityEdgeClient = {
+  readonly clientId: string;
+  readonly label: string;
+  readonly source: ProjectionSourceMetadata;
+  readonly semanticMeaning: string;
+  readonly readProjectionPayload: () => RawProjectionPayload;
+  readonly truthSource: InventoryIntegrityTruthSource;
+  readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
+export type InventoryIntegrityEdgeClientSummary = {
+  readonly clientId: string;
+  readonly sourceId: string;
+  readonly payloadId: string;
+  readonly payloadVersion: string;
+  readonly readability: string;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
 export type InventoryIntegrityEdgeProjectionResponse = {
   readonly metadata: ProjectionResponseMetadata;
   readonly lifecycle: ProjectionResponseLifecycle;

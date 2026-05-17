@@ -1,4 +1,7 @@
-import { mapEdgeProjectionResponse } from "./inventoryIntegrityEdgeResponseMapper";
+import {
+  createInventoryIntegrityMockEdgeClient,
+  readProjectionResponse,
+} from "./inventoryIntegrityEdgeClient";
 import { createInventoryIntegrityProjectionRegistry } from "./inventoryIntegrityProjectionRegistry";
 import {
   defaultInventoryIntegrityProjectionTarget,
@@ -8,11 +11,9 @@ import type {
   EdgeProjectionSourceMetadata,
   InventoryIntegrityEdgeProjectionResponse,
   InventoryIntegrityProjectionRegistry,
-  InventoryIntegrityRawEdgeProjectionResponse,
   InventoryIntegrityReadOnlyData,
   InventoryIntegrityReadOnlySource,
   ProjectionSourceMetadata,
-  RawProjectionPayload,
 } from "./inventoryIntegrityTypes";
 
 // Read-only source boundary for Inventory Integrity projections.
@@ -77,46 +78,9 @@ export const futureSnapshotProjectionSourceMetadata: ProjectionSourceMetadata = 
 export function createInventoryIntegrityMockEdgeProjectionResponse(
   rawData: InventoryIntegrityReadOnlyData,
 ): InventoryIntegrityEdgeProjectionResponse {
-  const payload: RawProjectionPayload = {
-    metadata: {
-      payloadId: "inventory-integrity-static-mock-edge-payload",
-      payloadKind: "static_read_only_response",
-      source: staticMockSourceMetadata,
-      payloadVersion: "inventory-integrity-raw-projection-payload-v1",
-      readability:
-        "static mock source を future raw Edge payload abstraction として読むための metadata payload です。",
-      adapterInputBoundary:
-        "mock raw payload は mapper input boundary の simulation です。Edge API implementation、fetch、network access、Supabase 接続は含みません。",
-      truthSource: "inventory_transactions",
-      cacheCompareTarget: "inventory_current",
-      semanticBoundary: "reasoning_visualization_only",
-      executionBoundary:
-        "raw payload semantics は real Edge payload ではありません。compare execution、rebuild、replay、correction、mutation、workflow は実行しません。",
-    },
-    lifecycle: {
-      state: "projection_normalized",
-      label: "mock raw payload 正規化対象",
-      readability:
-        "static mock data が mapper に渡される raw payload abstraction として構成された状態です。",
-      interpretation:
-        "raw payload は将来 payload contract の読み方であり、実データ取得完了や Edge 呼び出し完了を意味しません。",
-      semanticBoundary: "reasoning_visualization_only",
-      executionBoundary:
-        "payload lifecycle は lifecycle engine ではありません。fetch、network access、compare execution、rebuild、mutation は実行しません。",
-    },
-    data: rawData,
-    semanticBoundary: "reasoning_visualization_only",
-    executionBoundary:
-      "RawProjectionPayload は read-only payload semantics です。Edge Function 呼び出し、network access、mutation は実行しません。",
-  };
+  const client = createInventoryIntegrityMockEdgeClient(staticMockSourceMetadata, rawData);
 
-  const rawResponse: InventoryIntegrityRawEdgeProjectionResponse = {
-    payload,
-    semanticBoundary: payload.semanticBoundary,
-    executionBoundary: payload.executionBoundary,
-  };
-
-  return mapEdgeProjectionResponse(rawResponse);
+  return readProjectionResponse(client);
 }
 
 export function createInventoryIntegrityStaticMockSource(
