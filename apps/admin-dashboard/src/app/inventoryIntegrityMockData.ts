@@ -178,6 +178,17 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
           reason: "差異理由と由来 metadata はありますが、live evidence resolution は未実装です。",
           caveat: "一部レビュー可能な状態であり、承認可能や実行可能ではありません。",
         },
+        lifecycle: {
+          state: "projection_review_required",
+          label: "確認が必要な projection",
+          readability:
+            "差異候補と制限付き metadata があるため、人が確認する対象として読む lifecycle state です。",
+          interpretation:
+            "review required は確認観点であり、承認、rebuild、correction、workflow 開始を意味しません。",
+          semanticBoundary: "reasoning_visualization_only",
+          executionBoundary:
+            "lifecycle semantics は lifecycle engine ではありません。compare execution、rebuild、replay、correction、mutation は実行しません。",
+        },
         semanticBoundary: "reasoning_visualization_only",
         executionBoundary:
           "説明表示のみです。live compare、rebuild、replay、correction、在庫更新は実行しません。",
@@ -313,6 +324,17 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
           reason: "live compare と evidence resolution がないため、実データ review の材料が不足しています。",
           caveat: "レビュー未準備であり、correction や rebuild の指示ではありません。",
         },
+        lifecycle: {
+          state: "projection_created",
+          label: "作成済み未比較 projection",
+          readability:
+            "static projection として作成済みですが、live compare や evidence resolution は未実行として読む lifecycle state です。",
+          interpretation:
+            "created は存在確認であり、正しさ、比較完了、レビュー可能、実行許可を意味しません。",
+          semanticBoundary: "reasoning_visualization_only",
+          executionBoundary:
+            "lifecycle semantics は lifecycle engine ではありません。query 実行、compare execution、rebuild、mutation は実行しません。",
+        },
         semanticBoundary: "reasoning_visualization_only",
         executionBoundary:
           "比較の意味を説明するだけです。Supabase query や比較処理は実行しません。",
@@ -442,6 +464,17 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
           level: "partially_ready",
           reason: "在庫種別境界の説明材料はありますが、live evidence resolution はありません。",
           caveat: "一部レビュー可能な状態であり、監査開始や修正指示ではありません。",
+        },
+        lifecycle: {
+          state: "projection_stale",
+          label: "鮮度制限あり projection",
+          readability:
+            "静的な境界説明であり、最新 transaction 反映とは限らない stale lifecycle state として読みます。",
+          interpretation:
+            "stale は確認制限であり、rebuild required、correction required、workflow 開始を意味しません。",
+          semanticBoundary: "reasoning_visualization_only",
+          executionBoundary:
+            "lifecycle semantics は lifecycle engine ではありません。refresh、rebuild、replay、correction、mutation は実行しません。",
         },
         semanticBoundary: "reasoning_visualization_only",
         executionBoundary:

@@ -7,6 +7,7 @@ import type {
   InventoryIntegrityEvidenceMetadata,
   InventoryIntegrityFreshnessMetadata,
   InventoryIntegrityLineageMetadata,
+  InventoryIntegrityProjectionLifecycleMetadata,
   InventoryIntegrityProjectionMetadata,
   InventoryIntegrityReadOnlyData,
   InventoryIntegrityReviewReadinessMetadata,
@@ -76,6 +77,19 @@ export function normalizeReviewReadiness(
   };
 }
 
+export function normalizeProjectionLifecycle(
+  lifecycle: InventoryIntegrityProjectionLifecycleMetadata,
+): InventoryIntegrityProjectionLifecycleMetadata {
+  return {
+    state: lifecycle.state,
+    label: lifecycle.label,
+    readability: lifecycle.readability,
+    interpretation: lifecycle.interpretation,
+    semanticBoundary: lifecycle.semanticBoundary,
+    executionBoundary: lifecycle.executionBoundary,
+  };
+}
+
 export function normalizeEvidence(
   evidence: InventoryIntegrityEvidenceMetadata,
 ): InventoryIntegrityEvidenceMetadata {
@@ -103,6 +117,7 @@ function normalizeProjectionMetadata(
     traceability: normalizeTraceability(metadata.traceability),
     lineage: normalizeLineage(metadata.lineage),
     reviewReadiness: normalizeReviewReadiness(metadata.reviewReadiness),
+    lifecycle: normalizeProjectionLifecycle(metadata.lifecycle),
     semanticBoundary: metadata.semanticBoundary,
     executionBoundary: metadata.executionBoundary,
   };
