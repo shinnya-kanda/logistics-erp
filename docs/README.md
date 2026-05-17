@@ -32,3 +32,4 @@
 - [Inventory Integrity Priority Semantics Review](./inventory-integrity-priority-semantics-review.md) — review / audit / operational / escalation priority semantics review
 - [Inventory Integrity Evidence Semantics Review](./inventory-integrity-evidence-semantics-review.md) — evidence source / confidence / freshness / completeness semantics review
 - [Inventory Integrity Confidence Semantics Review](./inventory-integrity-confidence-semantics-review.md) — high / medium / low / unknown confidence semantics review
+- [Inventory Integrity Freshness Semantics Review](./inventory-integrity-freshness-semantics-review.md) — fresh / stale / delayed / expired / unknown freshness semantics review
