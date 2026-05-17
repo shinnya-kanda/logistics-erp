@@ -122,12 +122,53 @@ export type ProjectionReviewMode =
   | "operational_review"
   | "review_readiness";
 
+export type GovernanceContext = {
+  readonly governanceMode:
+    | "read_only_governance"
+    | "operational_governance"
+    | "audit_governance"
+    | "review_governance";
+  readonly interpretationFocus: string;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
+export type ReviewContext = {
+  readonly reviewMode: ProjectionReviewMode;
+  readonly reviewFocus: string;
+  readonly reviewReadiness: InventoryIntegrityReviewReadinessLevel;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
+export type WarehouseContext = {
+  readonly warehouseScope: "all_warehouses" | "selected_warehouse";
+  readonly warehouseId?: string;
+  readonly warehouseLabel: string;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
+export type ProjectionContext = {
+  readonly contextId: string;
+  readonly label: string;
+  readonly semanticMeaning: string;
+  readonly governance: GovernanceContext;
+  readonly review: ReviewContext;
+  readonly warehouse: WarehouseContext;
+  readonly truthSource: InventoryIntegrityTruthSource;
+  readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
 export type InventoryIntegrityProjectionQuery = {
   readonly queryId: string;
   readonly target: ProjectionResolutionTarget;
   readonly scope: ProjectionScope;
   readonly viewMode: ProjectionViewMode;
   readonly reviewMode: ProjectionReviewMode;
+  readonly context: ProjectionContext;
   readonly semanticMeaning: string;
   readonly truthSource: InventoryIntegrityTruthSource;
   readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;

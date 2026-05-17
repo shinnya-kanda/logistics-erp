@@ -42,6 +42,41 @@ export const defaultInventoryIntegrityProjectionQuery: InventoryIntegrityProject
   },
   viewMode: "integrity_view",
   reviewMode: "read_only_review",
+  context: {
+    contextId: "inventory-integrity-static-read-only-context",
+    label: "静的 read-only 解釈 context",
+    semanticMeaning:
+      "Inventory Integrity projection を governance / review / warehouse の観点で読むための read-only interpretation context です。",
+    governance: {
+      governanceMode: "read_only_governance",
+      interpretationFocus:
+        "差異、根拠、由来、レビュー可能性を参照表示として読むための governance context です。",
+      semanticBoundary: "reasoning_visualization_only",
+      executionBoundary:
+        "governance context は approval、workflow、rebuild、correction、mutation の実行権限ではありません。",
+    },
+    review: {
+      reviewMode: "read_only_review",
+      reviewFocus:
+        "review-readiness と limitation を参照し、実行判断ではなく確認観点として読む context です。",
+      reviewReadiness: "partially_ready",
+      semanticBoundary: "reasoning_visualization_only",
+      executionBoundary:
+        "review context は auto-review、担当割当、通知、承認、修正、workflow 開始を実行しません。",
+    },
+    warehouse: {
+      warehouseScope: "all_warehouses",
+      warehouseLabel: "全倉庫 static context",
+      semanticBoundary: "reasoning_visualization_only",
+      executionBoundary:
+        "warehouse context は runtime auth context ではなく、倉庫切替、DB 絞り込み、live data 接続、mutation を実行しません。",
+    },
+    truthSource: "inventory_transactions",
+    cacheCompareTarget: "inventory_current",
+    semanticBoundary: "reasoning_visualization_only",
+    executionBoundary:
+      "projection context は read-only interpretation boundary であり、fetch、Supabase 接続、compare execution、rebuild、replay、correction、mutation、workflow は実行しません。",
+  },
   semanticMeaning:
     "Inventory Integrity の static read-only projection service input boundary を示す query contract です。",
   truthSource: "inventory_transactions",
