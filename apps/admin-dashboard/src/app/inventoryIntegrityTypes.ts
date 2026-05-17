@@ -621,6 +621,39 @@ export type ProjectionResponseMetadata = {
   readonly executionBoundary: InventoryIntegrityExecutionBoundary;
 };
 
+export type RawProjectionMetadataPayload = {
+  readonly payloadId: string;
+  readonly payloadKind:
+    | "static_read_only_response"
+    | "future_edge_projection_response"
+    | "future_snapshot_projection_response";
+  readonly source: ProjectionSourceMetadata;
+  readonly payloadVersion: string;
+  readonly readability: string;
+  readonly adapterInputBoundary: string;
+  readonly truthSource: InventoryIntegrityTruthSource;
+  readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
+export type RawProjectionLifecyclePayload = {
+  readonly state: ProjectionLifecycleState;
+  readonly label: string;
+  readonly readability: string;
+  readonly interpretation: string;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
+export type RawProjectionPayload = {
+  readonly metadata: RawProjectionMetadataPayload;
+  readonly lifecycle: RawProjectionLifecyclePayload;
+  readonly data: InventoryIntegrityReadOnlyData;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
 export type InventoryIntegrityEdgeProjectionResponse = {
   readonly metadata: ProjectionResponseMetadata;
   readonly lifecycle: ProjectionResponseLifecycle;
@@ -630,9 +663,7 @@ export type InventoryIntegrityEdgeProjectionResponse = {
 };
 
 export type InventoryIntegrityRawEdgeProjectionResponse = {
-  readonly metadata: ProjectionResponseMetadata;
-  readonly lifecycle: ProjectionResponseLifecycle;
-  readonly rawData: InventoryIntegrityReadOnlyData;
+  readonly payload: RawProjectionPayload;
   readonly semanticBoundary: InventoryIntegritySemanticBoundary;
   readonly executionBoundary: InventoryIntegrityExecutionBoundary;
 };

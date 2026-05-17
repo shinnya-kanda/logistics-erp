@@ -4,22 +4,24 @@ import type {
   InventoryIntegrityRawEdgeProjectionResponse,
   ProjectionResponseLifecycle,
   ProjectionResponseMetadata,
+  RawProjectionLifecyclePayload,
+  RawProjectionMetadataPayload,
 } from "./inventoryIntegrityTypes";
 
 // Pure read-only mapper for raw Edge-like response -> normalized response envelope.
 // This is a response mapping boundary only: no fetch, network access, Supabase, execution, or mutation.
 
 export function mapEdgeProjectionMetadata(
-  metadata: ProjectionResponseMetadata,
+  metadata: RawProjectionMetadataPayload,
 ): ProjectionResponseMetadata {
   return {
-    responseId: metadata.responseId,
-    responseKind: metadata.responseKind,
+    responseId: metadata.payloadId,
+    responseKind: metadata.payloadKind,
     source: {
       ...metadata.source,
       capabilities: [...metadata.source.capabilities],
     },
-    responseContractVersion: metadata.responseContractVersion,
+    responseContractVersion: metadata.payloadVersion,
     readability: metadata.readability,
     adapterInputBoundary: metadata.adapterInputBoundary,
     truthSource: metadata.truthSource,
@@ -30,7 +32,7 @@ export function mapEdgeProjectionMetadata(
 }
 
 export function mapEdgeProjectionLifecycle(
-  lifecycle: ProjectionResponseLifecycle,
+  lifecycle: RawProjectionLifecyclePayload,
 ): ProjectionResponseLifecycle {
   return {
     state: lifecycle.state,
@@ -46,9 +48,9 @@ export function mapEdgeProjectionResponse(
   response: InventoryIntegrityRawEdgeProjectionResponse,
 ): InventoryIntegrityEdgeProjectionResponse {
   return {
-    metadata: mapEdgeProjectionMetadata(response.metadata),
-    lifecycle: mapEdgeProjectionLifecycle(response.lifecycle),
-    normalizedData: normalizeInventoryIntegrityReadOnlyData(response.rawData),
+    metadata: mapEdgeProjectionMetadata(response.payload.metadata),
+    lifecycle: mapEdgeProjectionLifecycle(response.payload.lifecycle),
+    normalizedData: normalizeInventoryIntegrityReadOnlyData(response.payload.data),
     semanticBoundary: response.semanticBoundary,
     executionBoundary: response.executionBoundary,
   };
