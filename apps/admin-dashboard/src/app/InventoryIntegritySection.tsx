@@ -12,14 +12,17 @@ import {
   getInventoryCompareSeveritySummary,
   getInventoryIntegrityAttention,
   getInventoryIntegrityAttentionLevelSummary,
+  getInventoryIntegrityCompletenessSummary,
   getInventoryIntegrityEscalationCandidates,
   getInventoryIntegrityEscalationSummary,
   getInventoryIntegrityEvidence,
   getInventoryIntegrityEvidenceConfidenceSummary,
   getInventoryIntegrityEvidenceGaps,
   getInventoryIntegrityEvidenceQualitySummary,
+  getInventoryIntegrityFreshnessSummary,
   getInventoryIntegrityIssues,
   getInventoryIntegrityLevelSummary,
+  getInventoryIntegrityReviewReadinessSummary,
   getInventoryIntegrityReviewPrioritySummary,
   getInventoryIntegrityReviewSignals,
   getInventoryIntegritySignals,
@@ -35,9 +38,12 @@ import type {
   InventoryCompareReason,
   InventoryCompareScope,
   InventoryIntegrityAttentionLevel,
+  InventoryIntegrityCompletenessLevel,
   InventoryIntegrityEvidenceConfidence,
   InventoryIntegrityEvidenceQuality,
+  InventoryIntegrityFreshnessLevel,
   InventoryIntegrityLevel,
+  InventoryIntegrityReviewReadinessLevel,
   InventoryIntegritySourceConfidence,
   InventoryIntegritySourceRelation,
   InventoryIntegrityStatus,
@@ -128,6 +134,28 @@ function evidenceConfidenceLabel(confidence: InventoryIntegrityEvidenceConfidenc
   if (confidence === "medium") return "説明信頼度: 中";
   if (confidence === "low") return "説明信頼度: 低";
   return "説明信頼度: 不明";
+}
+
+function freshnessLabel(freshness: InventoryIntegrityFreshnessLevel): string {
+  if (freshness === "fresh") return "鮮度: 新しい";
+  if (freshness === "stale") return "鮮度: 古い可能性";
+  if (freshness === "delayed") return "鮮度: 遅延あり";
+  if (freshness === "expired") return "鮮度: 期限切れ";
+  return "鮮度: 不明";
+}
+
+function completenessLabel(completeness: InventoryIntegrityCompletenessLevel): string {
+  if (completeness === "complete") return "揃い具合: 一通りあり";
+  if (completeness === "partial") return "揃い具合: 一部のみ";
+  if (completeness === "missing") return "揃い具合: 不足あり";
+  return "揃い具合: 不明";
+}
+
+function reviewReadinessLabel(readiness: InventoryIntegrityReviewReadinessLevel): string {
+  if (readiness === "review_ready") return "レビュー可能";
+  if (readiness === "partially_ready") return "一部レビュー可能";
+  if (readiness === "not_ready") return "レビュー未準備";
+  return "レビュー保留";
 }
 
 function evidenceQualityStyle(quality: InventoryIntegrityEvidenceQuality): CSSProperties {
@@ -257,6 +285,9 @@ export function InventoryIntegritySection() {
   const compareSeveritySummary = getInventoryCompareSeveritySummary(data);
   const compareReasonSummary = getInventoryCompareReasonSummary(data);
   const compareScopeSummary = getInventoryCompareScopeSummary(data);
+  const freshnessSummary = getInventoryIntegrityFreshnessSummary(data);
+  const completenessSummary = getInventoryIntegrityCompletenessSummary(data);
+  const reviewReadinessSummary = getInventoryIntegrityReviewReadinessSummary(data);
   const compareLineageGraph = getInventoryCompareLineageGraph(data);
   const compareDependencies = getInventoryCompareDependencies(data);
   const compareEvidenceItems = getInventoryCompareEvidenceItems(data);
@@ -337,6 +368,20 @@ export function InventoryIntegritySection() {
         {compareSeveritySummary.map((item) => `${severityLabel(item.severity)} ${item.count}`).join(", ")}
         {" / "}差異理由 {compareReasonSummary.map((item) => `${reasonLabel(item.reason)} ${item.count}`).join(", ")}
         {" / "}範囲 {compareScopeSummary.map((item) => `${scopeLabel(item.scope)} ${item.count}`).join(", ")}.
+      </div>
+
+      <div style={{ ...styles.notice, ...styles.neutralNotice }}>
+        projection metadata サマリー: 鮮度{" "}
+        {freshnessSummary.map((item) => `${freshnessLabel(item.freshness)} ${item.count}`).join(", ")}
+        {" / "}揃い具合{" "}
+        {completenessSummary
+          .map((item) => `${completenessLabel(item.completeness)} ${item.count}`)
+          .join(", ")}
+        {" / "}レビュー可能性{" "}
+        {reviewReadinessSummary
+          .map((item) => `${reviewReadinessLabel(item.reviewReadiness)} ${item.count}`)
+          .join(", ")}
+        。metadata は確認材料であり、正しさ保証や実行許可ではありません。
       </div>
 
       <div style={{ ...styles.notice, ...styles.neutralNotice }}>
@@ -442,11 +487,29 @@ export function InventoryIntegritySection() {
                 {projection.difference.differenceQuantity}
               </p>
               <p style={styles.description}>truth の見方: {projection.truthStatement}</p>
+              <p style={styles.description}>
+                観測時点(snapshot): {projection.snapshot.snapshotId} / {projection.snapshot.limitation}
+              </p>
+              <p style={styles.description}>
+                追跡(traceability): {projection.traceability.sourceTraceLabel} /{" "}
+                {projection.traceability.caveat}
+              </p>
+              <p style={styles.description}>
+                レビュー可能性: {projection.reviewReadiness.reason} /{" "}
+                {projection.reviewReadiness.caveat}
+              </p>
               <p style={styles.description}>実行しないこと: {projection.executionBoundary}</p>
               <div style={styles.badgeRow}>
                 <span style={styles.badge}>{severityLabel(projection.difference.severity)}</span>
                 <span style={styles.badge}>差異理由: {reasonLabel(projection.difference.reason)}</span>
                 <span style={styles.badge}>範囲: {scopeLabel(projection.scope)}</span>
+                <span style={styles.badge}>{freshnessLabel(projection.freshness.level)}</span>
+                <span style={styles.badge}>
+                  {completenessLabel(projection.completeness.level)}
+                </span>
+                <span style={styles.badge}>
+                  {reviewReadinessLabel(projection.reviewReadiness.level)}
+                </span>
               </div>
             </article>
           ))}

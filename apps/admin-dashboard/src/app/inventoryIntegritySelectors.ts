@@ -20,10 +20,16 @@ import type {
   InventoryIntegrityEvidenceGapGraphItem,
   InventoryIntegrityEvidenceQuality,
   InventoryIntegrityEvidenceQualitySummary,
+  InventoryIntegrityCompletenessLevel,
+  InventoryIntegrityCompletenessSummary,
+  InventoryIntegrityFreshnessLevel,
+  InventoryIntegrityFreshnessSummary,
   InventoryIntegrityIssue,
   InventoryIntegrityLevel,
   InventoryIntegrityLevelSummary,
   InventoryIntegrityReadOnlyData,
+  InventoryIntegrityReviewReadinessLevel,
+  InventoryIntegrityReviewReadinessSummary,
   InventoryIntegrityReviewPriority,
   InventoryIntegrityReviewPrioritySummary,
   InventoryIntegrityReviewSignalGraphItem,
@@ -175,6 +181,67 @@ export function getInventoryCompareScopeSummary(
     .map((scope) => ({
       scope,
       count: data.compareProjections.filter((projection) => projection.scope === scope).length,
+    }))
+    .filter((summary) => summary.count > 0);
+}
+
+export function getInventoryIntegrityFreshnessSummary(
+  data: InventoryIntegrityReadOnlyData,
+): readonly InventoryIntegrityFreshnessSummary[] {
+  const freshnessOrder: readonly InventoryIntegrityFreshnessLevel[] = [
+    "expired",
+    "stale",
+    "delayed",
+    "unknown",
+    "fresh",
+  ];
+
+  return freshnessOrder
+    .map((freshness) => ({
+      freshness,
+      count: data.compareProjections.filter(
+        (projection) => projection.freshness.level === freshness,
+      ).length,
+    }))
+    .filter((summary) => summary.count > 0);
+}
+
+export function getInventoryIntegrityCompletenessSummary(
+  data: InventoryIntegrityReadOnlyData,
+): readonly InventoryIntegrityCompletenessSummary[] {
+  const completenessOrder: readonly InventoryIntegrityCompletenessLevel[] = [
+    "missing",
+    "partial",
+    "unknown",
+    "complete",
+  ];
+
+  return completenessOrder
+    .map((completeness) => ({
+      completeness,
+      count: data.compareProjections.filter(
+        (projection) => projection.completeness.level === completeness,
+      ).length,
+    }))
+    .filter((summary) => summary.count > 0);
+}
+
+export function getInventoryIntegrityReviewReadinessSummary(
+  data: InventoryIntegrityReadOnlyData,
+): readonly InventoryIntegrityReviewReadinessSummary[] {
+  const readinessOrder: readonly InventoryIntegrityReviewReadinessLevel[] = [
+    "blocked_review",
+    "not_ready",
+    "partially_ready",
+    "review_ready",
+  ];
+
+  return readinessOrder
+    .map((reviewReadiness) => ({
+      reviewReadiness,
+      count: data.compareProjections.filter(
+        (projection) => projection.reviewReadiness.level === reviewReadiness,
+      ).length,
     }))
     .filter((summary) => summary.count > 0);
 }

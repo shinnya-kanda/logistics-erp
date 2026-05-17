@@ -85,10 +85,51 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
   compareProjections: [
     {
       id: "inventory-compare-part-location-gap",
+      identity: {
+        projectionId: "inventory-compare-part-location-gap",
+        projectionType: "compare_projection",
+        projectionVersion: "static-b37-01",
+        scope: "location",
+        generatedAt: "static mock",
+        contractVersion: "inventory-integrity-projection-contract",
+      },
       scope: "location",
       label: "部品・棚別の数量差異",
       description:
         "部品・棚単位で inventory_current と transaction 集計を将来どう比較するかを静的に説明します。",
+      snapshot: {
+        snapshotId: "snapshot-part-location-static",
+        asOfTime: "static mock",
+        observedAt: "static mock",
+        transactionCoverage: "partial",
+        freshness: "unknown",
+        limitation: "static mock のため、実データ snapshot や live freshness は確認していません。",
+      },
+      freshness: {
+        level: "unknown",
+        reason: "live compare や Supabase fetch を行っていない静的 projection です。",
+        caveat: "鮮度は確認制限であり、rebuild や compare execution の開始条件ではありません。",
+      },
+      completeness: {
+        level: "partial",
+        scope: "部品・棚別の差異説明に必要な mock metadata の範囲",
+        caveat: "一部の説明材料のみであり、正しさ保証や自動補完ではありません。",
+      },
+      traceability: {
+        sourceTraceLabel: "inventory_transactions truth と inventory_current cache の比較由来",
+        sourceChain: ["inventory_transactions", "inventory_current", "static compare projection"],
+        caveat: "source chain は追跡用の読み方であり、execution chain ではありません。",
+      },
+      lineageMetadata: {
+        lineageLabel: "部品・棚別 compare projection lineage",
+        derivedFrom: ["transaction 集計", "表示用 cache", "部品 + 棚の範囲"],
+        caveat: "lineage は由来説明であり、因果確定や修正権限ではありません。",
+      },
+      reviewReadiness: {
+        level: "partially_ready",
+        reason: "差異理由と由来 metadata はありますが、live evidence resolution は未実装です。",
+        caveat: "一部レビュー可能な状態であり、承認可能や実行可能ではありません。",
+      },
       difference: {
         currentReadModelQuantity: "120",
         transactionAggregationQuantity: "118",
@@ -137,10 +178,51 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
     },
     {
       id: "inventory-compare-project-scope-gap",
+      identity: {
+        projectionId: "inventory-compare-project-scope-gap",
+        projectionType: "compare_projection",
+        projectionVersion: "static-b37-01",
+        scope: "project",
+        generatedAt: "static mock",
+        contractVersion: "inventory-integrity-projection-contract",
+      },
       scope: "project",
       label: "project_no 別の数量差異",
       description:
         "project_no 単位で表示用 cache と transaction 集計を将来どう比較するかを静的に説明します。",
+      snapshot: {
+        snapshotId: "snapshot-project-scope-static",
+        asOfTime: "static mock",
+        observedAt: "static mock",
+        transactionCoverage: "unknown",
+        freshness: "unknown",
+        limitation: "未比較 mock のため、snapshot coverage は確認していません。",
+      },
+      freshness: {
+        level: "unknown",
+        reason: "差異 0 は live freshness ではなく、未比較状態を示す static policy です。",
+        caveat: "unknown freshness は safe 判定や compare completion ではありません。",
+      },
+      completeness: {
+        level: "missing",
+        scope: "project_no compare の live evidence / source coverage",
+        caveat: "不足は取得指示ではなく、review limitation です。",
+      },
+      traceability: {
+        sourceTraceLabel: "static policy 由来の未比較説明",
+        sourceChain: ["static_policy", "static compare projection"],
+        caveat: "未比較の traceability は replay eligibility ではありません。",
+      },
+      lineageMetadata: {
+        lineageLabel: "project_no compare projection lineage",
+        derivedFrom: ["未比較 policy", "project_no の範囲"],
+        caveat: "差異 0 の lineage は正しさ保証ではありません。",
+      },
+      reviewReadiness: {
+        level: "not_ready",
+        reason: "live compare と evidence resolution がないため、実データ review の材料が不足しています。",
+        caveat: "レビュー未準備であり、correction や rebuild の指示ではありません。",
+      },
       difference: {
         currentReadModelQuantity: "64",
         transactionAggregationQuantity: "64",
@@ -184,10 +266,51 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
     },
     {
       id: "inventory-compare-inventory-type-gap",
+      identity: {
+        projectionId: "inventory-compare-inventory-type-gap",
+        projectionType: "compare_projection",
+        projectionVersion: "static-b37-01",
+        scope: "inventory_type",
+        generatedAt: "static mock",
+        contractVersion: "inventory-integrity-projection-contract",
+      },
       scope: "inventory_type",
       label: "在庫種別境界の数量差異",
       description:
         "project / mrp の在庫種別境界を、再構築判断ではなく確認材料として静的に説明します。",
+      snapshot: {
+        snapshotId: "snapshot-inventory-type-static",
+        asOfTime: "static mock",
+        observedAt: "static mock",
+        transactionCoverage: "partial",
+        freshness: "stale",
+        limitation: "在庫種別境界の source coverage は static mock の範囲に限定されています。",
+      },
+      freshness: {
+        level: "stale",
+        reason: "静的な境界説明であり、最新 transaction 反映とは限りません。",
+        caveat: "stale は確認制限であり、rebuild required ではありません。",
+      },
+      completeness: {
+        level: "partial",
+        scope: "inventory_type 境界の静的説明 metadata",
+        caveat: "partial は見えている範囲の制限であり、missing action required ではありません。",
+      },
+      traceability: {
+        sourceTraceLabel: "在庫種別境界の transaction / cache / lineage 由来",
+        sourceChain: ["inventory_transactions", "inventory_current", "lineage_projection"],
+        caveat: "traceability は由来追跡であり、causal proof ではありません。",
+      },
+      lineageMetadata: {
+        lineageLabel: "inventory_type compare projection lineage",
+        derivedFrom: ["在庫種別別 transaction 集計", "在庫種別別 cache", "project / mrp 境界"],
+        caveat: "lineage gap は review limitation であり、correction 指示ではありません。",
+      },
+      reviewReadiness: {
+        level: "partially_ready",
+        reason: "在庫種別境界の説明材料はありますが、live evidence resolution はありません。",
+        caveat: "一部レビュー可能な状態であり、監査開始や修正指示ではありません。",
+      },
       difference: {
         currentReadModelQuantity: "31",
         transactionAggregationQuantity: "28",
