@@ -119,6 +119,26 @@ export type ProjectionEndpoint = {
   readonly executionBoundary: InventoryIntegrityExecutionBoundary;
 };
 
+export type ProjectionFetchExecutionState =
+  | "request_accepted"
+  | "request_blocked"
+  | "request_unsupported"
+  | "request_unavailable";
+
+export type ProjectionFetchExecutionSemantics = {
+  readonly semanticsId: string;
+  readonly state: ProjectionFetchExecutionState;
+  readonly label: string;
+  readonly readability: string;
+  readonly requestInterpretation: string;
+  readonly endpointInterpretation: string;
+  readonly noExecutionMeaning: string;
+  readonly truthSource: InventoryIntegrityTruthSource;
+  readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
 export type EdgeProjectionSourceMetadata = ProjectionSourceMetadata & {
   readonly sourceKind: "edge_function_source" | "future_edge_projection_source";
   readonly edgeFunctionName: string;
@@ -736,6 +756,7 @@ export type InventoryIntegrityFetchResultMetadata = {
   readonly endpoint: ProjectionEndpoint;
   readonly request: InventoryIntegrityEdgeRequest;
   readonly fetchSemantics: InventoryIntegrityFetchSemantics;
+  readonly fetchExecution: ProjectionFetchExecutionSemantics;
   readonly resultVersion: string;
   readonly readability: string;
   readonly adapterInputBoundary: string;
@@ -784,6 +805,7 @@ export type InventoryIntegrityEdgeRequest = {
   readonly target: ProjectionResolutionTarget;
   readonly endpoint: ProjectionEndpoint;
   readonly fetchSemantics: InventoryIntegrityFetchSemantics;
+  readonly fetchExecution: ProjectionFetchExecutionSemantics;
   readonly readability: string;
   readonly truthSource: InventoryIntegrityTruthSource;
   readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
@@ -798,6 +820,7 @@ export type InventoryIntegrityEdgeClient = {
   readonly semanticMeaning: string;
   readonly endpoint: ProjectionEndpoint;
   readonly fetchSemantics: InventoryIntegrityFetchSemantics;
+  readonly fetchExecution: ProjectionFetchExecutionSemantics;
   readonly readProjectionPayload: (request?: InventoryIntegrityEdgeRequest) => RawProjectionPayload;
   readonly truthSource: InventoryIntegrityTruthSource;
   readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
@@ -813,6 +836,7 @@ export type InventoryIntegrityEdgeClientSummary = {
   readonly endpointCapability: ProjectionEndpointCapability;
   readonly fetchSemanticsId: string;
   readonly fetchCapability: InventoryIntegrityFetchCapability;
+  readonly fetchExecutionState: ProjectionFetchExecutionState;
   readonly payloadId: string;
   readonly payloadVersion: string;
   readonly readability: string;
