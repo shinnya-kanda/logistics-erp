@@ -38,3 +38,4 @@
 - [Inventory Integrity Lineage Semantics Review](./inventory-integrity-lineage-semantics-review.md) — projection lineage / reasoning lineage / derived-from semantics review
 - [Inventory Integrity Explainability Semantics Review](./inventory-integrity-explainability-semantics-review.md) — human-readable / governance / operational / audit explanation semantics review
 - [Inventory Integrity Interpretation-Risk Semantics Review](./inventory-integrity-interpretation-risk-semantics-review.md) — safe misinterpretation / truth guarantee / confidence / warning misunderstanding semantics review
+- [Inventory Integrity Operational-Decision Semantics Review](./inventory-integrity-operational-decision-semantics-review.md) — review / audit / attention / manual verification / hold decision semantics review
