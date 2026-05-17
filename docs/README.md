@@ -39,3 +39,4 @@
 - [Inventory Integrity Explainability Semantics Review](./inventory-integrity-explainability-semantics-review.md) — human-readable / governance / operational / audit explanation semantics review
 - [Inventory Integrity Interpretation-Risk Semantics Review](./inventory-integrity-interpretation-risk-semantics-review.md) — safe misinterpretation / truth guarantee / confidence / warning misunderstanding semantics review
 - [Inventory Integrity Operational-Decision Semantics Review](./inventory-integrity-operational-decision-semantics-review.md) — review / audit / attention / manual verification / hold decision semantics review
+- [Inventory Integrity Governance-Review Semantics](./inventory-integrity-governance-review-semantics.md) — governance / audit / operational / escalation / integrity review semantics review
