@@ -31,3 +31,4 @@
 - [Inventory Integrity Severity Semantics Review](./inventory-integrity-severity-semantics-review.md) — informational / low / medium / high / critical severity semantics review
 - [Inventory Integrity Priority Semantics Review](./inventory-integrity-priority-semantics-review.md) — review / audit / operational / escalation priority semantics review
 - [Inventory Integrity Evidence Semantics Review](./inventory-integrity-evidence-semantics-review.md) — evidence source / confidence / freshness / completeness semantics review
+- [Inventory Integrity Confidence Semantics Review](./inventory-integrity-confidence-semantics-review.md) — high / medium / low / unknown confidence semantics review
