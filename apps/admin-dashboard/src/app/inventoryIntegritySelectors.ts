@@ -44,6 +44,11 @@ import type {
   InventoryIntegrityStatusSummary,
   InventoryIntegritySummary,
 } from "./inventoryIntegrityTypes";
+import {
+  selectProjectionMetadata,
+  selectProjectionReviewReadiness,
+  selectProjectionSummary,
+} from "./inventoryIntegritySelectorNormalization";
 
 export function getInventoryIntegritySummaries(
   data: InventoryIntegrityReadOnlyData,
@@ -134,11 +139,12 @@ export function getInventoryCompareSeveritySummary(
     "watch",
     "info",
   ];
+  const projections = data.compareProjections.map(selectProjectionSummary);
 
   return severityOrder
     .map((severity) => ({
       severity,
-      count: data.compareProjections.filter(
+      count: projections.filter(
         (projection) => projection.difference.severity === severity,
       ).length,
     }))
@@ -155,11 +161,12 @@ export function getInventoryCompareReasonSummary(
     "project_scope_gap",
     "not_compared",
   ];
+  const projections = data.compareProjections.map(selectProjectionSummary);
 
   return reasonOrder
     .map((reason) => ({
       reason,
-      count: data.compareProjections.filter(
+      count: projections.filter(
         (projection) => projection.difference.reason === reason,
       ).length,
     }))
@@ -176,11 +183,12 @@ export function getInventoryCompareScopeSummary(
     "part",
     "inventory_type",
   ];
+  const projections = data.compareProjections.map(selectProjectionSummary);
 
   return scopeOrder
     .map((scope) => ({
       scope,
-      count: data.compareProjections.filter((projection) => projection.scope === scope).length,
+      count: projections.filter((projection) => projection.scope === scope).length,
     }))
     .filter((summary) => summary.count > 0);
 }
@@ -195,11 +203,12 @@ export function getInventoryIntegrityFreshnessSummary(
     "unknown",
     "fresh",
   ];
+  const projectionMetadata = data.compareProjections.map(selectProjectionMetadata);
 
   return freshnessOrder
     .map((freshness) => ({
       freshness,
-      count: data.compareProjections.filter(
+      count: projectionMetadata.filter(
         (projection) => projection.metadata.freshness.level === freshness,
       ).length,
     }))
@@ -215,11 +224,12 @@ export function getInventoryIntegrityCompletenessSummary(
     "unknown",
     "complete",
   ];
+  const projectionMetadata = data.compareProjections.map(selectProjectionMetadata);
 
   return completenessOrder
     .map((completeness) => ({
       completeness,
-      count: data.compareProjections.filter(
+      count: projectionMetadata.filter(
         (projection) => projection.metadata.completeness.level === completeness,
       ).length,
     }))
@@ -235,12 +245,13 @@ export function getInventoryIntegrityReviewReadinessSummary(
     "partially_ready",
     "review_ready",
   ];
+  const projectionReadiness = data.compareProjections.map(selectProjectionReviewReadiness);
 
   return readinessOrder
     .map((reviewReadiness) => ({
       reviewReadiness,
-      count: data.compareProjections.filter(
-        (projection) => projection.metadata.reviewReadiness.level === reviewReadiness,
+      count: projectionReadiness.filter(
+        (projection) => projection.reviewReadiness.level === reviewReadiness,
       ).length,
     }))
     .filter((summary) => summary.count > 0);
