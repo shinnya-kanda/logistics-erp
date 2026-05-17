@@ -28,3 +28,4 @@
 - [Inventory Integrity UI Wording Consistency Review](./inventory-integrity-ui-wording-consistency-review.md) — Japanese-first UI wording / warning / status consistency review
 - [Inventory Integrity Warning Semantics Review](./inventory-integrity-warning-semantics-review.md) — warning / attention / escalation / review required semantics review
 - [Inventory Integrity State Semantics Review](./inventory-integrity-state-semantics-review.md) — ready / stale / partial / degraded / reviewing state semantics review
+- [Inventory Integrity Severity Semantics Review](./inventory-integrity-severity-semantics-review.md) — informational / low / medium / high / critical severity semantics review
