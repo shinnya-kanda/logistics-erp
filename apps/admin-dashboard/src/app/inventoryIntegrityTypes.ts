@@ -111,6 +111,16 @@ export type ProjectionResolution = {
   readonly executionBoundary: InventoryIntegrityExecutionBoundary;
 };
 
+export type InventoryIntegritySelectorNormalizationBoundary = {
+  readonly selectorId: string;
+  readonly label: string;
+  readonly semanticMeaning: string;
+  readonly truthSource: InventoryIntegrityTruthSource;
+  readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
 export type InventoryIntegrityConfidenceLevel = "high" | "medium" | "low" | "unknown";
 
 export type InventoryIntegrityFreshnessLevel =
@@ -424,6 +434,31 @@ export type InventoryCompareProjection = {
   readonly difference: InventoryCompareDifference;
   readonly lineage: InventoryCompareLineage;
   readonly truthStatement: string;
+};
+
+export type InventoryProjectionSummaryView = {
+  readonly projectionId: string;
+  readonly label: string;
+  readonly scope: InventoryCompareScope;
+  readonly description: string;
+  readonly difference: InventoryCompareDifference;
+  readonly truthStatement: string;
+  readonly selectorBoundary: InventoryIntegritySelectorNormalizationBoundary;
+};
+
+export type InventoryProjectionMetadataView = {
+  readonly projectionId: string;
+  readonly metadata: InventoryIntegrityProjectionMetadata;
+  readonly selectorBoundary: InventoryIntegritySelectorNormalizationBoundary;
+};
+
+export type InventoryProjectionReviewReadinessView = {
+  readonly projectionId: string;
+  readonly reviewReadiness: InventoryIntegrityReviewReadinessMetadata;
+  readonly freshness: InventoryIntegrityFreshnessMetadata;
+  readonly completeness: InventoryIntegrityCompletenessMetadata;
+  readonly confidence: InventoryIntegrityConfidenceMetadata;
+  readonly selectorBoundary: InventoryIntegritySelectorNormalizationBoundary;
 };
 
 export type InventoryIntegrityReadOnlyData = {
