@@ -97,6 +97,44 @@ export type ProjectionResolutionTarget = {
   readonly projectionKind?: InventoryIntegrityRegisteredProjectionKind;
 };
 
+export type ProjectionScope = {
+  readonly scope: InventoryCompareScope | "all";
+  readonly warehouseId?: string;
+  readonly projectId?: string;
+  readonly locationId?: string;
+  readonly partId?: string;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
+export type ProjectionViewMode =
+  | "summary_view"
+  | "compare_view"
+  | "integrity_view"
+  | "governance_view"
+  | "audit_view"
+  | "operational_view";
+
+export type ProjectionReviewMode =
+  | "read_only_review"
+  | "governance_review"
+  | "audit_review"
+  | "operational_review"
+  | "review_readiness";
+
+export type InventoryIntegrityProjectionQuery = {
+  readonly queryId: string;
+  readonly target: ProjectionResolutionTarget;
+  readonly scope: ProjectionScope;
+  readonly viewMode: ProjectionViewMode;
+  readonly reviewMode: ProjectionReviewMode;
+  readonly semanticMeaning: string;
+  readonly truthSource: InventoryIntegrityTruthSource;
+  readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
 export type InventoryIntegrityReadOnlySource =
   InventoryIntegrityProjectionSource<InventoryIntegrityReadOnlyData> & {
     readonly registry: InventoryIntegrityProjectionRegistry;
@@ -482,6 +520,7 @@ export type InventoryIntegrityReadOnlyData = {
 };
 
 export type InventoryIntegrityProjectionServiceView = {
+  readonly query: InventoryIntegrityProjectionQuery;
   readonly data: InventoryIntegrityReadOnlyData;
   readonly resolution?: ProjectionResolution;
   readonly projectionSummaries: readonly InventoryProjectionSummaryView[];
@@ -491,6 +530,7 @@ export type InventoryIntegrityProjectionServiceView = {
 };
 
 export type InventoryIntegritySummaryProjectionView = {
+  readonly query: InventoryIntegrityProjectionQuery;
   readonly summaries: readonly InventoryIntegritySummary[];
   readonly issues: readonly InventoryIntegrityIssue[];
   readonly signals: readonly InventoryIntegritySignal[];
@@ -499,6 +539,7 @@ export type InventoryIntegritySummaryProjectionView = {
 };
 
 export type InventoryIntegrityReviewProjectionView = {
+  readonly query: InventoryIntegrityProjectionQuery;
   readonly attentionProjections: readonly InventoryIntegrityAttention[];
   readonly projectionReviewReadiness: readonly InventoryProjectionReviewReadinessView[];
   readonly serviceBoundary: InventoryIntegrityProjectionServiceBoundary;
