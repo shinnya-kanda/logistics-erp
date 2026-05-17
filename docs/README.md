@@ -22,3 +22,4 @@
 - [Inventory Integrity Reasoning Graph Visualization Semantics](./inventory-integrity-reasoning-graph-visualization-semantics.md) — reasoning graph の node / edge / readability / comprehension semantics review
 - [Inventory Integrity Reasoning Graph Readability Semantics](./inventory-integrity-reasoning-graph-readability-semantics.md) — attention / severity / confidence / stale / review readability semantics review
 - [Inventory Integrity Audit Semantics Review](./inventory-integrity-audit-semantics-review.md) — audit visibility / evidence / lineage / confidence / traceability semantics review
+- [Inventory Integrity Operational Semantics Review](./inventory-integrity-operational-semantics-review.md) — operational visibility / attention / escalation / role-oriented semantics review
