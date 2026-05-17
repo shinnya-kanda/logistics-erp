@@ -200,7 +200,7 @@ export function getInventoryIntegrityFreshnessSummary(
     .map((freshness) => ({
       freshness,
       count: data.compareProjections.filter(
-        (projection) => projection.freshness.level === freshness,
+        (projection) => projection.metadata.freshness.level === freshness,
       ).length,
     }))
     .filter((summary) => summary.count > 0);
@@ -220,7 +220,7 @@ export function getInventoryIntegrityCompletenessSummary(
     .map((completeness) => ({
       completeness,
       count: data.compareProjections.filter(
-        (projection) => projection.completeness.level === completeness,
+        (projection) => projection.metadata.completeness.level === completeness,
       ).length,
     }))
     .filter((summary) => summary.count > 0);
@@ -240,7 +240,7 @@ export function getInventoryIntegrityReviewReadinessSummary(
     .map((reviewReadiness) => ({
       reviewReadiness,
       count: data.compareProjections.filter(
-        (projection) => projection.reviewReadiness.level === reviewReadiness,
+        (projection) => projection.metadata.reviewReadiness.level === reviewReadiness,
       ).length,
     }))
     .filter((summary) => summary.count > 0);
@@ -394,7 +394,7 @@ export function getInventoryIntegrityEvidenceGaps(
   data: InventoryIntegrityReadOnlyData,
 ): readonly InventoryIntegrityEvidenceGapGraphItem[] {
   return data.evidenceProjections.flatMap((evidence) =>
-    evidence.gaps.map((gap) => ({
+    evidence.metadata.gaps.map((gap) => ({
       evidenceId: evidence.id,
       projectionId: evidence.projectionId,
       gap,

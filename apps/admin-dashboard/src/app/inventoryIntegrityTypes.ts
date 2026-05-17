@@ -109,6 +109,12 @@ export type InventoryIntegrityFreshnessMetadata = {
   readonly caveat: string;
 };
 
+export type InventoryIntegrityConfidenceMetadata = {
+  readonly level: InventoryIntegrityConfidenceLevel;
+  readonly reason: string;
+  readonly caveat: string;
+};
+
 export type InventoryIntegrityCompletenessMetadata = {
   readonly level: InventoryIntegrityCompletenessLevel;
   readonly scope: string;
@@ -131,6 +137,30 @@ export type InventoryIntegrityLineageMetadata = {
   readonly lineageLabel: string;
   readonly derivedFrom: readonly string[];
   readonly caveat: string;
+};
+
+export type InventoryIntegrityEvidenceMetadata = {
+  readonly source: InventoryIntegrityEvidenceSource;
+  readonly confidence: InventoryIntegrityConfidenceMetadata;
+  readonly freshness: InventoryIntegrityFreshnessMetadata;
+  readonly completeness: InventoryIntegrityCompletenessMetadata;
+  readonly gaps: readonly InventoryIntegrityEvidenceGap[];
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
+export type InventoryIntegrityProjectionMetadata = {
+  readonly identity: InventoryIntegrityProjectionIdentity;
+  readonly snapshot: InventoryIntegritySnapshotMetadata;
+  readonly evidence: InventoryIntegrityEvidenceMetadata;
+  readonly confidence: InventoryIntegrityConfidenceMetadata;
+  readonly freshness: InventoryIntegrityFreshnessMetadata;
+  readonly completeness: InventoryIntegrityCompletenessMetadata;
+  readonly traceability: InventoryIntegrityTraceabilityMetadata;
+  readonly lineage: InventoryIntegrityLineageMetadata;
+  readonly reviewReadiness: InventoryIntegrityReviewReadinessMetadata;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
 };
 
 export type InventoryCompareDifference = {
@@ -243,6 +273,7 @@ export type InventoryIntegrityEvidence = {
   readonly projectionId: string;
   readonly attentionId: string;
   readonly title: string;
+  readonly metadata: InventoryIntegrityEvidenceMetadata;
   readonly source: InventoryIntegrityEvidenceSource;
   readonly confidence: InventoryIntegrityEvidenceConfidence;
   readonly quality: InventoryIntegrityEvidenceQuality;
@@ -293,20 +324,13 @@ export type InventoryIntegritySource = {
 
 export type InventoryCompareProjection = {
   readonly id: string;
-  readonly identity: InventoryIntegrityProjectionIdentity;
+  readonly metadata: InventoryIntegrityProjectionMetadata;
   readonly scope: InventoryCompareScope;
   readonly label: string;
   readonly description: string;
-  readonly snapshot: InventoryIntegritySnapshotMetadata;
-  readonly freshness: InventoryIntegrityFreshnessMetadata;
-  readonly completeness: InventoryIntegrityCompletenessMetadata;
-  readonly traceability: InventoryIntegrityTraceabilityMetadata;
-  readonly lineageMetadata: InventoryIntegrityLineageMetadata;
-  readonly reviewReadiness: InventoryIntegrityReviewReadinessMetadata;
   readonly difference: InventoryCompareDifference;
   readonly lineage: InventoryCompareLineage;
   readonly truthStatement: string;
-  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
 };
 
 export type InventoryIntegrityReadOnlyData = {
