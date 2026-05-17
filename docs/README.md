@@ -20,3 +20,4 @@
 - [Inventory Integrity Projection Adapter Contract Review](./inventory-integrity-projection-adapter-contract-review.md) — raw source / adapter / projection boundary の contract review
 - [Inventory Integrity Reasoning Graph Contract Review](./inventory-integrity-reasoning-graph-contract-review.md) — evidence / lineage / attention / review / escalation relation の graph contract review
 - [Inventory Integrity Reasoning Graph Visualization Semantics](./inventory-integrity-reasoning-graph-visualization-semantics.md) — reasoning graph の node / edge / readability / comprehension semantics review
+- [Inventory Integrity Reasoning Graph Readability Semantics](./inventory-integrity-reasoning-graph-readability-semantics.md) — attention / severity / confidence / stale / review readability semantics review
