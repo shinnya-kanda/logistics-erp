@@ -18,6 +18,32 @@ export type InventoryIntegrityProjectionType =
   | "evidence_projection"
   | "source_mapping_projection";
 
+export type InventoryIntegrityProjectionSourceKind =
+  | "static_mock_source"
+  | "edge_function_source"
+  | "snapshot_source"
+  | "compare_source"
+  | "governance_visualization_source";
+
+export type ProjectionSourceMetadata = {
+  readonly sourceId: string;
+  readonly sourceKind: InventoryIntegrityProjectionSourceKind;
+  readonly label: string;
+  readonly semanticMeaning: string;
+  readonly truthSource: InventoryIntegrityTruthSource;
+  readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
+export type InventoryIntegrityProjectionSource<TOutput> = {
+  readonly metadata: ProjectionSourceMetadata;
+  readonly read: () => TOutput;
+};
+
+export type InventoryIntegrityReadOnlySource =
+  InventoryIntegrityProjectionSource<InventoryIntegrityReadOnlyData>;
+
 export type InventoryIntegrityConfidenceLevel = "high" | "medium" | "low" | "unknown";
 
 export type InventoryIntegrityFreshnessLevel =
