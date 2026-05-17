@@ -35,3 +35,4 @@
 - [Inventory Integrity Freshness Semantics Review](./inventory-integrity-freshness-semantics-review.md) — fresh / stale / delayed / expired / unknown freshness semantics review
 - [Inventory Integrity Completeness Semantics Review](./inventory-integrity-completeness-semantics-review.md) — complete / partial / missing / unknown completeness semantics review
 - [Inventory Integrity Traceability Semantics Review](./inventory-integrity-traceability-semantics-review.md) — source lineage / source chain / projection traceability semantics review
+- [Inventory Integrity Lineage Semantics Review](./inventory-integrity-lineage-semantics-review.md) — projection lineage / reasoning lineage / derived-from semantics review
