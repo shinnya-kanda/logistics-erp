@@ -21,6 +21,7 @@ export function mapEdgeProjectionMetadata(
       ...metadata.source,
       capabilities: [...metadata.source.capabilities],
     },
+    statusSemantics: metadata.statusSemantics,
     responseContractVersion: metadata.payloadVersion,
     readability: metadata.readability,
     adapterInputBoundary: metadata.adapterInputBoundary,
@@ -50,6 +51,7 @@ export function mapEdgeProjectionResponse(
   return {
     metadata: mapEdgeProjectionMetadata(response.payload.metadata),
     lifecycle: mapEdgeProjectionLifecycle(response.payload.lifecycle),
+    statusSemantics: response.payload.metadata.statusSemantics,
     normalizedData: normalizeInventoryIntegrityReadOnlyData(response.payload.data),
     semanticBoundary: response.semanticBoundary,
     executionBoundary: response.executionBoundary,

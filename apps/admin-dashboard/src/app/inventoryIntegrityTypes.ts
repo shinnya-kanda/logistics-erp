@@ -139,6 +139,26 @@ export type ProjectionFetchExecutionSemantics = {
   readonly executionBoundary: InventoryIntegrityExecutionBoundary;
 };
 
+export type ProjectionResponseStatus =
+  | "response_accepted"
+  | "response_partial"
+  | "response_degraded"
+  | "response_unavailable";
+
+export type ProjectionResponseStatusSemantics = {
+  readonly semanticsId: string;
+  readonly status: ProjectionResponseStatus;
+  readonly label: string;
+  readonly readability: string;
+  readonly interpretation: string;
+  readonly limitation: string;
+  readonly noExecutionMeaning: string;
+  readonly truthSource: InventoryIntegrityTruthSource;
+  readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
 export type EdgeProjectionSourceMetadata = ProjectionSourceMetadata & {
   readonly sourceKind: "edge_function_source" | "future_edge_projection_source";
   readonly edgeFunctionName: string;
@@ -704,6 +724,7 @@ export type ProjectionResponseMetadata = {
     | "future_edge_projection_response"
     | "future_snapshot_projection_response";
   readonly source: ProjectionSourceMetadata;
+  readonly statusSemantics: ProjectionResponseStatusSemantics;
   readonly responseContractVersion: string;
   readonly readability: string;
   readonly adapterInputBoundary: string;
@@ -720,6 +741,7 @@ export type RawProjectionMetadataPayload = {
     | "future_edge_projection_response"
     | "future_snapshot_projection_response";
   readonly source: ProjectionSourceMetadata;
+  readonly statusSemantics: ProjectionResponseStatusSemantics;
   readonly payloadVersion: string;
   readonly readability: string;
   readonly adapterInputBoundary: string;
@@ -757,6 +779,7 @@ export type InventoryIntegrityFetchResultMetadata = {
   readonly request: InventoryIntegrityEdgeRequest;
   readonly fetchSemantics: InventoryIntegrityFetchSemantics;
   readonly fetchExecution: ProjectionFetchExecutionSemantics;
+  readonly responseStatus: ProjectionResponseStatusSemantics;
   readonly resultVersion: string;
   readonly readability: string;
   readonly adapterInputBoundary: string;
@@ -821,6 +844,7 @@ export type InventoryIntegrityEdgeClient = {
   readonly endpoint: ProjectionEndpoint;
   readonly fetchSemantics: InventoryIntegrityFetchSemantics;
   readonly fetchExecution: ProjectionFetchExecutionSemantics;
+  readonly responseStatus: ProjectionResponseStatusSemantics;
   readonly readProjectionPayload: (request?: InventoryIntegrityEdgeRequest) => RawProjectionPayload;
   readonly truthSource: InventoryIntegrityTruthSource;
   readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
@@ -837,6 +861,7 @@ export type InventoryIntegrityEdgeClientSummary = {
   readonly fetchSemanticsId: string;
   readonly fetchCapability: InventoryIntegrityFetchCapability;
   readonly fetchExecutionState: ProjectionFetchExecutionState;
+  readonly responseStatus: ProjectionResponseStatus;
   readonly payloadId: string;
   readonly payloadVersion: string;
   readonly readability: string;
@@ -847,6 +872,7 @@ export type InventoryIntegrityEdgeClientSummary = {
 export type InventoryIntegrityEdgeProjectionResponse = {
   readonly metadata: ProjectionResponseMetadata;
   readonly lifecycle: ProjectionResponseLifecycle;
+  readonly statusSemantics: ProjectionResponseStatusSemantics;
   readonly normalizedData: InventoryIntegrityReadOnlyData;
   readonly semanticBoundary: InventoryIntegritySemanticBoundary;
   readonly executionBoundary: InventoryIntegrityExecutionBoundary;

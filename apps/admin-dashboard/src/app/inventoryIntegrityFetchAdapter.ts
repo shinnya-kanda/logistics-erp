@@ -23,11 +23,12 @@ export function adaptFetchMetadataToPayload(
       ...metadata.source,
       capabilities: [...metadata.source.capabilities],
     },
+    statusSemantics: metadata.responseStatus,
     payloadVersion: metadata.resultVersion,
     readability:
-      `${metadata.readability} fetch adapter は future fetch result を payload semantics として読む境界であり、${metadata.endpoint.endpointId} の network response handling 実装ではありません。${metadata.fetchExecution.state} は read-only semantic state であり実行結果ではありません。`,
+      `${metadata.readability} fetch adapter は future fetch result を payload semantics として読む境界であり、${metadata.endpoint.endpointId} の network response handling 実装ではありません。${metadata.fetchExecution.state} と ${metadata.responseStatus.status} は read-only semantic state であり実行結果ではありません。`,
     adapterInputBoundary:
-      `${metadata.adapterInputBoundary} request ${metadata.request.requestId}、endpoint ${metadata.endpoint.endpointId}、${metadata.fetchSemantics.semanticsId}、execution ${metadata.fetchExecution.semanticsId} は read-only metadata であり、fetch 実行条件ではありません。`,
+      `${metadata.adapterInputBoundary} request ${metadata.request.requestId}、endpoint ${metadata.endpoint.endpointId}、${metadata.fetchSemantics.semanticsId}、execution ${metadata.fetchExecution.semanticsId}、response ${metadata.responseStatus.semanticsId} は read-only metadata であり、fetch 実行条件ではありません。`,
     truthSource: metadata.truthSource,
     cacheCompareTarget: metadata.cacheCompareTarget,
     semanticBoundary: metadata.semanticBoundary,
