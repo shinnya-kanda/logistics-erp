@@ -85,50 +85,94 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
   compareProjections: [
     {
       id: "inventory-compare-part-location-gap",
-      identity: {
-        projectionId: "inventory-compare-part-location-gap",
-        projectionType: "compare_projection",
-        projectionVersion: "static-b37-01",
-        scope: "location",
-        generatedAt: "static mock",
-        contractVersion: "inventory-integrity-projection-contract",
-      },
       scope: "location",
       label: "部品・棚別の数量差異",
       description:
         "部品・棚単位で inventory_current と transaction 集計を将来どう比較するかを静的に説明します。",
-      snapshot: {
-        snapshotId: "snapshot-part-location-static",
-        asOfTime: "static mock",
-        observedAt: "static mock",
-        transactionCoverage: "partial",
-        freshness: "unknown",
-        limitation: "static mock のため、実データ snapshot や live freshness は確認していません。",
-      },
-      freshness: {
-        level: "unknown",
-        reason: "live compare や Supabase fetch を行っていない静的 projection です。",
-        caveat: "鮮度は確認制限であり、rebuild や compare execution の開始条件ではありません。",
-      },
-      completeness: {
-        level: "partial",
-        scope: "部品・棚別の差異説明に必要な mock metadata の範囲",
-        caveat: "一部の説明材料のみであり、正しさ保証や自動補完ではありません。",
-      },
-      traceability: {
-        sourceTraceLabel: "inventory_transactions truth と inventory_current cache の比較由来",
-        sourceChain: ["inventory_transactions", "inventory_current", "static compare projection"],
-        caveat: "source chain は追跡用の読み方であり、execution chain ではありません。",
-      },
-      lineageMetadata: {
-        lineageLabel: "部品・棚別 compare projection lineage",
-        derivedFrom: ["transaction 集計", "表示用 cache", "部品 + 棚の範囲"],
-        caveat: "lineage は由来説明であり、因果確定や修正権限ではありません。",
-      },
-      reviewReadiness: {
-        level: "partially_ready",
-        reason: "差異理由と由来 metadata はありますが、live evidence resolution は未実装です。",
-        caveat: "一部レビュー可能な状態であり、承認可能や実行可能ではありません。",
+      metadata: {
+        identity: {
+          projectionId: "inventory-compare-part-location-gap",
+          projectionType: "compare_projection",
+          projectionVersion: "static-b37-02",
+          scope: "location",
+          generatedAt: "static mock",
+          contractVersion: "inventory-integrity-projection-contract",
+        },
+        snapshot: {
+          snapshotId: "snapshot-part-location-static",
+          asOfTime: "static mock",
+          observedAt: "static mock",
+          transactionCoverage: "partial",
+          freshness: "unknown",
+          limitation: "static mock のため、実データ snapshot や live freshness は確認していません。",
+        },
+        evidence: {
+          source: {
+            source: "inventory_transactions",
+            label: "transaction truth",
+            semanticMeaning:
+              "入出庫・移動・調整の履歴から差異理由を説明するための truth source です。",
+          },
+          confidence: {
+            level: "medium",
+            reason: "transaction 集計と cache 差異の説明材料はありますが、live resolution はありません。",
+            caveat: "medium confidence は正しさ保証や実行許可ではありません。",
+          },
+          freshness: {
+            level: "unknown",
+            reason: "live compare や Supabase fetch を行っていない静的 projection です。",
+            caveat: "鮮度は確認制限であり、rebuild や compare execution の開始条件ではありません。",
+          },
+          completeness: {
+            level: "partial",
+            scope: "部品・棚別の差異説明に必要な mock evidence metadata の範囲",
+            caveat: "一部の説明材料のみであり、正しさ保証や自動補完ではありません。",
+          },
+          gaps: [
+            {
+              id: "metadata-evidence-gap-live-resolution",
+              label: "live resolution 未実装",
+              reason: "現在は static mock のため、実データの証跡解決は行いません。",
+              limitation: "この gap は review limitation であり、auto-fix や rebuild の根拠ではありません。",
+            },
+          ],
+          semanticBoundary: "reasoning_visualization_only",
+          executionBoundary:
+            "metadata は説明表示のみです。evidence execution、rebuild、replay、correction は実行しません。",
+        },
+        confidence: {
+          level: "medium",
+          reason: "差異理由と由来 metadata はありますが、live evidence resolution は未実装です。",
+          caveat: "説明可能性の目安であり、truth guarantee ではありません。",
+        },
+        freshness: {
+          level: "unknown",
+          reason: "live compare や Supabase fetch を行っていない静的 projection です。",
+          caveat: "鮮度は確認制限であり、rebuild や compare execution の開始条件ではありません。",
+        },
+        completeness: {
+          level: "partial",
+          scope: "部品・棚別の差異説明に必要な mock metadata の範囲",
+          caveat: "一部の説明材料のみであり、正しさ保証や自動補完ではありません。",
+        },
+        traceability: {
+          sourceTraceLabel: "inventory_transactions truth と inventory_current cache の比較由来",
+          sourceChain: ["inventory_transactions", "inventory_current", "static compare projection"],
+          caveat: "source chain は追跡用の読み方であり、execution chain ではありません。",
+        },
+        lineage: {
+          lineageLabel: "部品・棚別 compare projection lineage",
+          derivedFrom: ["transaction 集計", "表示用 cache", "部品 + 棚の範囲"],
+          caveat: "lineage は由来説明であり、因果確定や修正権限ではありません。",
+        },
+        reviewReadiness: {
+          level: "partially_ready",
+          reason: "差異理由と由来 metadata はありますが、live evidence resolution は未実装です。",
+          caveat: "一部レビュー可能な状態であり、承認可能や実行可能ではありません。",
+        },
+        semanticBoundary: "reasoning_visualization_only",
+        executionBoundary:
+          "説明表示のみです。live compare、rebuild、replay、correction、在庫更新は実行しません。",
       },
       difference: {
         currentReadModelQuantity: "120",
@@ -173,55 +217,97 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
       },
       truthStatement:
         "inventory_transactions 集計が truth input で、inventory_current は比較対象の cache です。",
-      executionBoundary:
-        "説明表示のみです。live compare、rebuild、replay、correction、在庫更新は実行しません。",
     },
     {
       id: "inventory-compare-project-scope-gap",
-      identity: {
-        projectionId: "inventory-compare-project-scope-gap",
-        projectionType: "compare_projection",
-        projectionVersion: "static-b37-01",
-        scope: "project",
-        generatedAt: "static mock",
-        contractVersion: "inventory-integrity-projection-contract",
-      },
       scope: "project",
       label: "project_no 別の数量差異",
       description:
         "project_no 単位で表示用 cache と transaction 集計を将来どう比較するかを静的に説明します。",
-      snapshot: {
-        snapshotId: "snapshot-project-scope-static",
-        asOfTime: "static mock",
-        observedAt: "static mock",
-        transactionCoverage: "unknown",
-        freshness: "unknown",
-        limitation: "未比較 mock のため、snapshot coverage は確認していません。",
-      },
-      freshness: {
-        level: "unknown",
-        reason: "差異 0 は live freshness ではなく、未比較状態を示す static policy です。",
-        caveat: "unknown freshness は safe 判定や compare completion ではありません。",
-      },
-      completeness: {
-        level: "missing",
-        scope: "project_no compare の live evidence / source coverage",
-        caveat: "不足は取得指示ではなく、review limitation です。",
-      },
-      traceability: {
-        sourceTraceLabel: "static policy 由来の未比較説明",
-        sourceChain: ["static_policy", "static compare projection"],
-        caveat: "未比較の traceability は replay eligibility ではありません。",
-      },
-      lineageMetadata: {
-        lineageLabel: "project_no compare projection lineage",
-        derivedFrom: ["未比較 policy", "project_no の範囲"],
-        caveat: "差異 0 の lineage は正しさ保証ではありません。",
-      },
-      reviewReadiness: {
-        level: "not_ready",
-        reason: "live compare と evidence resolution がないため、実データ review の材料が不足しています。",
-        caveat: "レビュー未準備であり、correction や rebuild の指示ではありません。",
+      metadata: {
+        identity: {
+          projectionId: "inventory-compare-project-scope-gap",
+          projectionType: "compare_projection",
+          projectionVersion: "static-b37-02",
+          scope: "project",
+          generatedAt: "static mock",
+          contractVersion: "inventory-integrity-projection-contract",
+        },
+        snapshot: {
+          snapshotId: "snapshot-project-scope-static",
+          asOfTime: "static mock",
+          observedAt: "static mock",
+          transactionCoverage: "unknown",
+          freshness: "unknown",
+          limitation: "未比較 mock のため、snapshot coverage は確認していません。",
+        },
+        evidence: {
+          source: {
+            source: "static_policy",
+            label: "静的 policy 証跡",
+            semanticMeaning:
+              "未比較状態を正しさと誤読しないための静的な説明 source です。",
+          },
+          confidence: {
+            level: "unknown",
+            reason: "live compare を実行していないため、実データ根拠の信頼度は判断できません。",
+            caveat: "unknown confidence は safe 判定や無視可能を意味しません。",
+          },
+          freshness: {
+            level: "unknown",
+            reason: "差異 0 は live freshness ではなく、未比較状態を示す static policy です。",
+            caveat: "unknown freshness は safe 判定や compare completion ではありません。",
+          },
+          completeness: {
+            level: "missing",
+            scope: "project_no compare の live evidence / source coverage",
+            caveat: "不足は取得指示ではなく、review limitation です。",
+          },
+          gaps: [
+            {
+              id: "metadata-evidence-gap-not-compared",
+              label: "未比較 gap",
+              reason: "live compare を実行していないため、実際の一致は確認していません。",
+              limitation: "差異 0 表示を safe 判定や完了判定として扱わないでください。",
+            },
+          ],
+          semanticBoundary: "reasoning_visualization_only",
+          executionBoundary:
+            "metadata は説明表示のみです。evidence execution、compare execution、rebuild は実行しません。",
+        },
+        confidence: {
+          level: "unknown",
+          reason: "live compare と evidence resolution がないため、実データ review の材料が不足しています。",
+          caveat: "不明は安全保証や正しさ保証ではありません。",
+        },
+        freshness: {
+          level: "unknown",
+          reason: "差異 0 は live freshness ではなく、未比較状態を示す static policy です。",
+          caveat: "unknown freshness は safe 判定や compare completion ではありません。",
+        },
+        completeness: {
+          level: "missing",
+          scope: "project_no compare の live evidence / source coverage",
+          caveat: "不足は取得指示ではなく、review limitation です。",
+        },
+        traceability: {
+          sourceTraceLabel: "static policy 由来の未比較説明",
+          sourceChain: ["static_policy", "static compare projection"],
+          caveat: "未比較の traceability は replay eligibility ではありません。",
+        },
+        lineage: {
+          lineageLabel: "project_no compare projection lineage",
+          derivedFrom: ["未比較 policy", "project_no の範囲"],
+          caveat: "差異 0 の lineage は正しさ保証ではありません。",
+        },
+        reviewReadiness: {
+          level: "not_ready",
+          reason: "live compare と evidence resolution がないため、実データ review の材料が不足しています。",
+          caveat: "レビュー未準備であり、correction や rebuild の指示ではありません。",
+        },
+        semanticBoundary: "reasoning_visualization_only",
+        executionBoundary:
+          "比較の意味を説明するだけです。Supabase query や比較処理は実行しません。",
       },
       difference: {
         currentReadModelQuantity: "64",
@@ -261,55 +347,97 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
       },
       truthStatement:
         "この mock の差異 0 は正しさの証明ではありません。inventory_transactions が truth です。",
-      executionBoundary:
-        "比較の意味を説明するだけです。Supabase query や比較処理は実行しません。",
     },
     {
       id: "inventory-compare-inventory-type-gap",
-      identity: {
-        projectionId: "inventory-compare-inventory-type-gap",
-        projectionType: "compare_projection",
-        projectionVersion: "static-b37-01",
-        scope: "inventory_type",
-        generatedAt: "static mock",
-        contractVersion: "inventory-integrity-projection-contract",
-      },
       scope: "inventory_type",
       label: "在庫種別境界の数量差異",
       description:
         "project / mrp の在庫種別境界を、再構築判断ではなく確認材料として静的に説明します。",
-      snapshot: {
-        snapshotId: "snapshot-inventory-type-static",
-        asOfTime: "static mock",
-        observedAt: "static mock",
-        transactionCoverage: "partial",
-        freshness: "stale",
-        limitation: "在庫種別境界の source coverage は static mock の範囲に限定されています。",
-      },
-      freshness: {
-        level: "stale",
-        reason: "静的な境界説明であり、最新 transaction 反映とは限りません。",
-        caveat: "stale は確認制限であり、rebuild required ではありません。",
-      },
-      completeness: {
-        level: "partial",
-        scope: "inventory_type 境界の静的説明 metadata",
-        caveat: "partial は見えている範囲の制限であり、missing action required ではありません。",
-      },
-      traceability: {
-        sourceTraceLabel: "在庫種別境界の transaction / cache / lineage 由来",
-        sourceChain: ["inventory_transactions", "inventory_current", "lineage_projection"],
-        caveat: "traceability は由来追跡であり、causal proof ではありません。",
-      },
-      lineageMetadata: {
-        lineageLabel: "inventory_type compare projection lineage",
-        derivedFrom: ["在庫種別別 transaction 集計", "在庫種別別 cache", "project / mrp 境界"],
-        caveat: "lineage gap は review limitation であり、correction 指示ではありません。",
-      },
-      reviewReadiness: {
-        level: "partially_ready",
-        reason: "在庫種別境界の説明材料はありますが、live evidence resolution はありません。",
-        caveat: "一部レビュー可能な状態であり、監査開始や修正指示ではありません。",
+      metadata: {
+        identity: {
+          projectionId: "inventory-compare-inventory-type-gap",
+          projectionType: "compare_projection",
+          projectionVersion: "static-b37-02",
+          scope: "inventory_type",
+          generatedAt: "static mock",
+          contractVersion: "inventory-integrity-projection-contract",
+        },
+        snapshot: {
+          snapshotId: "snapshot-inventory-type-static",
+          asOfTime: "static mock",
+          observedAt: "static mock",
+          transactionCoverage: "partial",
+          freshness: "stale",
+          limitation: "在庫種別境界の source coverage は static mock の範囲に限定されています。",
+        },
+        evidence: {
+          source: {
+            source: "lineage_projection",
+            label: "差異由来(lineage)証跡",
+            semanticMeaning:
+              "project / mrp 境界と集計範囲の関係を説明する lineage 由来の証跡です。",
+          },
+          confidence: {
+            level: "low",
+            reason: "在庫種別境界の live evidence resolution がなく、説明材料に制限があります。",
+            caveat: "low confidence は誤り確定や correction required ではありません。",
+          },
+          freshness: {
+            level: "stale",
+            reason: "静的な境界説明であり、最新 transaction 反映とは限りません。",
+            caveat: "stale は確認制限であり、rebuild required ではありません。",
+          },
+          completeness: {
+            level: "partial",
+            scope: "inventory_type 境界の静的 evidence metadata",
+            caveat: "partial は見えている範囲の制限であり、missing action required ではありません。",
+          },
+          gaps: [
+            {
+              id: "metadata-evidence-gap-boundary-resolution",
+              label: "境界解決不足",
+              reason: "inventory_type 境界の live evidence resolution は未実装です。",
+              limitation: "証跡不足は review limitation であり、rebuild や auto-fix の根拠ではありません。",
+            },
+          ],
+          semanticBoundary: "reasoning_visualization_only",
+          executionBoundary:
+            "metadata は説明表示のみです。監査開始、correction、rebuild、replay は実行しません。",
+        },
+        confidence: {
+          level: "low",
+          reason: "在庫種別境界の説明材料はありますが、live evidence resolution はありません。",
+          caveat: "低い説明可能性は誤り確定や修正指示ではありません。",
+        },
+        freshness: {
+          level: "stale",
+          reason: "静的な境界説明であり、最新 transaction 反映とは限りません。",
+          caveat: "stale は確認制限であり、rebuild required ではありません。",
+        },
+        completeness: {
+          level: "partial",
+          scope: "inventory_type 境界の静的説明 metadata",
+          caveat: "partial は見えている範囲の制限であり、missing action required ではありません。",
+        },
+        traceability: {
+          sourceTraceLabel: "在庫種別境界の transaction / cache / lineage 由来",
+          sourceChain: ["inventory_transactions", "inventory_current", "lineage_projection"],
+          caveat: "traceability は由来追跡であり、causal proof ではありません。",
+        },
+        lineage: {
+          lineageLabel: "inventory_type compare projection lineage",
+          derivedFrom: ["在庫種別別 transaction 集計", "在庫種別別 cache", "project / mrp 境界"],
+          caveat: "lineage gap は review limitation であり、correction 指示ではありません。",
+        },
+        reviewReadiness: {
+          level: "partially_ready",
+          reason: "在庫種別境界の説明材料はありますが、live evidence resolution はありません。",
+          caveat: "一部レビュー可能な状態であり、監査開始や修正指示ではありません。",
+        },
+        semanticBoundary: "reasoning_visualization_only",
+        executionBoundary:
+          "rebuild、replay、correction は行いません。境界確認は参照用 metadata として表示します。",
       },
       difference: {
         currentReadModelQuantity: "31",
@@ -354,8 +482,6 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
       },
       truthStatement:
         "inventory_type 別に見ても inventory_current は truth ではありません。transaction 集計が期待数量を定義します。",
-      executionBoundary:
-        "rebuild、replay、correction は行いません。境界確認は参照用 metadata として表示します。",
     },
   ],
   attentionProjections: [
@@ -456,6 +582,40 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
       projectionId: "inventory-compare-part-location-gap",
       attentionId: "inventory-attention-part-location-gap",
       title: "部品・棚別差異の証跡",
+      metadata: {
+        source: {
+          source: "inventory_transactions",
+          label: "transaction truth",
+          semanticMeaning:
+            "入出庫・移動・調整の履歴から差異理由を説明するための truth source です。",
+        },
+        confidence: {
+          level: "medium",
+          reason: "inventory_transactions 集計と inventory_current cache の差異を説明する根拠候補です。",
+          caveat: "medium confidence は正しさ保証や実行許可ではありません。",
+        },
+        freshness: {
+          level: "unknown",
+          reason: "static mock のため、実データ証跡の鮮度は確認していません。",
+          caveat: "unknown freshness は safe 判定ではありません。",
+        },
+        completeness: {
+          level: "partial",
+          scope: "部品・棚別差異の static evidence",
+          caveat: "partial evidence は補完指示ではありません。",
+        },
+        gaps: [
+          {
+            id: "evidence-gap-live-resolution",
+            label: "live resolution 未実装",
+            reason: "現在は static mock のため、実データの証跡解決は行いません。",
+            limitation: "この証跡は説明補助であり、正しさの確定や自動修正には使いません。",
+          },
+        ],
+        semanticBoundary: "reasoning_visualization_only",
+        executionBoundary:
+          "証跡と説明の表示のみです。evidence execution、auto-fix、rebuild、replay、correction、通知、担当割当は実行しません。",
+      },
       source: {
         source: "inventory_transactions",
         label: "transaction truth",
@@ -485,6 +645,40 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
       projectionId: "inventory-compare-project-scope-gap",
       attentionId: "inventory-attention-project-scope-gap",
       title: "project_no 境界の参考証跡",
+      metadata: {
+        source: {
+          source: "static_policy",
+          label: "静的 policy 証跡",
+          semanticMeaning:
+            "未比較状態を正しさと誤読しないための静的な説明 source です。",
+        },
+        confidence: {
+          level: "unknown",
+          reason: "project_no 範囲の live compare は実行していません。",
+          caveat: "unknown confidence は安全保証ではありません。",
+        },
+        freshness: {
+          level: "unknown",
+          reason: "未比較状態を示す static evidence です。",
+          caveat: "unknown freshness は compare completion ではありません。",
+        },
+        completeness: {
+          level: "missing",
+          scope: "project_no 境界の live evidence",
+          caveat: "missing evidence は fetch / upload 指示ではありません。",
+        },
+        gaps: [
+          {
+            id: "evidence-gap-not-compared",
+            label: "未比較 gap",
+            reason: "live compare を実行していないため、実際の一致は確認していません。",
+            limitation: "差異 0 表示を safe 判定や完了判定として扱わないでください。",
+          },
+        ],
+        semanticBoundary: "reasoning_visualization_only",
+        executionBoundary:
+          "証跡と説明の表示のみです。evidence execution、auto-fix、rebuild、replay、correction、通知、担当割当は実行しません。",
+      },
       source: {
         source: "static_policy",
         label: "静的 policy 証跡",
@@ -514,6 +708,40 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
       projectionId: "inventory-compare-inventory-type-gap",
       attentionId: "inventory-attention-inventory-type-gap",
       title: "在庫種別境界の証跡不足",
+      metadata: {
+        source: {
+          source: "lineage_projection",
+          label: "差異由来(lineage)証跡",
+          semanticMeaning:
+            "project / mrp 境界と集計範囲の関係を説明する lineage 由来の証跡です。",
+        },
+        confidence: {
+          level: "low",
+          reason: "在庫種別境界の live evidence resolution は未実装です。",
+          caveat: "low confidence は誤り確定ではありません。",
+        },
+        freshness: {
+          level: "stale",
+          reason: "静的な lineage evidence であり、最新 transaction 反映とは限りません。",
+          caveat: "stale は確認制限であり、rebuild required ではありません。",
+        },
+        completeness: {
+          level: "missing",
+          scope: "在庫種別境界の live evidence resolution",
+          caveat: "missing evidence は correction 指示ではありません。",
+        },
+        gaps: [
+          {
+            id: "evidence-gap-boundary-resolution",
+            label: "境界解決不足",
+            reason: "inventory_type 境界の live evidence resolution は未実装です。",
+            limitation: "証跡不足は review limitation であり、rebuild や auto-fix の根拠ではありません。",
+          },
+        ],
+        semanticBoundary: "reasoning_visualization_only",
+        executionBoundary:
+          "証跡と説明の表示のみです。evidence execution、auto-fix、rebuild、replay、correction、通知、担当割当は実行しません。",
+      },
       source: {
         source: "lineage_projection",
         label: "差異由来(lineage)証跡",

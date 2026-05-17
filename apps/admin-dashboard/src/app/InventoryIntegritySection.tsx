@@ -490,27 +490,28 @@ export function InventoryIntegritySection() {
               </p>
               <p style={styles.description}>truth の見方: {projection.truthStatement}</p>
               <p style={styles.description}>
-                観測時点(snapshot): {projection.snapshot.snapshotId} / {projection.snapshot.limitation}
+                観測時点(snapshot): {projection.metadata.snapshot.snapshotId} /{" "}
+                {projection.metadata.snapshot.limitation}
               </p>
               <p style={styles.description}>
-                追跡(traceability): {projection.traceability.sourceTraceLabel} /{" "}
-                {projection.traceability.caveat}
+                追跡(traceability): {projection.metadata.traceability.sourceTraceLabel} /{" "}
+                {projection.metadata.traceability.caveat}
               </p>
               <p style={styles.description}>
-                レビュー可能性: {projection.reviewReadiness.reason} /{" "}
-                {projection.reviewReadiness.caveat}
+                レビュー可能性: {projection.metadata.reviewReadiness.reason} /{" "}
+                {projection.metadata.reviewReadiness.caveat}
               </p>
-              <p style={styles.description}>実行しないこと: {projection.executionBoundary}</p>
+              <p style={styles.description}>実行しないこと: {projection.metadata.executionBoundary}</p>
               <div style={styles.badgeRow}>
                 <span style={styles.badge}>{severityLabel(projection.difference.severity)}</span>
                 <span style={styles.badge}>差異理由: {reasonLabel(projection.difference.reason)}</span>
                 <span style={styles.badge}>範囲: {scopeLabel(projection.scope)}</span>
-                <span style={styles.badge}>{freshnessLabel(projection.freshness.level)}</span>
+                <span style={styles.badge}>{freshnessLabel(projection.metadata.freshness.level)}</span>
                 <span style={styles.badge}>
-                  {completenessLabel(projection.completeness.level)}
+                  {completenessLabel(projection.metadata.completeness.level)}
                 </span>
                 <span style={styles.badge}>
-                  {reviewReadinessLabel(projection.reviewReadiness.level)}
+                  {reviewReadinessLabel(projection.metadata.reviewReadiness.level)}
                 </span>
               </div>
             </article>
@@ -631,17 +632,19 @@ export function InventoryIntegritySection() {
               <p style={styles.description}>説明: {evidence.explanation}</p>
               <p style={styles.description}>理由: {evidence.rationale}</p>
               <p style={styles.description}>
-                由来: {evidence.source.label} / {evidence.source.semanticMeaning}
+                由来: {evidence.metadata.source.label} / {evidence.metadata.source.semanticMeaning}
               </p>
-              <p style={styles.description}>実行しないこと: {evidence.executionBoundary}</p>
+              <p style={styles.description}>実行しないこと: {evidence.metadata.executionBoundary}</p>
               <div style={styles.badgeRow}>
                 <span style={styles.badge}>証跡は表示のみ</span>
                 <span style={styles.badge}>{evidenceQualityLabel(evidence.quality)}</span>
-                <span style={styles.badge}>{evidenceConfidenceLabel(evidence.confidence)}</span>
-                <span style={styles.badge}>{semanticBoundaryLabel(evidence.semanticBoundary)}</span>
+                <span style={styles.badge}>
+                  {evidenceConfidenceLabel(evidence.metadata.confidence.level)}
+                </span>
+                <span style={styles.badge}>{semanticBoundaryLabel(evidence.metadata.semanticBoundary)}</span>
               </div>
               <div style={styles.list}>
-                {evidence.gaps.map((gap) => (
+                {evidence.metadata.gaps.map((gap) => (
                   <div key={gap.id} style={styles.card}>
                     <strong>証跡不足: {gap.label}</strong>
                     <p style={styles.description}>理由: {gap.reason}</p>
