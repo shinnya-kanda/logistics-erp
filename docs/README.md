@@ -36,3 +36,4 @@
 - [Inventory Integrity Completeness Semantics Review](./inventory-integrity-completeness-semantics-review.md) — complete / partial / missing / unknown completeness semantics review
 - [Inventory Integrity Traceability Semantics Review](./inventory-integrity-traceability-semantics-review.md) — source lineage / source chain / projection traceability semantics review
 - [Inventory Integrity Lineage Semantics Review](./inventory-integrity-lineage-semantics-review.md) — projection lineage / reasoning lineage / derived-from semantics review
+- [Inventory Integrity Explainability Semantics Review](./inventory-integrity-explainability-semantics-review.md) — human-readable / governance / operational / audit explanation semantics review
