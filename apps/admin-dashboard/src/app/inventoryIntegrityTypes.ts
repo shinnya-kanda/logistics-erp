@@ -74,10 +74,32 @@ export type ProjectionTransportState =
   | "transport_unreachable"
   | "transport_static_only";
 
+export type ProjectionOfflineState =
+  | "offline_possible"
+  | "offline_required"
+  | "offline_unavailable"
+  | "offline_bypassed";
+
+export type ProjectionOfflineSemantics = {
+  readonly semanticsId: string;
+  readonly state: ProjectionOfflineState;
+  readonly label: string;
+  readonly readability: string;
+  readonly cacheInterpretation: string;
+  readonly governanceInterpretation: string;
+  readonly operationalInterpretation: string;
+  readonly noExecutionMeaning: string;
+  readonly truthSource: InventoryIntegrityTruthSource;
+  readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
 export type ProjectionTransportSemantics = {
   readonly semanticsId: string;
   readonly state: ProjectionTransportState;
   readonly label: string;
+  readonly offlineSemantics: ProjectionOfflineSemantics;
   readonly readability: string;
   readonly offlineInterpretation: string;
   readonly timeoutInterpretation: string;
@@ -100,6 +122,7 @@ export type ProjectionCacheSemantics = {
   readonly semanticsId: string;
   readonly state: ProjectionCacheState;
   readonly label: string;
+  readonly offlineSemantics: ProjectionOfflineSemantics;
   readonly readability: string;
   readonly freshnessInterpretation: string;
   readonly reuseInterpretation: string;
@@ -851,6 +874,7 @@ export type InventoryIntegrityFetchResultMetadata = {
   readonly fetchExecution: ProjectionFetchExecutionSemantics;
   readonly transportSemantics: ProjectionTransportSemantics;
   readonly cacheSemantics: ProjectionCacheSemantics;
+  readonly offlineSemantics: ProjectionOfflineSemantics;
   readonly retrySemantics: ProjectionRetrySemantics;
   readonly responseStatus: ProjectionResponseStatusSemantics;
   readonly resultVersion: string;
@@ -920,6 +944,7 @@ export type InventoryIntegrityEdgeClient = {
   readonly responseStatus: ProjectionResponseStatusSemantics;
   readonly transportSemantics: ProjectionTransportSemantics;
   readonly cacheSemantics: ProjectionCacheSemantics;
+  readonly offlineSemantics: ProjectionOfflineSemantics;
   readonly retrySemantics: ProjectionRetrySemantics;
   readonly readProjectionPayload: (request?: InventoryIntegrityEdgeRequest) => RawProjectionPayload;
   readonly truthSource: InventoryIntegrityTruthSource;
@@ -939,6 +964,7 @@ export type InventoryIntegrityEdgeClientSummary = {
   readonly fetchExecutionState: ProjectionFetchExecutionState;
   readonly transportState: ProjectionTransportState;
   readonly cacheState: ProjectionCacheState;
+  readonly offlineState: ProjectionOfflineState;
   readonly retryState: ProjectionRetryState;
   readonly responseStatus: ProjectionResponseStatus;
   readonly payloadId: string;

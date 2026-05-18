@@ -14,6 +14,7 @@ import type {
   ProjectionEndpoint,
   ProjectionEndpointPolicy,
   ProjectionFetchExecutionSemantics,
+  ProjectionOfflineSemantics,
   ProjectionResponseStatusSemantics,
   ProjectionRetrySemantics,
   ProjectionSourceMetadata,
@@ -48,10 +49,32 @@ export const inventoryIntegrityFetchPolicy: InventoryIntegrityFetchPolicy = {
     "InventoryIntegrityFetchPolicy は execution authority を持ちません。fetch、network access、compare execution、rebuild、mutation は実行しません。",
 };
 
+export const inventoryIntegrityOfflineSemantics: ProjectionOfflineSemantics = {
+  semanticsId: "inventory-integrity-static-read-only-offline-semantics",
+  state: "offline_bypassed",
+  label: "static offline-bypassed interpretation",
+  readability:
+    "offline_bypassed は static mock flow で offline handling を使わずに読まれる状態を示します。offline 対応完了や offline cache 利用ではありません。",
+  cacheInterpretation:
+    "offline cache interpretation は将来 offline cache をどう読むかの状態であり、cache storage 読み書き、persist、restore を実行しません。",
+  governanceInterpretation:
+    "offline_possible / offline_required は governance visualization 用の解釈状態であり、承認、通知、workflow を開始しません。",
+  operationalInterpretation:
+    "offline state は operational dashboard の表示用解釈であり、offline detection、network probe、再接続、担当割当を実行しません。",
+  noExecutionMeaning:
+    "offline semantics は offline implementation ではありません。offline queue、fetch、network access、Supabase 接続、mutation は実行しません。",
+  truthSource: "inventory_transactions",
+  cacheCompareTarget: "inventory_current",
+  semanticBoundary: "reasoning_visualization_only",
+  executionBoundary:
+    "ProjectionOfflineSemantics は execution authority を持ちません。offline storage access、sync、network request、mutation は実行しません。",
+};
+
 export const inventoryIntegrityTransportSemantics: ProjectionTransportSemantics = {
   semanticsId: "inventory-integrity-static-read-only-transport-semantics",
   state: "transport_static_only",
   label: "static-only transport interpretation",
+  offlineSemantics: inventoryIntegrityOfflineSemantics,
   readability:
     "transport_static_only は static mock flow が network transport を使わずに読まれる状態を示します。transport_available や network 成功ではありません。",
   offlineInterpretation:
@@ -75,6 +98,7 @@ export const inventoryIntegrityCacheSemantics: ProjectionCacheSemantics = {
   semanticsId: "inventory-integrity-static-read-only-cache-semantics",
   state: "cache_bypassed",
   label: "static cache-bypassed interpretation",
+  offlineSemantics: inventoryIntegrityOfflineSemantics,
   readability:
     "cache_bypassed は static mock flow が Edge cache implementation を使わずに読まれる状態を示します。cache fresh 判定や cache hit ではありません。",
   freshnessInterpretation:
@@ -266,6 +290,7 @@ export function createInventoryIntegrityMockEdgeClient(
     responseStatus: inventoryIntegrityResponseStatusSemantics,
     transportSemantics: inventoryIntegrityTransportSemantics,
     cacheSemantics: inventoryIntegrityCacheSemantics,
+    offlineSemantics: inventoryIntegrityOfflineSemantics,
     retrySemantics: inventoryIntegrityRetrySemantics,
     readProjectionPayload: (request = defaultInventoryIntegrityEdgeRequest) => {
       const fetchResult: InventoryIntegrityFetchResult = {
@@ -279,11 +304,12 @@ export function createInventoryIntegrityMockEdgeClient(
           fetchExecution: request.fetchExecution,
           transportSemantics: inventoryIntegrityTransportSemantics,
           cacheSemantics: inventoryIntegrityCacheSemantics,
+          offlineSemantics: inventoryIntegrityOfflineSemantics,
           retrySemantics: inventoryIntegrityRetrySemantics,
           responseStatus: inventoryIntegrityResponseStatusSemantics,
           resultVersion: "inventory-integrity-static-fetch-result-v1",
           readability:
-            `static mock source を future fetch result と同じ語彙で読むための metadata です。request、${request.endpoint.endpointId}、${request.fetchSemantics.semanticsId}、${request.fetchExecution.state}、${inventoryIntegrityTransportSemantics.state}、${inventoryIntegrityCacheSemantics.state}、${inventoryIntegrityRetrySemantics.state}、${inventoryIntegrityResponseStatusSemantics.status} は読み方の境界であり retry result ではありません。`,
+            `static mock source を future fetch result と同じ語彙で読むための metadata です。request、${request.endpoint.endpointId}、${request.fetchSemantics.semanticsId}、${request.fetchExecution.state}、${inventoryIntegrityTransportSemantics.state}、${inventoryIntegrityCacheSemantics.state}、${inventoryIntegrityOfflineSemantics.state}、${inventoryIntegrityRetrySemantics.state}、${inventoryIntegrityResponseStatusSemantics.status} は読み方の境界であり offline result ではありません。`,
           adapterInputBoundary:
             "mock fetch result は fetch adapter input boundary の simulation です。endpoint implementation、Edge API implementation、fetch、network access、Supabase 接続は含みません。",
           truthSource: "inventory_transactions",
@@ -350,6 +376,7 @@ export function readProjectionSummary(
     fetchExecutionState: request.fetchExecution.state,
     transportState: client.transportSemantics.state,
     cacheState: client.cacheSemantics.state,
+    offlineState: client.offlineSemantics.state,
     retryState: client.retrySemantics.state,
     responseStatus: client.responseStatus.status,
     payloadId: payload.metadata.payloadId,
