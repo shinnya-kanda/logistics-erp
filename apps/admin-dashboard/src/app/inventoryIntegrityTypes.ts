@@ -111,6 +111,27 @@ export type ProjectionCacheSemantics = {
   readonly executionBoundary: InventoryIntegrityExecutionBoundary;
 };
 
+export type ProjectionRetryState =
+  | "retry_allowed"
+  | "retry_blocked"
+  | "retry_unnecessary"
+  | "retry_unavailable";
+
+export type ProjectionRetrySemantics = {
+  readonly semanticsId: string;
+  readonly state: ProjectionRetryState;
+  readonly label: string;
+  readonly readability: string;
+  readonly governanceInterpretation: string;
+  readonly operationalInterpretation: string;
+  readonly offlineRecoveryInterpretation: string;
+  readonly noExecutionMeaning: string;
+  readonly truthSource: InventoryIntegrityTruthSource;
+  readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
 export type InventoryIntegrityFetchSemantics = {
   readonly semanticsId: string;
   readonly capability: InventoryIntegrityFetchCapability;
@@ -174,6 +195,7 @@ export type ProjectionFetchExecutionSemantics = {
   readonly semanticsId: string;
   readonly state: ProjectionFetchExecutionState;
   readonly label: string;
+  readonly retrySemantics: ProjectionRetrySemantics;
   readonly readability: string;
   readonly requestInterpretation: string;
   readonly endpointInterpretation: string;
@@ -196,6 +218,7 @@ export type ProjectionResponseStatusSemantics = {
   readonly label: string;
   readonly transportSemantics: ProjectionTransportSemantics;
   readonly cacheSemantics: ProjectionCacheSemantics;
+  readonly retrySemantics: ProjectionRetrySemantics;
   readonly readability: string;
   readonly interpretation: string;
   readonly limitation: string;
@@ -828,6 +851,7 @@ export type InventoryIntegrityFetchResultMetadata = {
   readonly fetchExecution: ProjectionFetchExecutionSemantics;
   readonly transportSemantics: ProjectionTransportSemantics;
   readonly cacheSemantics: ProjectionCacheSemantics;
+  readonly retrySemantics: ProjectionRetrySemantics;
   readonly responseStatus: ProjectionResponseStatusSemantics;
   readonly resultVersion: string;
   readonly readability: string;
@@ -896,6 +920,7 @@ export type InventoryIntegrityEdgeClient = {
   readonly responseStatus: ProjectionResponseStatusSemantics;
   readonly transportSemantics: ProjectionTransportSemantics;
   readonly cacheSemantics: ProjectionCacheSemantics;
+  readonly retrySemantics: ProjectionRetrySemantics;
   readonly readProjectionPayload: (request?: InventoryIntegrityEdgeRequest) => RawProjectionPayload;
   readonly truthSource: InventoryIntegrityTruthSource;
   readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
@@ -914,6 +939,7 @@ export type InventoryIntegrityEdgeClientSummary = {
   readonly fetchExecutionState: ProjectionFetchExecutionState;
   readonly transportState: ProjectionTransportState;
   readonly cacheState: ProjectionCacheState;
+  readonly retryState: ProjectionRetryState;
   readonly responseStatus: ProjectionResponseStatus;
   readonly payloadId: string;
   readonly payloadVersion: string;
