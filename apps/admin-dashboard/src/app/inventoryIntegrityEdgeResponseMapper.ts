@@ -25,6 +25,7 @@ export function mapEdgeProjectionMetadata(
     consistencySemantics: metadata.consistencySemantics,
     degradationSemantics: metadata.degradationSemantics,
     authoritySemantics: metadata.authoritySemantics,
+    snapshotSemantics: metadata.snapshotSemantics,
     responseContractVersion: metadata.payloadVersion,
     readability: metadata.readability,
     adapterInputBoundary: metadata.adapterInputBoundary,
