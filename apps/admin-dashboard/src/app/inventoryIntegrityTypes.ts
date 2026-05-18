@@ -155,6 +155,27 @@ export type ProjectionRetrySemantics = {
   readonly executionBoundary: InventoryIntegrityExecutionBoundary;
 };
 
+export type ProjectionConsistencyState =
+  | "consistency_confirmed"
+  | "consistency_partial"
+  | "consistency_unknown"
+  | "consistency_unverified";
+
+export type ProjectionConsistencySemantics = {
+  readonly semanticsId: string;
+  readonly state: ProjectionConsistencyState;
+  readonly label: string;
+  readonly readability: string;
+  readonly comparisonInterpretation: string;
+  readonly governanceInterpretation: string;
+  readonly auditInterpretation: string;
+  readonly noExecutionMeaning: string;
+  readonly truthSource: InventoryIntegrityTruthSource;
+  readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
 export type InventoryIntegrityFetchSemantics = {
   readonly semanticsId: string;
   readonly capability: InventoryIntegrityFetchCapability;
@@ -242,6 +263,7 @@ export type ProjectionResponseStatusSemantics = {
   readonly transportSemantics: ProjectionTransportSemantics;
   readonly cacheSemantics: ProjectionCacheSemantics;
   readonly retrySemantics: ProjectionRetrySemantics;
+  readonly consistencySemantics: ProjectionConsistencySemantics;
   readonly readability: string;
   readonly interpretation: string;
   readonly limitation: string;
@@ -818,6 +840,7 @@ export type ProjectionResponseMetadata = {
     | "future_snapshot_projection_response";
   readonly source: ProjectionSourceMetadata;
   readonly statusSemantics: ProjectionResponseStatusSemantics;
+  readonly consistencySemantics: ProjectionConsistencySemantics;
   readonly responseContractVersion: string;
   readonly readability: string;
   readonly adapterInputBoundary: string;
@@ -835,6 +858,7 @@ export type RawProjectionMetadataPayload = {
     | "future_snapshot_projection_response";
   readonly source: ProjectionSourceMetadata;
   readonly statusSemantics: ProjectionResponseStatusSemantics;
+  readonly consistencySemantics: ProjectionConsistencySemantics;
   readonly payloadVersion: string;
   readonly readability: string;
   readonly adapterInputBoundary: string;
@@ -876,6 +900,7 @@ export type InventoryIntegrityFetchResultMetadata = {
   readonly cacheSemantics: ProjectionCacheSemantics;
   readonly offlineSemantics: ProjectionOfflineSemantics;
   readonly retrySemantics: ProjectionRetrySemantics;
+  readonly consistencySemantics: ProjectionConsistencySemantics;
   readonly responseStatus: ProjectionResponseStatusSemantics;
   readonly resultVersion: string;
   readonly readability: string;

@@ -11,6 +11,7 @@ import type {
   InventoryIntegrityRawEdgeProjectionResponse,
   InventoryIntegrityReadOnlyData,
   ProjectionCacheSemantics,
+  ProjectionConsistencySemantics,
   ProjectionEndpoint,
   ProjectionEndpointPolicy,
   ProjectionFetchExecutionSemantics,
@@ -137,6 +138,27 @@ export const inventoryIntegrityRetrySemantics: ProjectionRetrySemantics = {
     "ProjectionRetrySemantics は execution authority を持ちません。retry scheduling、backoff、network request、mutation は実行しません。",
 };
 
+export const inventoryIntegrityConsistencySemantics: ProjectionConsistencySemantics = {
+  semanticsId: "inventory-integrity-static-read-only-consistency-semantics",
+  state: "consistency_unverified",
+  label: "static consistency-unverified interpretation",
+  readability:
+    "consistency_unverified は static mock flow で consistency を検証済みとして扱わない状態を示します。整合確定、差分確定、compare 成功ではありません。",
+  comparisonInterpretation:
+    "consistency_confirmed / consistency_partial は将来 projection comparison をどう読むかの状態であり、compare execution、再計算、差分確定を実行しません。",
+  governanceInterpretation:
+    "consistency state は governance visualization 用の解釈であり、承認、通知、workflow、auto-fix を開始しません。",
+  auditInterpretation:
+    "audit dashboard では response metadata の読み方として参照されますが、監査証跡の確定、検証完了、correctness guarantee ではありません。",
+  noExecutionMeaning:
+    "consistency semantics は consistency implementation ではありません。compare execution、fetch、network access、Supabase 接続、mutation は実行しません。",
+  truthSource: "inventory_transactions",
+  cacheCompareTarget: "inventory_current",
+  semanticBoundary: "reasoning_visualization_only",
+  executionBoundary:
+    "ProjectionConsistencySemantics は execution authority を持ちません。projection comparison、rebuild、replay、correction、mutation は実行しません。",
+};
+
 export const inventoryIntegrityFetchSemantics: InventoryIntegrityFetchSemantics = {
   semanticsId: "inventory-integrity-static-read-only-fetch-semantics",
   capability: "static_no_network_read",
@@ -222,6 +244,7 @@ export const inventoryIntegrityResponseStatusSemantics: ProjectionResponseStatus
   label: "read-only response accepted semantics",
   transportSemantics: inventoryIntegrityTransportSemantics,
   cacheSemantics: inventoryIntegrityCacheSemantics,
+  consistencySemantics: inventoryIntegrityConsistencySemantics,
   retrySemantics: inventoryIntegrityRetrySemantics,
   readability:
     "response_accepted は static mock response を read-only interpretation boundary として読める状態を示します。network response success ではありません。",
@@ -306,10 +329,11 @@ export function createInventoryIntegrityMockEdgeClient(
           cacheSemantics: inventoryIntegrityCacheSemantics,
           offlineSemantics: inventoryIntegrityOfflineSemantics,
           retrySemantics: inventoryIntegrityRetrySemantics,
+          consistencySemantics: inventoryIntegrityConsistencySemantics,
           responseStatus: inventoryIntegrityResponseStatusSemantics,
           resultVersion: "inventory-integrity-static-fetch-result-v1",
           readability:
-            `static mock source を future fetch result と同じ語彙で読むための metadata です。request、${request.endpoint.endpointId}、${request.fetchSemantics.semanticsId}、${request.fetchExecution.state}、${inventoryIntegrityTransportSemantics.state}、${inventoryIntegrityCacheSemantics.state}、${inventoryIntegrityOfflineSemantics.state}、${inventoryIntegrityRetrySemantics.state}、${inventoryIntegrityResponseStatusSemantics.status} は読み方の境界であり offline result ではありません。`,
+            `static mock source を future fetch result と同じ語彙で読むための metadata です。request、${request.endpoint.endpointId}、${request.fetchSemantics.semanticsId}、${request.fetchExecution.state}、${inventoryIntegrityTransportSemantics.state}、${inventoryIntegrityCacheSemantics.state}、${inventoryIntegrityOfflineSemantics.state}、${inventoryIntegrityRetrySemantics.state}、${inventoryIntegrityConsistencySemantics.state}、${inventoryIntegrityResponseStatusSemantics.status} は読み方の境界であり consistency result ではありません。`,
           adapterInputBoundary:
             "mock fetch result は fetch adapter input boundary の simulation です。endpoint implementation、Edge API implementation、fetch、network access、Supabase 接続は含みません。",
           truthSource: "inventory_transactions",
