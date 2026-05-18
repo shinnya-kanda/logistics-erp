@@ -18,6 +18,7 @@ import type {
   ProjectionEndpointPolicy,
   ProjectionFetchExecutionSemantics,
   ProjectionOfflineSemantics,
+  ProjectionProvenanceSemantics,
   ProjectionResponseStatusSemantics,
   ProjectionRetrySemantics,
   ProjectionSnapshotSemantics,
@@ -141,10 +142,32 @@ export const inventoryIntegrityRetrySemantics: ProjectionRetrySemantics = {
     "ProjectionRetrySemantics は execution authority を持ちません。retry scheduling、backoff、network request、mutation は実行しません。",
 };
 
+export const inventoryIntegrityProvenanceSemantics: ProjectionProvenanceSemantics = {
+  semanticsId: "inventory-integrity-static-read-only-provenance-semantics",
+  state: "provenance_unverified",
+  label: "static provenance-unverified interpretation",
+  readability:
+    "provenance_unverified は static mock flow で provenance を検証済みとして扱わない状態を示します。source verification 完了、lineage 確定、監査証跡確定ではありません。",
+  lineageInterpretation:
+    "provenance_verified / provenance_partial は将来 lineage をどう読むかの状態であり、lineage execution、source traversal、履歴照会を実行しません。",
+  sourceVerificationInterpretation:
+    "source verification は governance visualization 用の解釈であり、source check、DB query、Supabase 接続、検証 workflow を開始しません。",
+  auditInterpretation:
+    "audit dashboard では provenance metadata の読み方として参照されますが、監査証跡の確定、正当性保証、correctness guarantee ではありません。",
+  noExecutionMeaning:
+    "provenance semantics は lineage implementation ではありません。lineage execution、fetch、network access、Supabase 接続、mutation は実行しません。",
+  truthSource: "inventory_transactions",
+  cacheCompareTarget: "inventory_current",
+  semanticBoundary: "reasoning_visualization_only",
+  executionBoundary:
+    "ProjectionProvenanceSemantics は execution authority を持ちません。provenance handling、lineage traversal、source verification、mutation は実行しません。",
+};
+
 export const inventoryIntegritySnapshotSemantics: ProjectionSnapshotSemantics = {
   semanticsId: "inventory-integrity-static-read-only-snapshot-semantics",
   state: "snapshot_unverified",
   label: "static snapshot-unverified interpretation",
+  provenanceSemantics: inventoryIntegrityProvenanceSemantics,
   readability:
     "snapshot_unverified は static mock flow で snapshot を検証済みとして扱わない状態を示します。snapshot 取得、historical 確定、reconstructed projection 確定ではありません。",
   historicalInterpretation:
@@ -167,6 +190,7 @@ export const inventoryIntegrityAuthoritySemantics: ProjectionAuthoritySemantics 
   state: "authority_readonly",
   label: "static read-only authority interpretation",
   snapshotSemantics: inventoryIntegritySnapshotSemantics,
+  provenanceSemantics: inventoryIntegrityProvenanceSemantics,
   readability:
     "authority_readonly は static mock flow を read-only access governance の語彙で読む状態を示します。permission confirmed、RBAC 判定、実行許可ではありません。",
   governanceInterpretation:
@@ -405,10 +429,11 @@ export function createInventoryIntegrityMockEdgeClient(
           degradationSemantics: inventoryIntegrityDegradationSemantics,
           authoritySemantics: inventoryIntegrityAuthoritySemantics,
           snapshotSemantics: inventoryIntegritySnapshotSemantics,
+          provenanceSemantics: inventoryIntegrityProvenanceSemantics,
           responseStatus: inventoryIntegrityResponseStatusSemantics,
           resultVersion: "inventory-integrity-static-fetch-result-v1",
           readability:
-            `static mock source を future fetch result と同じ語彙で読むための metadata です。request、${request.endpoint.endpointId}、${request.fetchSemantics.semanticsId}、${request.fetchExecution.state}、${inventoryIntegrityTransportSemantics.state}、${inventoryIntegrityCacheSemantics.state}、${inventoryIntegrityOfflineSemantics.state}、${inventoryIntegrityRetrySemantics.state}、${inventoryIntegrityConsistencySemantics.state}、${inventoryIntegrityDegradationSemantics.state}、${inventoryIntegrityAuthoritySemantics.state}、${inventoryIntegritySnapshotSemantics.state}、${inventoryIntegrityResponseStatusSemantics.status} は読み方の境界であり snapshot result ではありません。`,
+            `static mock source を future fetch result と同じ語彙で読むための metadata です。request、${request.endpoint.endpointId}、${request.fetchSemantics.semanticsId}、${request.fetchExecution.state}、${inventoryIntegrityTransportSemantics.state}、${inventoryIntegrityCacheSemantics.state}、${inventoryIntegrityOfflineSemantics.state}、${inventoryIntegrityRetrySemantics.state}、${inventoryIntegrityConsistencySemantics.state}、${inventoryIntegrityDegradationSemantics.state}、${inventoryIntegrityAuthoritySemantics.state}、${inventoryIntegritySnapshotSemantics.state}、${inventoryIntegrityProvenanceSemantics.state}、${inventoryIntegrityResponseStatusSemantics.status} は読み方の境界であり provenance result ではありません。`,
           adapterInputBoundary:
             "mock fetch result は fetch adapter input boundary の simulation です。endpoint implementation、Edge API implementation、fetch、network access、Supabase 接続は含みません。",
           truthSource: "inventory_transactions",
