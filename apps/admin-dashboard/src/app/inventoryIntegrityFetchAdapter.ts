@@ -26,9 +26,9 @@ export function adaptFetchMetadataToPayload(
     statusSemantics: metadata.responseStatus,
     payloadVersion: metadata.resultVersion,
     readability:
-      `${metadata.readability} fetch adapter は future fetch result を payload semantics として読む境界であり、${metadata.endpoint.endpointId} の network response handling 実装ではありません。${metadata.transportSemantics.state}、${metadata.fetchExecution.state}、${metadata.responseStatus.status} は read-only semantic state であり実行結果ではありません。`,
+      `${metadata.readability} fetch adapter は future fetch result を payload semantics として読む境界であり、${metadata.endpoint.endpointId} の network response handling 実装ではありません。${metadata.transportSemantics.state}、${metadata.cacheSemantics.state}、${metadata.fetchExecution.state}、${metadata.responseStatus.status} は read-only semantic state であり実行結果ではありません。`,
     adapterInputBoundary:
-      `${metadata.adapterInputBoundary} request ${metadata.request.requestId}、endpoint ${metadata.endpoint.endpointId}、transport ${metadata.transportSemantics.semanticsId}、${metadata.fetchSemantics.semanticsId}、execution ${metadata.fetchExecution.semanticsId}、response ${metadata.responseStatus.semanticsId} は read-only metadata であり、fetch 実行条件ではありません。`,
+      `${metadata.adapterInputBoundary} request ${metadata.request.requestId}、endpoint ${metadata.endpoint.endpointId}、transport ${metadata.transportSemantics.semanticsId}、cache ${metadata.cacheSemantics.semanticsId}、${metadata.fetchSemantics.semanticsId}、execution ${metadata.fetchExecution.semanticsId}、response ${metadata.responseStatus.semanticsId} は read-only metadata であり、fetch 実行条件ではありません。`,
     truthSource: metadata.truthSource,
     cacheCompareTarget: metadata.cacheCompareTarget,
     semanticBoundary: metadata.semanticBoundary,

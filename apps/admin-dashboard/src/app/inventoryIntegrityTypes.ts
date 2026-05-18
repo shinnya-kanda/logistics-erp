@@ -90,11 +90,33 @@ export type ProjectionTransportSemantics = {
   readonly executionBoundary: InventoryIntegrityExecutionBoundary;
 };
 
+export type ProjectionCacheState =
+  | "cache_fresh"
+  | "cache_stale"
+  | "cache_reused"
+  | "cache_bypassed";
+
+export type ProjectionCacheSemantics = {
+  readonly semanticsId: string;
+  readonly state: ProjectionCacheState;
+  readonly label: string;
+  readonly readability: string;
+  readonly freshnessInterpretation: string;
+  readonly reuseInterpretation: string;
+  readonly bypassInterpretation: string;
+  readonly noExecutionMeaning: string;
+  readonly truthSource: InventoryIntegrityTruthSource;
+  readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
 export type InventoryIntegrityFetchSemantics = {
   readonly semanticsId: string;
   readonly capability: InventoryIntegrityFetchCapability;
   readonly policy: InventoryIntegrityFetchPolicy;
   readonly transportSemantics: ProjectionTransportSemantics;
+  readonly cacheSemantics: ProjectionCacheSemantics;
   readonly requestContractBoundary: string;
   readonly responseHandlingBoundary: string;
   readonly readability: string;
@@ -173,6 +195,7 @@ export type ProjectionResponseStatusSemantics = {
   readonly status: ProjectionResponseStatus;
   readonly label: string;
   readonly transportSemantics: ProjectionTransportSemantics;
+  readonly cacheSemantics: ProjectionCacheSemantics;
   readonly readability: string;
   readonly interpretation: string;
   readonly limitation: string;
@@ -804,6 +827,7 @@ export type InventoryIntegrityFetchResultMetadata = {
   readonly fetchSemantics: InventoryIntegrityFetchSemantics;
   readonly fetchExecution: ProjectionFetchExecutionSemantics;
   readonly transportSemantics: ProjectionTransportSemantics;
+  readonly cacheSemantics: ProjectionCacheSemantics;
   readonly responseStatus: ProjectionResponseStatusSemantics;
   readonly resultVersion: string;
   readonly readability: string;
@@ -871,6 +895,7 @@ export type InventoryIntegrityEdgeClient = {
   readonly fetchExecution: ProjectionFetchExecutionSemantics;
   readonly responseStatus: ProjectionResponseStatusSemantics;
   readonly transportSemantics: ProjectionTransportSemantics;
+  readonly cacheSemantics: ProjectionCacheSemantics;
   readonly readProjectionPayload: (request?: InventoryIntegrityEdgeRequest) => RawProjectionPayload;
   readonly truthSource: InventoryIntegrityTruthSource;
   readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
@@ -888,6 +913,7 @@ export type InventoryIntegrityEdgeClientSummary = {
   readonly fetchCapability: InventoryIntegrityFetchCapability;
   readonly fetchExecutionState: ProjectionFetchExecutionState;
   readonly transportState: ProjectionTransportState;
+  readonly cacheState: ProjectionCacheState;
   readonly responseStatus: ProjectionResponseStatus;
   readonly payloadId: string;
   readonly payloadVersion: string;
