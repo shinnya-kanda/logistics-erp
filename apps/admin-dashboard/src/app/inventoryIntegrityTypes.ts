@@ -155,6 +155,27 @@ export type ProjectionRetrySemantics = {
   readonly executionBoundary: InventoryIntegrityExecutionBoundary;
 };
 
+export type ProjectionTraceState =
+  | "trace_verified"
+  | "trace_partial"
+  | "trace_missing"
+  | "trace_unverified";
+
+export type ProjectionTraceSemantics = {
+  readonly semanticsId: string;
+  readonly state: ProjectionTraceState;
+  readonly label: string;
+  readonly readability: string;
+  readonly lineageInterpretation: string;
+  readonly distributedTraceInterpretation: string;
+  readonly auditInterpretation: string;
+  readonly noExecutionMeaning: string;
+  readonly truthSource: InventoryIntegrityTruthSource;
+  readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
 export type ProjectionFallbackState =
   | "fallback_available"
   | "fallback_required"
@@ -187,6 +208,7 @@ export type ProjectionEvidenceSemantics = {
   readonly state: ProjectionEvidenceState;
   readonly label: string;
   readonly fallbackSemantics: ProjectionFallbackSemantics;
+  readonly traceSemantics: ProjectionTraceSemantics;
   readonly readability: string;
   readonly verificationInterpretation: string;
   readonly missingInterpretation: string;
@@ -209,6 +231,7 @@ export type ProjectionProvenanceSemantics = {
   readonly state: ProjectionProvenanceState;
   readonly label: string;
   readonly evidenceSemantics: ProjectionEvidenceSemantics;
+  readonly traceSemantics: ProjectionTraceSemantics;
   readonly readability: string;
   readonly lineageInterpretation: string;
   readonly sourceVerificationInterpretation: string;
@@ -985,6 +1008,7 @@ export type ProjectionResponseMetadata = {
   readonly provenanceSemantics: ProjectionProvenanceSemantics;
   readonly evidenceSemantics: ProjectionEvidenceSemantics;
   readonly fallbackSemantics: ProjectionFallbackSemantics;
+  readonly traceSemantics: ProjectionTraceSemantics;
   readonly responseContractVersion: string;
   readonly readability: string;
   readonly adapterInputBoundary: string;
@@ -1009,6 +1033,7 @@ export type RawProjectionMetadataPayload = {
   readonly provenanceSemantics: ProjectionProvenanceSemantics;
   readonly evidenceSemantics: ProjectionEvidenceSemantics;
   readonly fallbackSemantics: ProjectionFallbackSemantics;
+  readonly traceSemantics: ProjectionTraceSemantics;
   readonly payloadVersion: string;
   readonly readability: string;
   readonly adapterInputBoundary: string;
@@ -1057,6 +1082,7 @@ export type InventoryIntegrityFetchResultMetadata = {
   readonly provenanceSemantics: ProjectionProvenanceSemantics;
   readonly evidenceSemantics: ProjectionEvidenceSemantics;
   readonly fallbackSemantics: ProjectionFallbackSemantics;
+  readonly traceSemantics: ProjectionTraceSemantics;
   readonly responseStatus: ProjectionResponseStatusSemantics;
   readonly resultVersion: string;
   readonly readability: string;
