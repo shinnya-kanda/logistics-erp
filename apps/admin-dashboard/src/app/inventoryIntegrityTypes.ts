@@ -155,6 +155,27 @@ export type ProjectionRetrySemantics = {
   readonly executionBoundary: InventoryIntegrityExecutionBoundary;
 };
 
+export type ProjectionGovernanceState =
+  | "governance_verified"
+  | "governance_review_required"
+  | "governance_restricted"
+  | "governance_unverified";
+
+export type ProjectionGovernanceSemantics = {
+  readonly semanticsId: string;
+  readonly state: ProjectionGovernanceState;
+  readonly label: string;
+  readonly readability: string;
+  readonly reviewInterpretation: string;
+  readonly escalationInterpretation: string;
+  readonly restrictedVisibilityInterpretation: string;
+  readonly noExecutionMeaning: string;
+  readonly truthSource: InventoryIntegrityTruthSource;
+  readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
 export type ProjectionTraceState =
   | "trace_verified"
   | "trace_partial"
@@ -165,6 +186,7 @@ export type ProjectionTraceSemantics = {
   readonly semanticsId: string;
   readonly state: ProjectionTraceState;
   readonly label: string;
+  readonly governanceSemantics: ProjectionGovernanceSemantics;
   readonly readability: string;
   readonly lineageInterpretation: string;
   readonly distributedTraceInterpretation: string;
@@ -209,6 +231,7 @@ export type ProjectionEvidenceSemantics = {
   readonly label: string;
   readonly fallbackSemantics: ProjectionFallbackSemantics;
   readonly traceSemantics: ProjectionTraceSemantics;
+  readonly governanceSemantics: ProjectionGovernanceSemantics;
   readonly readability: string;
   readonly verificationInterpretation: string;
   readonly missingInterpretation: string;
@@ -278,6 +301,7 @@ export type ProjectionAuthoritySemantics = {
   readonly label: string;
   readonly snapshotSemantics: ProjectionSnapshotSemantics;
   readonly provenanceSemantics: ProjectionProvenanceSemantics;
+  readonly governanceSemantics: ProjectionGovernanceSemantics;
   readonly readability: string;
   readonly governanceInterpretation: string;
   readonly restrictionInterpretation: string;
@@ -1009,6 +1033,7 @@ export type ProjectionResponseMetadata = {
   readonly evidenceSemantics: ProjectionEvidenceSemantics;
   readonly fallbackSemantics: ProjectionFallbackSemantics;
   readonly traceSemantics: ProjectionTraceSemantics;
+  readonly governanceSemantics: ProjectionGovernanceSemantics;
   readonly responseContractVersion: string;
   readonly readability: string;
   readonly adapterInputBoundary: string;
@@ -1034,6 +1059,7 @@ export type RawProjectionMetadataPayload = {
   readonly evidenceSemantics: ProjectionEvidenceSemantics;
   readonly fallbackSemantics: ProjectionFallbackSemantics;
   readonly traceSemantics: ProjectionTraceSemantics;
+  readonly governanceSemantics: ProjectionGovernanceSemantics;
   readonly payloadVersion: string;
   readonly readability: string;
   readonly adapterInputBoundary: string;
@@ -1083,6 +1109,7 @@ export type InventoryIntegrityFetchResultMetadata = {
   readonly evidenceSemantics: ProjectionEvidenceSemantics;
   readonly fallbackSemantics: ProjectionFallbackSemantics;
   readonly traceSemantics: ProjectionTraceSemantics;
+  readonly governanceSemantics: ProjectionGovernanceSemantics;
   readonly responseStatus: ProjectionResponseStatusSemantics;
   readonly resultVersion: string;
   readonly readability: string;
