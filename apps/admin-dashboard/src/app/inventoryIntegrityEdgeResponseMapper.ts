@@ -30,6 +30,7 @@ export function mapEdgeProjectionMetadata(
     evidenceSemantics: metadata.evidenceSemantics,
     fallbackSemantics: metadata.fallbackSemantics,
     traceSemantics: metadata.traceSemantics,
+    governanceSemantics: metadata.governanceSemantics,
     responseContractVersion: metadata.payloadVersion,
     readability: metadata.readability,
     adapterInputBoundary: metadata.adapterInputBoundary,
