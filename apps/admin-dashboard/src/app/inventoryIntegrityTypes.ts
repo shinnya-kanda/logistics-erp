@@ -155,6 +155,29 @@ export type ProjectionRetrySemantics = {
   readonly executionBoundary: InventoryIntegrityExecutionBoundary;
 };
 
+export type ProjectionEscalationState =
+  | "escalation_required"
+  | "escalation_recommended"
+  | "escalation_blocked"
+  | "escalation_unverified";
+
+export type ProjectionEscalationSemantics = {
+  readonly semanticsId: string;
+  readonly state: ProjectionEscalationState;
+  readonly label: string;
+  readonly readability: string;
+  readonly governanceEscalationInterpretation: string;
+  readonly auditEscalationInterpretation: string;
+  readonly operationalEscalationVisibility: string;
+  readonly reviewEscalationInterpretation: string;
+  readonly blockedInterpretation: string;
+  readonly noExecutionMeaning: string;
+  readonly truthSource: InventoryIntegrityTruthSource;
+  readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
 export type ProjectionAttentionState =
   | "attention_required"
   | "attention_recommended"
@@ -165,6 +188,7 @@ export type ProjectionAttentionSemantics = {
   readonly semanticsId: string;
   readonly state: ProjectionAttentionState;
   readonly label: string;
+  readonly escalationSemantics: ProjectionEscalationSemantics;
   readonly readability: string;
   readonly operationalAttentionInterpretation: string;
   readonly governanceAttentionInterpretation: string;
@@ -189,6 +213,7 @@ export type ProjectionDecisionSemantics = {
   readonly state: ProjectionDecisionState;
   readonly label: string;
   readonly attentionSemantics: ProjectionAttentionSemantics;
+  readonly escalationSemantics: ProjectionEscalationSemantics;
   readonly readability: string;
   readonly operationalDecisionInterpretation: string;
   readonly governanceDecisionInterpretation: string;
@@ -239,6 +264,7 @@ export type ProjectionGovernanceSemantics = {
   readonly reviewSemantics: ProjectionReviewSemantics;
   readonly decisionSemantics: ProjectionDecisionSemantics;
   readonly attentionSemantics: ProjectionAttentionSemantics;
+  readonly escalationSemantics: ProjectionEscalationSemantics;
   readonly readability: string;
   readonly reviewInterpretation: string;
   readonly escalationInterpretation: string;
@@ -1112,6 +1138,7 @@ export type ProjectionResponseMetadata = {
   readonly reviewSemantics: ProjectionReviewSemantics;
   readonly decisionSemantics: ProjectionDecisionSemantics;
   readonly attentionSemantics: ProjectionAttentionSemantics;
+  readonly escalationSemantics: ProjectionEscalationSemantics;
   readonly responseContractVersion: string;
   readonly readability: string;
   readonly adapterInputBoundary: string;
@@ -1141,6 +1168,7 @@ export type RawProjectionMetadataPayload = {
   readonly reviewSemantics: ProjectionReviewSemantics;
   readonly decisionSemantics: ProjectionDecisionSemantics;
   readonly attentionSemantics: ProjectionAttentionSemantics;
+  readonly escalationSemantics: ProjectionEscalationSemantics;
   readonly payloadVersion: string;
   readonly readability: string;
   readonly adapterInputBoundary: string;
@@ -1194,6 +1222,7 @@ export type InventoryIntegrityFetchResultMetadata = {
   readonly reviewSemantics: ProjectionReviewSemantics;
   readonly decisionSemantics: ProjectionDecisionSemantics;
   readonly attentionSemantics: ProjectionAttentionSemantics;
+  readonly escalationSemantics: ProjectionEscalationSemantics;
   readonly responseStatus: ProjectionResponseStatusSemantics;
   readonly resultVersion: string;
   readonly readability: string;
