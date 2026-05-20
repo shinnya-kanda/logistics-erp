@@ -10,6 +10,7 @@ import type {
   InventoryIntegrityFetchSemantics,
   InventoryIntegrityRawEdgeProjectionResponse,
   InventoryIntegrityReadOnlyData,
+  InventoryIntegrityReadOnlyEndpointContract,
   ProjectionAttentionSemantics,
   ProjectionAuthoritySemantics,
   ProjectionCacheSemantics,
@@ -521,6 +522,45 @@ export const inventoryIntegrityProjectionEndpoint: ProjectionEndpoint = {
     "ProjectionEndpoint は real endpoint implementation ではありません。URL 呼び出し、fetch、network access、Supabase 接続、mutation は実行しません。",
 };
 
+export const inventoryIntegrityReadOnlyEndpointPolicy: ProjectionEndpointPolicy = {
+  policyId: "inventory-integrity-real-read-only-endpoint-policy",
+  label: "real read-only endpoint semantics policy",
+  capabilities: [
+    "real_read_only_edge_endpoint",
+    "future_read_only_edge_endpoint",
+    "future_projection_loading_endpoint",
+    "future_governance_visualization_endpoint",
+    "no_execution_authority",
+  ],
+  requestBoundary:
+    "real read-only endpoint policy は GET の projection 参照境界のみを示します。POST、mutation、workflow、compare execution には接続しません。",
+  fetchBoundary:
+    "real endpoint は read-only fetch PoC の境界であり、write API、Supabase mutation、rebuild、correction を実行しません。",
+  readability:
+    "static fallback を保持したまま real read-only endpoint を 1 本だけ読むための endpoint policy metadata です。",
+  truthSource: "inventory_transactions",
+  cacheCompareTarget: "inventory_current",
+  semanticBoundary: "reasoning_visualization_only",
+  executionBoundary:
+    "ProjectionEndpointPolicy は execution authority を持ちません。GET read-only fetch 以外の request dispatch、mutation、workflow は実行しません。",
+};
+
+export const inventoryIntegrityReadOnlyProjectionEndpoint: ProjectionEndpoint = {
+  endpointId: "inventory-integrity-real-read-only-endpoint",
+  endpointKind: "read_only_edge_function_endpoint",
+  label: "real read-only endpoint reference",
+  capability: "real_read_only_edge_endpoint",
+  policy: inventoryIntegrityReadOnlyEndpointPolicy,
+  endpointReference: "read-only-endpoint://inventory-integrity/projection",
+  readability:
+    "real read-only fetch PoC の endpoint reference です。GET 参照のみを許し、mutation や workflow execution の authority は持ちません。",
+  truthSource: "inventory_transactions",
+  cacheCompareTarget: "inventory_current",
+  semanticBoundary: "reasoning_visualization_only",
+  executionBoundary:
+    "ProjectionEndpoint は GET read-only fetch の参照先 metadata です。POST、write API、compare execution、mutation は実行しません。",
+};
+
 export const inventoryIntegrityFetchExecutionSemantics: ProjectionFetchExecutionSemantics = {
   semanticsId: "inventory-integrity-static-read-only-fetch-execution-semantics",
   state: "request_accepted",
@@ -566,6 +606,32 @@ export const inventoryIntegrityResponseStatusSemantics: ProjectionResponseStatus
     "ProjectionResponseStatusSemantics は execution authority を持ちません。network access、response handling 実装、compare execution、mutation は実行しません。",
 };
 
+export const inventoryIntegrityUnavailableResponseStatusSemantics: ProjectionResponseStatusSemantics =
+  {
+    semanticsId: "inventory-integrity-read-only-response-unavailable-semantics",
+    status: "response_unavailable",
+    label: "read-only response unavailable semantics",
+    transportSemantics: inventoryIntegrityTransportSemantics,
+    cacheSemantics: inventoryIntegrityCacheSemantics,
+    consistencySemantics: inventoryIntegrityConsistencySemantics,
+    degradationSemantics: inventoryIntegrityDegradationSemantics,
+    authoritySemantics: inventoryIntegrityAuthoritySemantics,
+    retrySemantics: inventoryIntegrityRetrySemantics,
+    readability:
+      "response_unavailable は real read-only fetch PoC で response を採用できない状態を示します。static fallback は維持しますが、成功や correctness guarantee ではありません。",
+    interpretation:
+      "GET read-only response が unavailable / unreadable の場合に fallback data を表示可能にする metadata であり、retry execution や workflow 開始ではありません。",
+    limitation:
+      "response_unavailable は degraded visibility の読み方であり、error 確定、auto-fix、rebuild、correction、担当割当の条件ではありません。",
+    noExecutionMeaning:
+      "response unavailable semantics は recovery implementation ではありません。retry、fetch 再実行、Supabase 接続、mutation は実行しません。",
+    truthSource: "inventory_transactions",
+    cacheCompareTarget: "inventory_current",
+    semanticBoundary: "reasoning_visualization_only",
+    executionBoundary:
+      "ProjectionResponseStatusSemantics は execution authority を持ちません。fallback 表示以外の request dispatch、workflow、mutation は実行しません。",
+  };
+
 export const defaultInventoryIntegrityEdgeRequest: InventoryIntegrityEdgeRequest = {
   requestId: "inventory-integrity-static-mock-edge-request",
   requestKind: "static_mock_edge_request",
@@ -602,6 +668,44 @@ export const defaultInventoryIntegrityEdgeRequest: InventoryIntegrityEdgeRequest
     "InventoryIntegrityEdgeRequest は read-only request semantics です。fetch、network access、Supabase 接続、compare execution、mutation は実行しません。",
 };
 
+export function createInventoryIntegrityReadOnlyEndpointContract(
+  endpointUrl?: string,
+): InventoryIntegrityReadOnlyEndpointContract {
+  return {
+    contractId: "inventory-integrity-real-read-only-endpoint-contract",
+    sourceMode: endpointUrl ? "real_read_only_endpoint" : "static_fallback",
+    enabled: Boolean(endpointUrl),
+    method: "GET",
+    endpoint: inventoryIntegrityReadOnlyProjectionEndpoint,
+    endpointUrl,
+    fallbackEndpoint: inventoryIntegrityProjectionEndpoint,
+    readability:
+      "real read-only endpoint contract は GET で projection response を読むための PoC 境界です。POST、mutation、workflow、execution authority は含みません。",
+    fallbackMeaning:
+      "endpointUrl が未設定、または read-only fetch が失敗した場合は static fallback を維持します。fallback は correction、rebuild、retry execution ではありません。",
+    truthSource: "inventory_transactions",
+    cacheCompareTarget: "inventory_current",
+    semanticBoundary: "reasoning_visualization_only",
+    executionBoundary:
+      "InventoryIntegrityReadOnlyEndpointContract は execution authority を持ちません。GET read-only fetch 以外の request、mutation、workflow は実行しません。",
+  };
+}
+
+export function createInventoryIntegrityReadOnlyEdgeRequest(
+  endpointContract: InventoryIntegrityReadOnlyEndpointContract,
+): InventoryIntegrityEdgeRequest {
+  return {
+    ...defaultInventoryIntegrityEdgeRequest,
+    requestId: "inventory-integrity-real-read-only-edge-request",
+    requestKind: "future_edge_projection_request",
+    endpoint: endpointContract.endpoint,
+    readability:
+      "real read-only Edge request contract は GET projection 参照のための request semantics です。POST、mutation、compare execution、workflow は実行しません。",
+    executionBoundary:
+      "InventoryIntegrityEdgeRequest は read-only request semantics です。GET fetch 以外の network access、Supabase mutation、compare execution、correction、workflow は実行しません。",
+  };
+}
+
 export function createInventoryIntegrityMockEdgeClient(
   source: ProjectionSourceMetadata,
   rawData: InventoryIntegrityReadOnlyData,
@@ -621,60 +725,12 @@ export function createInventoryIntegrityMockEdgeClient(
     offlineSemantics: inventoryIntegrityOfflineSemantics,
     retrySemantics: inventoryIntegrityRetrySemantics,
     readProjectionPayload: (request = defaultInventoryIntegrityEdgeRequest) => {
-      const fetchResult: InventoryIntegrityFetchResult = {
-        metadata: {
-          resultId: `${request.requestId}-fetch-result`,
-          resultKind: "static_mock_fetch_result",
-          source,
-          endpoint: request.endpoint,
-          request,
-          fetchSemantics: request.fetchSemantics,
-          fetchExecution: request.fetchExecution,
-          transportSemantics: inventoryIntegrityTransportSemantics,
-          cacheSemantics: inventoryIntegrityCacheSemantics,
-          offlineSemantics: inventoryIntegrityOfflineSemantics,
-          retrySemantics: inventoryIntegrityRetrySemantics,
-          consistencySemantics: inventoryIntegrityConsistencySemantics,
-          degradationSemantics: inventoryIntegrityDegradationSemantics,
-          authoritySemantics: inventoryIntegrityAuthoritySemantics,
-          snapshotSemantics: inventoryIntegritySnapshotSemantics,
-          provenanceSemantics: inventoryIntegrityProvenanceSemantics,
-          evidenceSemantics: inventoryIntegrityEvidenceSemantics,
-          fallbackSemantics: inventoryIntegrityFallbackSemantics,
-          traceSemantics: inventoryIntegrityTraceSemantics,
-          governanceSemantics: inventoryIntegrityGovernanceSemantics,
-          reviewSemantics: inventoryIntegrityReviewSemantics,
-          decisionSemantics: inventoryIntegrityDecisionSemantics,
-          attentionSemantics: inventoryIntegrityAttentionSemantics,
-          escalationSemantics: inventoryIntegrityEscalationSemantics,
-          responseStatus: inventoryIntegrityResponseStatusSemantics,
-          resultVersion: "inventory-integrity-static-fetch-result-v1",
-          readability:
-            `static mock source を future fetch result と同じ語彙で読むための metadata です。request、${request.endpoint.endpointId}、${request.fetchSemantics.semanticsId}、${request.fetchExecution.state}、${inventoryIntegrityTransportSemantics.state}、${inventoryIntegrityCacheSemantics.state}、${inventoryIntegrityOfflineSemantics.state}、${inventoryIntegrityRetrySemantics.state}、${inventoryIntegrityConsistencySemantics.state}、${inventoryIntegrityDegradationSemantics.state}、${inventoryIntegrityAuthoritySemantics.state}、${inventoryIntegritySnapshotSemantics.state}、${inventoryIntegrityProvenanceSemantics.state}、${inventoryIntegrityEvidenceSemantics.state}、${inventoryIntegrityFallbackSemantics.state}、${inventoryIntegrityTraceSemantics.state}、${inventoryIntegrityGovernanceSemantics.state}、${inventoryIntegrityReviewSemantics.state}、${inventoryIntegrityDecisionSemantics.state}、${inventoryIntegrityAttentionSemantics.state}、${inventoryIntegrityEscalationSemantics.state}、${inventoryIntegrityResponseStatusSemantics.status} は読み方の境界であり escalation result ではありません。`,
-          adapterInputBoundary:
-            "mock fetch result は fetch adapter input boundary の simulation です。endpoint implementation、Edge API implementation、fetch、network access、Supabase 接続は含みません。",
-          truthSource: "inventory_transactions",
-          cacheCompareTarget: "inventory_current",
-          semanticBoundary: "reasoning_visualization_only",
-          executionBoundary:
-            `fetch result semantics は real network response ではありません。request ${request.requestId} は compare execution、rebuild、replay、correction、mutation、workflow を実行しません。`,
-        },
-        lifecycle: {
-          state: "projection_normalized",
-          label: "mock fetch result payload 変換対象",
-          readability:
-            "static mock data が fetch adapter を経由して raw payload abstraction に変換される状態です。",
-          interpretation:
-            "fetch result lifecycle は将来 fetch result の読み方であり、実データ取得完了や Edge 呼び出し完了を意味しません。",
-          semanticBoundary: "reasoning_visualization_only",
-          executionBoundary:
-            "fetch result lifecycle は lifecycle engine ではありません。fetch、network access、compare execution、rebuild、mutation は実行しません。",
-        },
-        data: rawData,
-        semanticBoundary: "reasoning_visualization_only",
-        executionBoundary:
-          "InventoryIntegrityFetchResult は read-only fetch result semantics です。Edge Function 呼び出し、network access、mutation は実行しません。",
-      };
+      const fetchResult = createInventoryIntegrityFetchResult(
+        source,
+        rawData,
+        request,
+        "static_mock_fetch_result",
+      );
 
       return adaptFetchResponseToPayload(fetchResult);
     },
@@ -683,6 +739,69 @@ export function createInventoryIntegrityMockEdgeClient(
     semanticBoundary: "reasoning_visualization_only",
     executionBoundary:
       "Edge client scaffold は real network client ではありません。fetch、network access、Supabase 接続、compare execution、mutation は実行しません。",
+  };
+}
+
+export function createInventoryIntegrityFetchResult(
+  source: ProjectionSourceMetadata,
+  rawData: InventoryIntegrityReadOnlyData,
+  request: InventoryIntegrityEdgeRequest,
+  resultKind: InventoryIntegrityFetchResult["metadata"]["resultKind"],
+  responseStatus: ProjectionResponseStatusSemantics = inventoryIntegrityResponseStatusSemantics,
+): InventoryIntegrityFetchResult {
+  return {
+    metadata: {
+      resultId: `${request.requestId}-fetch-result`,
+      resultKind,
+      source,
+      endpoint: request.endpoint,
+      request,
+      fetchSemantics: request.fetchSemantics,
+      fetchExecution: request.fetchExecution,
+      transportSemantics: inventoryIntegrityTransportSemantics,
+      cacheSemantics: inventoryIntegrityCacheSemantics,
+      offlineSemantics: inventoryIntegrityOfflineSemantics,
+      retrySemantics: inventoryIntegrityRetrySemantics,
+      consistencySemantics: inventoryIntegrityConsistencySemantics,
+      degradationSemantics: inventoryIntegrityDegradationSemantics,
+      authoritySemantics: inventoryIntegrityAuthoritySemantics,
+      snapshotSemantics: inventoryIntegritySnapshotSemantics,
+      provenanceSemantics: inventoryIntegrityProvenanceSemantics,
+      evidenceSemantics: inventoryIntegrityEvidenceSemantics,
+      fallbackSemantics: inventoryIntegrityFallbackSemantics,
+      traceSemantics: inventoryIntegrityTraceSemantics,
+      governanceSemantics: inventoryIntegrityGovernanceSemantics,
+      reviewSemantics: inventoryIntegrityReviewSemantics,
+      decisionSemantics: inventoryIntegrityDecisionSemantics,
+      attentionSemantics: inventoryIntegrityAttentionSemantics,
+      escalationSemantics: inventoryIntegrityEscalationSemantics,
+      responseStatus,
+      resultVersion: "inventory-integrity-static-fetch-result-v1",
+      readability:
+        `read-only source を fetch result と同じ語彙で読むための metadata です。request、${request.endpoint.endpointId}、${request.fetchSemantics.semanticsId}、${request.fetchExecution.state}、${inventoryIntegrityTransportSemantics.state}、${inventoryIntegrityCacheSemantics.state}、${inventoryIntegrityOfflineSemantics.state}、${inventoryIntegrityRetrySemantics.state}、${inventoryIntegrityConsistencySemantics.state}、${inventoryIntegrityDegradationSemantics.state}、${inventoryIntegrityAuthoritySemantics.state}、${inventoryIntegritySnapshotSemantics.state}、${inventoryIntegrityProvenanceSemantics.state}、${inventoryIntegrityEvidenceSemantics.state}、${inventoryIntegrityFallbackSemantics.state}、${inventoryIntegrityTraceSemantics.state}、${inventoryIntegrityGovernanceSemantics.state}、${inventoryIntegrityReviewSemantics.state}、${inventoryIntegrityDecisionSemantics.state}、${inventoryIntegrityAttentionSemantics.state}、${inventoryIntegrityEscalationSemantics.state}、${responseStatus.status} は読み方の境界であり execution result ではありません。`,
+      adapterInputBoundary:
+        "fetch result は fetch adapter input boundary です。GET read-only response 以外の endpoint implementation、write API、POST、Supabase mutation は含みません。",
+      truthSource: "inventory_transactions",
+      cacheCompareTarget: "inventory_current",
+      semanticBoundary: "reasoning_visualization_only",
+      executionBoundary:
+        `fetch result semantics は mutation response ではありません。request ${request.requestId} は compare execution、rebuild、replay、correction、mutation、workflow を実行しません。`,
+    },
+    lifecycle: {
+      state: "projection_normalized",
+      label: "read-only fetch result payload 変換対象",
+      readability:
+        "read-only data が fetch adapter を経由して raw payload abstraction に変換される状態です。",
+      interpretation:
+        "fetch result lifecycle は read-only response の読み方であり、更新完了や workflow 完了を意味しません。",
+      semanticBoundary: "reasoning_visualization_only",
+      executionBoundary:
+        "fetch result lifecycle は lifecycle engine ではありません。fetch orchestration、compare execution、rebuild、mutation は実行しません。",
+    },
+    data: rawData,
+    semanticBoundary: "reasoning_visualization_only",
+    executionBoundary:
+      "InventoryIntegrityFetchResult は read-only fetch result semantics です。POST、write API、mutation は実行しません。",
   };
 }
 

@@ -29,6 +29,7 @@ export type InventoryIntegrityProjectionSourceKind =
 
 export type ProjectionSourceCapability =
   | "static_read_only"
+  | "real_read_only_endpoint"
   | "future_edge_response"
   | "future_snapshot_projection"
   | "future_governance_visualization"
@@ -477,6 +478,7 @@ export type InventoryIntegrityFetchSemantics = {
 
 export type ProjectionEndpointCapability =
   | "static_mock_endpoint_reference"
+  | "real_read_only_edge_endpoint"
   | "future_read_only_edge_endpoint"
   | "future_projection_loading_endpoint"
   | "future_governance_visualization_endpoint"
@@ -500,6 +502,7 @@ export type ProjectionEndpoint = {
   readonly endpointId: string;
   readonly endpointKind:
     | "static_mock_endpoint"
+    | "read_only_edge_function_endpoint"
     | "future_edge_function_endpoint"
     | "future_snapshot_endpoint";
   readonly label: string;
@@ -507,6 +510,22 @@ export type ProjectionEndpoint = {
   readonly policy: ProjectionEndpointPolicy;
   readonly endpointReference: string;
   readonly readability: string;
+  readonly truthSource: InventoryIntegrityTruthSource;
+  readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
+export type InventoryIntegrityReadOnlyEndpointContract = {
+  readonly contractId: string;
+  readonly sourceMode: "static_fallback" | "real_read_only_endpoint";
+  readonly enabled: boolean;
+  readonly method: "GET";
+  readonly endpoint: ProjectionEndpoint;
+  readonly endpointUrl?: string;
+  readonly fallbackEndpoint: ProjectionEndpoint;
+  readonly readability: string;
+  readonly fallbackMeaning: string;
   readonly truthSource: InventoryIntegrityTruthSource;
   readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
   readonly semanticBoundary: InventoryIntegritySemanticBoundary;
@@ -710,6 +729,13 @@ export type InventoryIntegrityProjectionQuery = {
 export type InventoryIntegrityReadOnlySource =
   InventoryIntegrityProjectionSource<InventoryIntegrityEdgeProjectionResponse> & {
     readonly registry: InventoryIntegrityProjectionRegistry;
+  };
+
+export type InventoryIntegrityReadOnlyFetchSource =
+  InventoryIntegrityProjectionSource<Promise<InventoryIntegrityEdgeProjectionResponse>> & {
+    readonly registry: InventoryIntegrityProjectionRegistry;
+    readonly endpointContract: InventoryIntegrityReadOnlyEndpointContract;
+    readonly fallbackSource: InventoryIntegrityReadOnlySource;
   };
 
 export type ProjectionResolution = {
