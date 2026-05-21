@@ -156,6 +156,29 @@ export type ProjectionRetrySemantics = {
   readonly executionBoundary: InventoryIntegrityExecutionBoundary;
 };
 
+export type ProjectionLatencyState =
+  | "latency_normal"
+  | "latency_slow"
+  | "latency_timeout"
+  | "latency_unverified";
+
+export type ProjectionLatencySemantics = {
+  readonly semanticsId: string;
+  readonly state: ProjectionLatencyState;
+  readonly label: string;
+  readonly readability: string;
+  readonly requestDurationInterpretation: string;
+  readonly slowEndpointInterpretation: string;
+  readonly timeoutDegradationInterpretation: string;
+  readonly operationalLatencyInterpretation: string;
+  readonly degradedLatencyVisibilityInterpretation: string;
+  readonly noExecutionMeaning: string;
+  readonly truthSource: InventoryIntegrityTruthSource;
+  readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
 export type ProjectionTelemetryState =
   | "telemetry_available"
   | "telemetry_partial"
@@ -166,6 +189,7 @@ export type ProjectionTelemetrySemantics = {
   readonly semanticsId: string;
   readonly state: ProjectionTelemetryState;
   readonly label: string;
+  readonly latencySemantics: ProjectionLatencySemantics;
   readonly readability: string;
   readonly requestObservabilityInterpretation: string;
   readonly endpointObservabilityInterpretation: string;
@@ -492,6 +516,7 @@ export type InventoryIntegrityFetchSemantics = {
   readonly transportSemantics: ProjectionTransportSemantics;
   readonly cacheSemantics: ProjectionCacheSemantics;
   readonly telemetrySemantics: ProjectionTelemetrySemantics;
+  readonly latencySemantics: ProjectionLatencySemantics;
   readonly requestContractBoundary: string;
   readonly responseHandlingBoundary: string;
   readonly readability: string;
@@ -592,6 +617,7 @@ export type ProjectionResponseStatusSemantics = {
   readonly cacheSemantics: ProjectionCacheSemantics;
   readonly retrySemantics: ProjectionRetrySemantics;
   readonly telemetrySemantics: ProjectionTelemetrySemantics;
+  readonly latencySemantics: ProjectionLatencySemantics;
   readonly consistencySemantics: ProjectionConsistencySemantics;
   readonly degradationSemantics: ProjectionDegradationSemantics;
   readonly authoritySemantics: ProjectionAuthoritySemantics;
@@ -1192,6 +1218,7 @@ export type ProjectionResponseMetadata = {
   readonly attentionSemantics: ProjectionAttentionSemantics;
   readonly escalationSemantics: ProjectionEscalationSemantics;
   readonly telemetrySemantics: ProjectionTelemetrySemantics;
+  readonly latencySemantics: ProjectionLatencySemantics;
   readonly responseContractVersion: string;
   readonly readability: string;
   readonly adapterInputBoundary: string;
@@ -1223,6 +1250,7 @@ export type RawProjectionMetadataPayload = {
   readonly attentionSemantics: ProjectionAttentionSemantics;
   readonly escalationSemantics: ProjectionEscalationSemantics;
   readonly telemetrySemantics: ProjectionTelemetrySemantics;
+  readonly latencySemantics: ProjectionLatencySemantics;
   readonly payloadVersion: string;
   readonly readability: string;
   readonly adapterInputBoundary: string;
@@ -1278,6 +1306,7 @@ export type InventoryIntegrityFetchResultMetadata = {
   readonly attentionSemantics: ProjectionAttentionSemantics;
   readonly escalationSemantics: ProjectionEscalationSemantics;
   readonly telemetrySemantics: ProjectionTelemetrySemantics;
+  readonly latencySemantics: ProjectionLatencySemantics;
   readonly responseStatus: ProjectionResponseStatusSemantics;
   readonly resultVersion: string;
   readonly readability: string;
