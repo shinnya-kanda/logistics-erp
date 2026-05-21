@@ -36,6 +36,7 @@ export function mapEdgeProjectionMetadata(
     attentionSemantics: metadata.attentionSemantics,
     escalationSemantics: metadata.escalationSemantics,
     telemetrySemantics: metadata.telemetrySemantics,
+    latencySemantics: metadata.latencySemantics,
     responseContractVersion: metadata.payloadVersion,
     readability: metadata.readability,
     adapterInputBoundary: metadata.adapterInputBoundary,
