@@ -156,6 +156,29 @@ export type ProjectionRetrySemantics = {
   readonly executionBoundary: InventoryIntegrityExecutionBoundary;
 };
 
+export type ProjectionHealthState =
+  | "health_normal"
+  | "health_degraded"
+  | "health_unhealthy"
+  | "health_unverified";
+
+export type ProjectionHealthSemantics = {
+  readonly semanticsId: string;
+  readonly state: ProjectionHealthState;
+  readonly label: string;
+  readonly readability: string;
+  readonly operationalHealthInterpretation: string;
+  readonly degradedHealthVisibilityInterpretation: string;
+  readonly governanceHealthInterpretation: string;
+  readonly endpointHealthInterpretation: string;
+  readonly observabilityHealthInterpretation: string;
+  readonly noExecutionMeaning: string;
+  readonly truthSource: InventoryIntegrityTruthSource;
+  readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
 export type ProjectionConfidenceState =
   | "confidence_high"
   | "confidence_partial"
@@ -166,6 +189,7 @@ export type ProjectionConfidenceSemantics = {
   readonly semanticsId: string;
   readonly state: ProjectionConfidenceState;
   readonly label: string;
+  readonly healthSemantics: ProjectionHealthSemantics;
   readonly readability: string;
   readonly projectionConfidenceInterpretation: string;
   readonly degradedConfidenceVisibilityInterpretation: string;
@@ -190,6 +214,7 @@ export type ProjectionDiagnosticSemantics = {
   readonly state: ProjectionDiagnosticState;
   readonly label: string;
   readonly confidenceSemantics: ProjectionConfidenceSemantics;
+  readonly healthSemantics: ProjectionHealthSemantics;
   readonly readability: string;
   readonly diagnosticInterpretation: string;
   readonly degradedDiagnosticVisibilityInterpretation: string;
@@ -215,6 +240,7 @@ export type ProjectionAvailabilitySemantics = {
   readonly label: string;
   readonly diagnosticSemantics: ProjectionDiagnosticSemantics;
   readonly confidenceSemantics: ProjectionConfidenceSemantics;
+  readonly healthSemantics: ProjectionHealthSemantics;
   readonly readability: string;
   readonly endpointAvailabilityInterpretation: string;
   readonly degradedEndpointInterpretation: string;
@@ -697,6 +723,7 @@ export type ProjectionResponseStatusSemantics = {
   readonly availabilitySemantics: ProjectionAvailabilitySemantics;
   readonly diagnosticSemantics: ProjectionDiagnosticSemantics;
   readonly confidenceSemantics: ProjectionConfidenceSemantics;
+  readonly healthSemantics: ProjectionHealthSemantics;
   readonly consistencySemantics: ProjectionConsistencySemantics;
   readonly degradationSemantics: ProjectionDegradationSemantics;
   readonly authoritySemantics: ProjectionAuthoritySemantics;
@@ -1301,6 +1328,7 @@ export type ProjectionResponseMetadata = {
   readonly availabilitySemantics: ProjectionAvailabilitySemantics;
   readonly diagnosticSemantics: ProjectionDiagnosticSemantics;
   readonly confidenceSemantics: ProjectionConfidenceSemantics;
+  readonly healthSemantics: ProjectionHealthSemantics;
   readonly responseContractVersion: string;
   readonly readability: string;
   readonly adapterInputBoundary: string;
@@ -1336,6 +1364,7 @@ export type RawProjectionMetadataPayload = {
   readonly availabilitySemantics: ProjectionAvailabilitySemantics;
   readonly diagnosticSemantics: ProjectionDiagnosticSemantics;
   readonly confidenceSemantics: ProjectionConfidenceSemantics;
+  readonly healthSemantics: ProjectionHealthSemantics;
   readonly payloadVersion: string;
   readonly readability: string;
   readonly adapterInputBoundary: string;
@@ -1395,6 +1424,7 @@ export type InventoryIntegrityFetchResultMetadata = {
   readonly availabilitySemantics: ProjectionAvailabilitySemantics;
   readonly diagnosticSemantics: ProjectionDiagnosticSemantics;
   readonly confidenceSemantics: ProjectionConfidenceSemantics;
+  readonly healthSemantics: ProjectionHealthSemantics;
   readonly responseStatus: ProjectionResponseStatusSemantics;
   readonly resultVersion: string;
   readonly readability: string;
