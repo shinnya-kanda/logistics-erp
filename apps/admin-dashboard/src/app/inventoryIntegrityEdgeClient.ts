@@ -31,6 +31,7 @@ import type {
   ProjectionLatencySemantics,
   ProjectionOfflineSemantics,
   ProjectionProvenanceSemantics,
+  ProjectionResilienceSemantics,
   ProjectionResponseStatusSemantics,
   ProjectionReviewSemantics,
   ProjectionRetrySemantics,
@@ -157,10 +158,37 @@ export const inventoryIntegrityRetrySemantics: ProjectionRetrySemantics = {
     "ProjectionRetrySemantics は execution authority を持ちません。retry scheduling、backoff、network request、mutation は実行しません。",
 };
 
+export const inventoryIntegrityResilienceSemantics: ProjectionResilienceSemantics =
+  {
+    semanticsId: "inventory-integrity-static-read-only-resilience-semantics",
+    state: "resilience_unverified",
+    label: "static resilience-unverified interpretation",
+    readability:
+      "resilience_unverified は static fallback flow で resilience を検証済みとして扱わない状態を示します。resilience monitoring、recovery execution、復旧準備完了ではありません。",
+    operationalResilienceInterpretation:
+      "resilience_normal / resilience_degraded は将来 operational resilience をどう読むかの状態であり、resilience monitoring、retry orchestration、recovery execution を実行しません。",
+    degradedResilienceVisibilityInterpretation:
+      "degraded resilience visibility は回復力が限定的に見える状態の表示解釈であり、error 確定、alert、correction、運用処理を開始しません。",
+    governanceResilienceInterpretation:
+      "governance resilience dashboard 用の意味境界であり、承認、監査確定、policy enforcement、正当性保証ではありません。",
+    recoveryReadinessInterpretation:
+      "recovery readiness interpretation は復旧準備の読み方であり、recovery execution、retry orchestration、fallback execution を開始しません。",
+    observabilityResilienceInterpretation:
+      "observability resilience interpretation は health / confidence / availability metadata の見え方であり、telemetry export、orchestration instrumentation、monitoring を追加しません。",
+    noExecutionMeaning:
+      "resilience semantics は resilience monitoring implementation ではありません。resilience monitoring、recovery execution、retry orchestration、telemetry export、mutation は実行しません。",
+    truthSource: "inventory_transactions",
+    cacheCompareTarget: "inventory_current",
+    semanticBoundary: "reasoning_visualization_only",
+    executionBoundary:
+      "ProjectionResilienceSemantics は execution authority を持ちません。resilience monitoring、recovery execution、retry orchestration、instrumentation は実行しません。",
+  };
+
 export const inventoryIntegrityHealthSemantics: ProjectionHealthSemantics = {
   semanticsId: "inventory-integrity-static-read-only-health-semantics",
   state: "health_unverified",
   label: "static health-unverified interpretation",
+  resilienceSemantics: inventoryIntegrityResilienceSemantics,
   readability:
     "health_unverified は static fallback flow で health を検証済みとして扱わない状態を示します。health monitoring、health scoring、正常性確定ではありません。",
   operationalHealthInterpretation:
@@ -188,6 +216,7 @@ export const inventoryIntegrityConfidenceSemantics: ProjectionConfidenceSemantic
     state: "confidence_unverified",
     label: "static confidence-unverified interpretation",
     healthSemantics: inventoryIntegrityHealthSemantics,
+    resilienceSemantics: inventoryIntegrityResilienceSemantics,
     readability:
       "confidence_unverified は static fallback flow で confidence を検証済みとして扱わない状態を示します。confidence scoring、analytics execution、AI evaluation 完了ではありません。",
     projectionConfidenceInterpretation:
@@ -245,6 +274,7 @@ export const inventoryIntegrityAvailabilitySemantics: ProjectionAvailabilitySema
     diagnosticSemantics: inventoryIntegrityDiagnosticSemantics,
     confidenceSemantics: inventoryIntegrityConfidenceSemantics,
     healthSemantics: inventoryIntegrityHealthSemantics,
+    resilienceSemantics: inventoryIntegrityResilienceSemantics,
     readability:
       "availability_unverified は static fallback flow で availability を検証済みとして扱わない状態を示します。uptime 測定、health 確認、endpoint available 確定ではありません。",
     endpointAvailabilityInterpretation:
@@ -770,6 +800,7 @@ export const inventoryIntegrityResponseStatusSemantics: ProjectionResponseStatus
   diagnosticSemantics: inventoryIntegrityDiagnosticSemantics,
   confidenceSemantics: inventoryIntegrityConfidenceSemantics,
   healthSemantics: inventoryIntegrityHealthSemantics,
+  resilienceSemantics: inventoryIntegrityResilienceSemantics,
   readability:
     "response_accepted は static mock response を read-only interpretation boundary として読める状態を示します。network response success ではありません。",
   interpretation:
@@ -802,6 +833,7 @@ export const inventoryIntegrityUnavailableResponseStatusSemantics: ProjectionRes
     diagnosticSemantics: inventoryIntegrityDiagnosticSemantics,
     confidenceSemantics: inventoryIntegrityConfidenceSemantics,
     healthSemantics: inventoryIntegrityHealthSemantics,
+    resilienceSemantics: inventoryIntegrityResilienceSemantics,
     readability:
       "response_unavailable は real read-only fetch PoC で response を採用できない状態を示します。static fallback は維持しますが、成功や correctness guarantee ではありません。",
     interpretation:
@@ -966,10 +998,11 @@ export function createInventoryIntegrityFetchResult(
       diagnosticSemantics: inventoryIntegrityDiagnosticSemantics,
       confidenceSemantics: inventoryIntegrityConfidenceSemantics,
       healthSemantics: inventoryIntegrityHealthSemantics,
+      resilienceSemantics: inventoryIntegrityResilienceSemantics,
       responseStatus,
       resultVersion: "inventory-integrity-static-fetch-result-v1",
       readability:
-        `read-only source を fetch result と同じ語彙で読むための metadata です。request、${request.endpoint.endpointId}、${request.fetchSemantics.semanticsId}、${request.fetchExecution.state}、${inventoryIntegrityTransportSemantics.state}、${inventoryIntegrityCacheSemantics.state}、${inventoryIntegrityOfflineSemantics.state}、${inventoryIntegrityRetrySemantics.state}、${inventoryIntegrityConsistencySemantics.state}、${inventoryIntegrityDegradationSemantics.state}、${inventoryIntegrityAuthoritySemantics.state}、${inventoryIntegritySnapshotSemantics.state}、${inventoryIntegrityProvenanceSemantics.state}、${inventoryIntegrityEvidenceSemantics.state}、${inventoryIntegrityFallbackSemantics.state}、${inventoryIntegrityTraceSemantics.state}、${inventoryIntegrityGovernanceSemantics.state}、${inventoryIntegrityReviewSemantics.state}、${inventoryIntegrityDecisionSemantics.state}、${inventoryIntegrityAttentionSemantics.state}、${inventoryIntegrityEscalationSemantics.state}、${inventoryIntegrityTelemetrySemantics.state}、${inventoryIntegrityLatencySemantics.state}、${inventoryIntegrityAvailabilitySemantics.state}、${inventoryIntegrityDiagnosticSemantics.state}、${inventoryIntegrityConfidenceSemantics.state}、${inventoryIntegrityHealthSemantics.state}、${responseStatus.status} は読み方の境界であり execution result ではありません。`,
+        `read-only source を fetch result と同じ語彙で読むための metadata です。request、${request.endpoint.endpointId}、${request.fetchSemantics.semanticsId}、${request.fetchExecution.state}、${inventoryIntegrityTransportSemantics.state}、${inventoryIntegrityCacheSemantics.state}、${inventoryIntegrityOfflineSemantics.state}、${inventoryIntegrityRetrySemantics.state}、${inventoryIntegrityConsistencySemantics.state}、${inventoryIntegrityDegradationSemantics.state}、${inventoryIntegrityAuthoritySemantics.state}、${inventoryIntegritySnapshotSemantics.state}、${inventoryIntegrityProvenanceSemantics.state}、${inventoryIntegrityEvidenceSemantics.state}、${inventoryIntegrityFallbackSemantics.state}、${inventoryIntegrityTraceSemantics.state}、${inventoryIntegrityGovernanceSemantics.state}、${inventoryIntegrityReviewSemantics.state}、${inventoryIntegrityDecisionSemantics.state}、${inventoryIntegrityAttentionSemantics.state}、${inventoryIntegrityEscalationSemantics.state}、${inventoryIntegrityTelemetrySemantics.state}、${inventoryIntegrityLatencySemantics.state}、${inventoryIntegrityAvailabilitySemantics.state}、${inventoryIntegrityDiagnosticSemantics.state}、${inventoryIntegrityConfidenceSemantics.state}、${inventoryIntegrityHealthSemantics.state}、${inventoryIntegrityResilienceSemantics.state}、${responseStatus.status} は読み方の境界であり execution result ではありません。`,
       adapterInputBoundary:
         "fetch result は fetch adapter input boundary です。GET read-only response 以外の endpoint implementation、write API、POST、Supabase mutation は含みません。",
       truthSource: "inventory_transactions",
