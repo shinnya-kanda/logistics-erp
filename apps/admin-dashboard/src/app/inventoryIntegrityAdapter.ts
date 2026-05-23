@@ -111,6 +111,9 @@ function normalizeProjectionMetadata(
     identity: { ...metadata.identity },
     snapshot: { ...metadata.snapshot },
     evidence: normalizeEvidence(metadata.evidence),
+    compareHardening: metadata.compareHardening
+      ? { ...metadata.compareHardening }
+      : undefined,
     confidence: normalizeConfidence(metadata.confidence),
     freshness: normalizeFreshness(metadata.freshness),
     completeness: normalizeCompleteness(metadata.completeness),

@@ -1233,6 +1233,7 @@ export function createInventoryIntegrityFetchResult(
   request: InventoryIntegrityEdgeRequest,
   resultKind: InventoryIntegrityFetchResult["metadata"]["resultKind"],
   responseStatus: ProjectionResponseStatusSemantics = inventoryIntegrityResponseStatusSemantics,
+  compareHardening?: InventoryIntegrityFetchResult["metadata"]["compareHardening"],
 ): InventoryIntegrityFetchResult {
   return {
     metadata: {
@@ -1277,6 +1278,7 @@ export function createInventoryIntegrityFetchResult(
       trustworthinessSemantics: inventoryIntegrityTrustworthinessSemantics,
       operationalSustainabilitySemantics:
         inventoryIntegrityOperationalSustainabilitySemantics,
+      compareHardening,
       responseStatus,
       resultVersion: "inventory-integrity-static-fetch-result-v1",
       readability:

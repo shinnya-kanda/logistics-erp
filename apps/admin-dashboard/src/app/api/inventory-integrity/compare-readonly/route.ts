@@ -10,15 +10,24 @@ import {
 } from "../../../inventoryIntegrityEdgeClient";
 import { realReadOnlyProjectionSourceMetadata } from "../../../inventoryIntegritySource";
 import type {
+  InventoryCompareHardeningMetadata,
   InventoryCompareProjection,
   InventoryCompareSeverity,
+  InventoryCompareSourceStatus,
   InventoryCompareStatus,
+  InventoryCompareResultVisibilityStatus,
+  InventoryCompareScopeValidationStatus,
   InventoryIntegrityReadOnlyData,
 } from "../../../inventoryIntegrityTypes";
 
 type GuardResult =
   | { ok: true; token: string; warehouseCode: string }
-  | { ok: false; status: 401 | 403; error: string };
+  | {
+      ok: false;
+      status: 401 | 403;
+      error: string;
+      scopeStatus: InventoryCompareScopeValidationStatus;
+    };
 
 type InventoryTransactionRow = {
   readonly transaction_type: string | null;
@@ -56,17 +65,23 @@ function extractBearerToken(req: NextRequest): string | null {
   return match?.[1] ?? null;
 }
 
-function unavailable(status: 401 | 403, error: string): GuardResult {
-  return { ok: false, status, error };
+function unavailable(
+  status: 401 | 403,
+  error: string,
+  scopeStatus: InventoryCompareScopeValidationStatus,
+): GuardResult {
+  return { ok: false, status, error, scopeStatus };
 }
 
 async function requireAdminDashboardRole(req: NextRequest): Promise<GuardResult> {
   const token = extractBearerToken(req);
-  if (!token) return unavailable(401, "unauthorized");
+  if (!token) return unavailable(401, "unauthorized", "unavailable_scope");
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
-  if (!supabaseUrl || !supabaseAnonKey) return unavailable(401, "unauthorized");
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return unavailable(401, "unauthorized", "unavailable_scope");
+  }
 
   const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -77,7 +92,7 @@ async function requireAdminDashboardRole(req: NextRequest): Promise<GuardResult>
     data: { user },
     error: authError,
   } = await supabase.auth.getUser(token);
-  if (authError || !user) return unavailable(401, "unauthorized");
+  if (authError || !user) return unavailable(401, "unauthorized", "unavailable_scope");
 
   const { data: profile, error: profileError } = await supabase
     .from("user_profiles")
@@ -85,18 +100,90 @@ async function requireAdminDashboardRole(req: NextRequest): Promise<GuardResult>
     .eq("user_id", user.id)
     .maybeSingle();
 
-  if (profileError || !profile) return unavailable(403, "profile_unavailable");
-  if (profile.user_id !== user.id) return unavailable(403, "profile_mismatch");
-  if (profile.is_active !== true) return unavailable(403, "user_inactive");
+  if (profileError || !profile) {
+    return unavailable(403, "profile_unavailable", "unavailable_scope");
+  }
+  if (profile.user_id !== user.id) return unavailable(403, "profile_mismatch", "invalid_scope");
+  if (profile.is_active !== true) return unavailable(403, "user_inactive", "invalid_scope");
   if (typeof profile.role !== "string" || !allowedRoles.has(profile.role)) {
-    return unavailable(403, "role_not_allowed");
+    return unavailable(403, "role_not_allowed", "invalid_scope");
   }
 
   const warehouseCode =
     typeof profile.warehouse_code === "string" ? profile.warehouse_code.trim() : "";
-  if (!warehouseCode) return unavailable(403, "warehouse_unavailable");
+  if (!warehouseCode) return unavailable(403, "warehouse_unavailable", "unavailable_scope");
 
   return { ok: true, token, warehouseCode };
+}
+
+function createCompareHardeningMetadata({
+  sourceStatus,
+  resultStatus,
+  scopeStatus,
+  reason,
+}: {
+  readonly sourceStatus: InventoryCompareSourceStatus;
+  readonly resultStatus: InventoryCompareResultVisibilityStatus;
+  readonly scopeStatus: InventoryCompareScopeValidationStatus;
+  readonly reason: string;
+}): InventoryCompareHardeningMetadata {
+  return {
+    hardeningId: `inventory-integrity-compare-readonly-${sourceStatus}-${resultStatus}-${scopeStatus}`,
+    sourceStatus,
+    resultStatus,
+    scopeStatus,
+    label: "read-only compare hardening semantics",
+    readability:
+      `${sourceStatus} / ${resultStatus} / ${scopeStatus} は compare endpoint の read-only visibility 状態です。${reason}`,
+    sourceInterpretation:
+      "compare source status は inventory_transactions / inventory_current を read-only source として読めるかの表示状態です。",
+    resultInterpretation:
+      "compare result status は empty / partial / unverified の表示状態であり、正しさ保証ではありません。",
+    scopeInterpretation:
+      "scope status は warehouse_code 境界の読み方であり、権限変更や在庫操作ではありません。",
+    degradationVisibility:
+      "degraded / unavailable は read-only degraded visibility であり、修正、再生成、在庫変更の開始条件ではありません。",
+    noExecutionMeaning:
+      "compare hardening は compare execution ではありません。修正、再生成、在庫変更、同期処理は実行しません。",
+    truthSource: "inventory_transactions",
+    cacheCompareTarget: "inventory_current",
+    semanticBoundary: "reasoning_visualization_only",
+    executionBoundary:
+      "InventoryCompareHardeningMetadata は execution authority を持ちません。修正、再生成、在庫変更は実行しません。",
+  };
+}
+
+function createUnavailableReadOnlyResponse({
+  status,
+  error,
+  scopeStatus,
+}: {
+  readonly status: number;
+  readonly error: string;
+  readonly scopeStatus: InventoryCompareScopeValidationStatus;
+}) {
+  const compareHardening = createCompareHardeningMetadata({
+    sourceStatus: "compare_source_unavailable",
+    resultStatus: "compare_result_unverified",
+    scopeStatus,
+    reason: error,
+  });
+
+  return NextResponse.json(
+    {
+      ok: false,
+      error,
+      endpoint: endpointPath,
+      method: "GET",
+      truthSource: "inventory_transactions",
+      cacheCompareTarget: "inventory_current",
+      compareHardening,
+      semanticBoundary: "reasoning_visualization_only",
+      executionBoundary:
+        "compare-readonly endpoint failure は read-only unavailable visibility です。修正、再生成、在庫変更は実行しません。",
+    },
+    { status },
+  );
 }
 
 function toQuantity(value: number | string | null): number {
@@ -216,6 +303,7 @@ function severityForStatus(status: InventoryCompareStatus): InventoryCompareSeve
 function buildCompareProjection(
   row: CompareQuantity,
   generatedAt: string,
+  compareHardening: InventoryCompareHardeningMetadata,
 ): InventoryCompareProjection {
   const differenceQuantity = row.transactionQuantity - row.currentQuantity;
   const compareStatus = resolveCompareStatus(
@@ -277,6 +365,7 @@ function buildCompareProjection(
         executionBoundary:
           "compare evidence は read-only visibility です。更新、再生成、在庫変更は実行しません。",
       },
+      compareHardening,
       confidence: {
         level: "medium",
         reason: "real read-only compare rows から作成した visibility です。",
@@ -381,9 +470,10 @@ function buildReadOnlyData(
   fallbackData: InventoryIntegrityReadOnlyData,
   quantities: readonly CompareQuantity[],
   generatedAt: string,
+  compareHardening: InventoryCompareHardeningMetadata,
 ): InventoryIntegrityReadOnlyData {
   const compareProjections = quantities
-    .map((quantity) => buildCompareProjection(quantity, generatedAt))
+    .map((quantity) => buildCompareProjection(quantity, generatedAt, compareHardening))
     .sort((a, b) => a.id.localeCompare(b.id));
   const mismatchCount = compareProjections.filter(
     (projection) => projection.difference.compareStatus !== "matched",
@@ -409,19 +499,21 @@ function buildReadOnlyData(
 export async function GET(req: NextRequest) {
   const guard = await requireAdminDashboardRole(req);
   if (!guard.ok) {
-    return NextResponse.json(
-      { ok: false, error: guard.error },
-      { status: guard.status },
-    );
+    return createUnavailableReadOnlyResponse({
+      status: guard.status,
+      error: guard.error,
+      scopeStatus: guard.scopeStatus,
+    });
   }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
   if (!supabaseUrl || !supabaseAnonKey) {
-    return NextResponse.json(
-      { ok: false, error: "supabase_env_unavailable" },
-      { status: 500 },
-    );
+    return createUnavailableReadOnlyResponse({
+      status: 500,
+      error: "supabase_env_unavailable",
+      scopeStatus: "unavailable_scope",
+    });
   }
 
   const supabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -442,10 +534,11 @@ export async function GET(req: NextRequest) {
     .range(0, 9999);
 
   if (transactionResult.error) {
-    return NextResponse.json(
-      { ok: false, error: "transaction_read_unavailable" },
-      { status: 500 },
-    );
+    return createUnavailableReadOnlyResponse({
+      status: 500,
+      error: "transaction_read_unavailable",
+      scopeStatus: "valid_scope",
+    });
   }
 
   const currentResult = await supabase
@@ -455,10 +548,11 @@ export async function GET(req: NextRequest) {
     .range(0, 9999);
 
   if (currentResult.error) {
-    return NextResponse.json(
-      { ok: false, error: "current_read_unavailable" },
-      { status: 500 },
-    );
+    return createUnavailableReadOnlyResponse({
+      status: 500,
+      error: "current_read_unavailable",
+      scopeStatus: "valid_scope",
+    });
   }
 
   ((transactionResult.data ?? []) as InventoryTransactionRow[]).forEach((row) =>
@@ -468,11 +562,30 @@ export async function GET(req: NextRequest) {
     addCurrentQuantity(quantities, row, generatedAt),
   );
 
+  const transactionRows = transactionResult.data ?? [];
+  const currentRows = currentResult.data ?? [];
+  const compareHardening = createCompareHardeningMetadata({
+    sourceStatus:
+      transactionRows.length === 0 || currentRows.length === 0
+        ? "compare_source_degraded"
+        : "compare_source_available",
+    resultStatus:
+      quantities.size === 0 ? "compare_result_empty" : "compare_result_partial",
+    scopeStatus:
+      transactionRows.length === 0 || currentRows.length === 0
+        ? "degraded_scope"
+        : "valid_scope",
+    reason:
+      quantities.size === 0
+        ? "read-only compare source returned no comparable rows"
+        : "read-only compare source returned partial visibility rows",
+  });
   const fallbackData = getInventoryIntegrityMockData();
   const readOnlyData = buildReadOnlyData(
     fallbackData,
     Array.from(quantities.values()),
     generatedAt,
+    compareHardening,
   );
   const endpointContract = createInventoryIntegrityReadOnlyEndpointContract(endpointPath);
   const request = createInventoryIntegrityReadOnlyEdgeRequest(endpointContract);
@@ -481,6 +594,8 @@ export async function GET(req: NextRequest) {
     readOnlyData,
     request,
     "future_edge_fetch_result",
+    undefined,
+    compareHardening,
   );
   const payload = adaptFetchResponseToPayload(fetchResult);
   const mappedResponse = mapEdgeProjectionResponse({
@@ -496,6 +611,7 @@ export async function GET(req: NextRequest) {
     truthSource: "inventory_transactions",
     cacheCompareTarget: "inventory_current",
     warehouseCode: guard.warehouseCode,
+    compareHardening,
     normalizedData: mappedResponse.normalizedData,
     metadata: mappedResponse.metadata,
     statusSemantics: mappedResponse.statusSemantics,

@@ -51,6 +51,9 @@ export function mapEdgeProjectionMetadata(
     trustworthinessSemantics: metadata.trustworthinessSemantics,
     operationalSustainabilitySemantics:
       metadata.operationalSustainabilitySemantics,
+    compareHardening: metadata.compareHardening
+      ? { ...metadata.compareHardening }
+      : undefined,
     responseContractVersion: metadata.payloadVersion,
     readability: metadata.readability,
     adapterInputBoundary: metadata.adapterInputBoundary,
