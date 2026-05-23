@@ -48,6 +48,7 @@ import type {
   InventoryCompareProjectionFreshnessMetadata,
   InventoryCompareScope,
   InventoryCompareStatus,
+  InventoryCompareTruthAggregationQualityMetadata,
   InventoryIntegrityAttentionLevel,
   InventoryIntegrityCompletenessLevel,
   InventoryIntegrityEvidenceConfidence,
@@ -389,6 +390,27 @@ function extractCompareProjectionFreshness(
     : null;
 }
 
+function extractCompareTruthAggregationQuality(
+  value: unknown,
+): InventoryCompareTruthAggregationQualityMetadata | null {
+  if (!value || typeof value !== "object") return null;
+
+  const candidate = value as { readonly compareTruthAggregationQuality?: unknown };
+  if (
+    !candidate.compareTruthAggregationQuality ||
+    typeof candidate.compareTruthAggregationQuality !== "object"
+  ) {
+    return null;
+  }
+
+  const quality =
+    candidate.compareTruthAggregationQuality as Partial<InventoryCompareTruthAggregationQualityMetadata>;
+  return typeof quality.truthAggregationQuality === "string" &&
+    typeof quality.truthQualityText === "string"
+    ? (quality as InventoryCompareTruthAggregationQualityMetadata)
+    : null;
+}
+
 function readableSignals(signals: readonly string[], limit = 4): string {
   const visibleSignals = signals.slice(0, limit).join(" / ");
   return signals.length > limit
@@ -529,6 +551,8 @@ export function InventoryIntegritySection() {
     useState<InventoryCompareConfidenceMetadata | null>(null);
   const [compareProjectionFreshness, setCompareProjectionFreshness] =
     useState<InventoryCompareProjectionFreshnessMetadata | null>(null);
+  const [compareTruthAggregationQuality, setCompareTruthAggregationQuality] =
+    useState<InventoryCompareTruthAggregationQualityMetadata | null>(null);
 
   useEffect(() => {
     const token = session?.access_token;
@@ -542,6 +566,7 @@ export function InventoryIntegritySection() {
       setCompareOperatorTimeline(null);
       setCompareConfidence(null);
       setCompareProjectionFreshness(null);
+      setCompareTruthAggregationQuality(null);
       return;
     }
 
@@ -569,6 +594,9 @@ export function InventoryIntegritySection() {
           setCompareOperatorTimeline(extractCompareOperatorTimeline(responseBody));
           setCompareConfidence(extractCompareConfidence(responseBody));
           setCompareProjectionFreshness(extractCompareProjectionFreshness(responseBody));
+          setCompareTruthAggregationQuality(
+            extractCompareTruthAggregationQuality(responseBody),
+          );
           return;
         }
 
@@ -581,6 +609,7 @@ export function InventoryIntegritySection() {
         setCompareOperatorTimeline(extractCompareOperatorTimeline(responseBody));
         setCompareConfidence(extractCompareConfidence(responseBody));
         setCompareProjectionFreshness(extractCompareProjectionFreshness(responseBody));
+        setCompareTruthAggregationQuality(extractCompareTruthAggregationQuality(responseBody));
         const readOnlyData = extractInventoryIntegrityReadOnlyData(responseBody);
         if (!readOnlyData) {
           setCompareSourceLabel("static fallback");
@@ -600,6 +629,7 @@ export function InventoryIntegritySection() {
           setCompareOperatorTimeline(null);
           setCompareConfidence(null);
           setCompareProjectionFreshness(null);
+          setCompareTruthAggregationQuality(null);
         }
       }
     }
@@ -733,6 +763,22 @@ export function InventoryIntegritySection() {
               </span>
             </>
           ) : null}
+          {compareTruthAggregationQuality ? (
+            <>
+              <span style={styles.summaryText}>
+                {compareTruthAggregationQuality.truthQualityText}
+              </span>
+              <span style={styles.supportingText}>
+                truth aggregation quality:{" "}
+                {compareTruthAggregationQuality.truthAggregationQuality} /{" "}
+                {compareTruthAggregationQuality.truthQualityReason}
+              </span>
+              <span style={styles.supportingText}>
+                source: {compareTruthAggregationQuality.truthQualitySource} / signals:{" "}
+                {readableSignals(compareTruthAggregationQuality.truthQualitySignals)}
+              </span>
+            </>
+          ) : null}
           {compareOperatorTimeline ? (
             <span style={styles.supportingText}>
               operator timeline: {compareOperatorTimeline.timelineText} /{" "}
@@ -773,6 +819,9 @@ export function InventoryIntegritySection() {
           : ""}
         {compareProjectionFreshness
           ? ` projection freshness ${compareProjectionFreshness.projectionFreshness}.`
+          : ""}
+        {compareTruthAggregationQuality
+          ? ` truth aggregation quality ${compareTruthAggregationQuality.truthAggregationQuality}.`
           : ""}
       </div>
 
@@ -903,6 +952,12 @@ export function InventoryIntegritySection() {
                   {projection.metadata.compareProjectionFreshness.freshnessText}
                 </p>
               ) : null}
+              {projection.metadata.compareTruthAggregationQuality ? (
+                <p style={styles.description}>
+                  truth aggregation quality:{" "}
+                  {projection.metadata.compareTruthAggregationQuality.truthQualityText}
+                </p>
+              ) : null}
               {projection.metadata.compareOperatorGuidance ? (
                 <p style={styles.description}>
                   operator guidance: {projection.metadata.compareOperatorGuidance.operatorGuidance}
@@ -997,6 +1052,16 @@ export function InventoryIntegritySection() {
                   {projection.metadata.compareProjectionFreshness.freshnessSource} / signals:{" "}
                   {readableSignals(
                     projection.metadata.compareProjectionFreshness.freshnessSignals,
+                  )}
+                </p>
+              ) : null}
+              {projection.metadata.compareTruthAggregationQuality ? (
+                <p style={styles.supportingText}>
+                  truth quality reason:{" "}
+                  {projection.metadata.compareTruthAggregationQuality.truthQualityReason} / source:{" "}
+                  {projection.metadata.compareTruthAggregationQuality.truthQualitySource} / signals:{" "}
+                  {readableSignals(
+                    projection.metadata.compareTruthAggregationQuality.truthQualitySignals,
                   )}
                 </p>
               ) : null}

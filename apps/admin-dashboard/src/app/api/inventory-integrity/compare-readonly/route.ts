@@ -40,6 +40,8 @@ import type {
   InventoryCompareSeverityMetadata,
   InventoryCompareSourceStatus,
   InventoryCompareStatus,
+  InventoryCompareTruthAggregationQuality,
+  InventoryCompareTruthAggregationQualityMetadata,
   InventoryCompareResultVisibilityStatus,
   InventoryCompareScopeValidationStatus,
   InventoryIntegrityReadOnlyData,
@@ -1454,6 +1456,163 @@ function createCompareProjectionFreshnessMetadata({
   };
 }
 
+function truthAggregationQualityForSemantics({
+  compareHardening,
+  compareConfidence,
+  projectionFreshness,
+  classification,
+  severity,
+  operatorSummary,
+  operatorTimeline,
+  compareStatus,
+}: {
+  readonly compareHardening: InventoryCompareHardeningMetadata;
+  readonly compareConfidence: InventoryCompareConfidence;
+  readonly projectionFreshness: InventoryCompareProjectionFreshness;
+  readonly classification: InventoryCompareMismatchClassification;
+  readonly severity: InventoryCompareSeverity;
+  readonly operatorSummary?: InventoryCompareOperatorSummary;
+  readonly operatorTimeline?: InventoryCompareOperatorTimeline;
+  readonly compareStatus?: InventoryCompareStatus;
+}): InventoryCompareTruthAggregationQuality {
+  if (
+    compareConfidence === "confidence_blocked" ||
+    projectionFreshness === "freshness_unavailable" ||
+    compareHardening.sourceStatus === "compare_source_unavailable" ||
+    compareHardening.scopeStatus === "unavailable_scope" ||
+    classification === "unavailable_projection"
+  ) {
+    return "truth_quality_unavailable";
+  }
+  if (
+    compareConfidence === "confidence_unverified" ||
+    projectionFreshness === "freshness_unknown" ||
+    classification === "compare_unverified" ||
+    severity === "unverified" ||
+    operatorSummary === "summary_source_unverified" ||
+    operatorTimeline === "timeline_wait_for_confirmation" ||
+    compareHardening.resultStatus === "compare_result_unverified"
+  ) {
+    return "truth_quality_unverified";
+  }
+  if (
+    compareHardening.sourceStatus === "compare_source_degraded" ||
+    compareHardening.scopeStatus === "degraded_scope" ||
+    compareHardening.scopeStatus === "invalid_scope" ||
+    compareHardening.resultStatus === "compare_result_empty" ||
+    compareHardening.resultStatus === "compare_result_partial" ||
+    classification === "scope_mismatch" ||
+    classification === "compare_partial"
+  ) {
+    return "truth_quality_incomplete";
+  }
+  if (
+    classification === "negative_truth" ||
+    classification === "aggregation_mismatch" ||
+    severity === "high" ||
+    severity === "critical" ||
+    operatorSummary === "summary_action_required" ||
+    operatorSummary === "summary_review_needed" ||
+    operatorTimeline === "timeline_verify_source"
+  ) {
+    return "truth_quality_warning";
+  }
+  if (
+    compareHardening.sourceStatus === "compare_source_available" &&
+    compareHardening.scopeStatus === "valid_scope" &&
+    compareConfidence === "confidence_high" &&
+    projectionFreshness !== "freshness_stale" &&
+    compareStatus === "matched"
+  ) {
+    return "truth_quality_stable";
+  }
+  return "truth_quality_warning";
+}
+
+function truthQualityText(quality: InventoryCompareTruthAggregationQuality): string {
+  if (quality === "truth_quality_stable") {
+    return "truth 集計は安定して見えます";
+  }
+  if (quality === "truth_quality_warning") {
+    return "truth 集計に注意が必要です";
+  }
+  if (quality === "truth_quality_incomplete") {
+    return "truth 集計は不完全な可能性があります";
+  }
+  if (quality === "truth_quality_unverified") {
+    return "truth 集計は未検証です";
+  }
+  return "truth source が利用できないため判断保留です";
+}
+
+function truthQualityReason(quality: InventoryCompareTruthAggregationQuality): string {
+  if (quality === "truth_quality_stable") {
+    return "source / scope / confidence が確認可能で、truth 側の強い注意 signal が見えないため、安定した集計表示として整理します";
+  }
+  if (quality === "truth_quality_warning") {
+    return "negative truth / aggregation mismatch / high severity などの signal が見えるため、注意して読む集計表示として整理します";
+  }
+  if (quality === "truth_quality_incomplete") {
+    return "partial / degraded / scope 制限が見えるため、truth 集計の説明範囲が不完全な可能性として整理します";
+  }
+  if (quality === "truth_quality_unverified") {
+    return "compare source または判定材料が未検証に見えるため、truth 集計を確定しない表示として整理します";
+  }
+  return "truth source または scope が利用できないため、判断保留の表示として整理します";
+}
+
+function createCompareTruthAggregationQualityMetadata({
+  truthAggregationQuality,
+  compareHardening,
+  compareConfidence,
+  projectionFreshness,
+  classification,
+  severity,
+  operatorSummary,
+  operatorTimeline,
+  truthQualitySource,
+  truthQualitySignals,
+}: {
+  readonly truthAggregationQuality: InventoryCompareTruthAggregationQuality;
+  readonly compareHardening: InventoryCompareHardeningMetadata;
+  readonly compareConfidence: InventoryCompareConfidence;
+  readonly projectionFreshness: InventoryCompareProjectionFreshness;
+  readonly classification: InventoryCompareMismatchClassification;
+  readonly severity: InventoryCompareSeverity;
+  readonly operatorSummary?: InventoryCompareOperatorSummary;
+  readonly operatorTimeline?: InventoryCompareOperatorTimeline;
+  readonly truthQualitySource: string;
+  readonly truthQualitySignals: readonly string[];
+}): InventoryCompareTruthAggregationQualityMetadata {
+  return {
+    truthQualityId: `inventory-integrity-compare-readonly-${classification}-${truthAggregationQuality}`,
+    truthAggregationQuality,
+    truthQualityText: truthQualityText(truthAggregationQuality),
+    truthQualityReason: truthQualityReason(truthAggregationQuality),
+    truthQualitySource,
+    truthQualitySignals,
+    label: "read-only truth aggregation quality semantics",
+    interpretation:
+      "truth aggregation quality は inventory_transactions 由来の集計結果がどの程度安定して読めるかを示す governance / operational observability metadata です。",
+    noExecutionMeaning:
+      "truth aggregation quality は在庫操作、外部連携、担当設定の変更、truth 集計品質に基づく在庫変更を開始しません。",
+    sourceStatus: compareHardening.sourceStatus,
+    resultStatus: compareHardening.resultStatus,
+    scopeStatus: compareHardening.scopeStatus,
+    compareConfidence,
+    projectionFreshness,
+    classification,
+    severity,
+    operatorSummary,
+    operatorTimeline,
+    truthSource: "inventory_transactions",
+    cacheCompareTarget: "inventory_current",
+    semanticBoundary: "reasoning_visualization_only",
+    executionBoundary:
+      "InventoryCompareTruthAggregationQualityMetadata は read-only truth aggregation visibility です。操作導線、担当設定の変更、在庫変更は実行しません。",
+  };
+}
+
 function createUnavailableReadOnlyResponse({
   status,
   error,
@@ -1644,6 +1803,29 @@ function createUnavailableReadOnlyResponse({
       compareHardening.scopeStatus,
     ],
   });
+  const compareTruthAggregationQuality = createCompareTruthAggregationQualityMetadata({
+    truthAggregationQuality: "truth_quality_unavailable",
+    compareHardening,
+    compareConfidence: compareConfidence.compareConfidence,
+    projectionFreshness: compareProjectionFreshness.projectionFreshness,
+    classification: compareClassification.classification,
+    severity: compareSeverity.severity,
+    operatorSummary: compareOperatorSummary.operatorSummary,
+    operatorTimeline: compareOperatorTimeline.operatorTimeline,
+    truthQualitySource: "compare_source_unavailable",
+    truthQualitySignals: [
+      compareProjectionFreshness.projectionFreshness,
+      compareConfidence.compareConfidence,
+      compareOperatorTimeline.operatorTimeline,
+      compareOperatorSummary.operatorSummary,
+      compareOperatorMessage.operatorMessage,
+      compareOperatorGuidance.operatorGuidance,
+      compareClassification.classification,
+      compareHardening.sourceStatus,
+      compareHardening.resultStatus,
+      compareHardening.scopeStatus,
+    ],
+  });
 
   return NextResponse.json(
     {
@@ -1667,6 +1849,7 @@ function createUnavailableReadOnlyResponse({
       compareOperatorTimeline,
       compareConfidence,
       compareProjectionFreshness,
+      compareTruthAggregationQuality,
       semanticBoundary: "reasoning_visualization_only",
       executionBoundary:
         "compare-readonly endpoint failure は read-only unavailable visibility です。修正、再生成、在庫変更は実行しません。",
@@ -2100,6 +2283,42 @@ function buildCompareProjection(
       compareStatus,
     ],
   });
+  const compareTruthAggregationQuality = createCompareTruthAggregationQualityMetadata({
+    truthAggregationQuality: truthAggregationQualityForSemantics({
+      compareHardening,
+      compareConfidence: compareConfidence.compareConfidence,
+      projectionFreshness: compareProjectionFreshness.projectionFreshness,
+      classification: mismatchClassification,
+      severity: compareSeverity.severity,
+      operatorTimeline: compareOperatorTimeline.operatorTimeline,
+      compareStatus,
+    }),
+    compareHardening,
+    compareConfidence: compareConfidence.compareConfidence,
+    projectionFreshness: compareProjectionFreshness.projectionFreshness,
+    classification: mismatchClassification,
+    severity: compareSeverity.severity,
+    operatorTimeline: compareOperatorTimeline.operatorTimeline,
+    truthQualitySource: "compare_truth_source_semantics_chain",
+    truthQualitySignals: [
+      compareProjectionFreshness.projectionFreshness,
+      compareConfidence.compareConfidence,
+      compareOperatorTimeline.operatorTimeline,
+      compareOperatorMessage.operatorMessage,
+      compareOperatorGuidance.operatorGuidance,
+      compareOwnerActionability.ownerActionability,
+      compareOwnership.ownership,
+      compareOperationalPriority.priority,
+      compareEscalationReadiness.readiness,
+      compareReviewReadiness.readiness,
+      compareSeverity.severity,
+      mismatchClassification,
+      compareHardening.sourceStatus,
+      compareHardening.resultStatus,
+      compareHardening.scopeStatus,
+      compareStatus,
+    ],
+  });
   const projectionId = `real-compare-${row.warehouseCode}-${row.partNo}`;
 
   return {
@@ -2168,6 +2387,7 @@ function buildCompareProjection(
       compareOperatorTimeline,
       compareConfidence,
       compareProjectionFreshness,
+      compareTruthAggregationQuality,
       confidence: {
         level: "medium",
         reason: "real read-only compare rows から作成した visibility です。",
@@ -2764,6 +2984,81 @@ function resolveResponseProjectionFreshness(
   });
 }
 
+function resolveResponseTruthAggregationQuality(
+  compareHardening: InventoryCompareHardeningMetadata,
+  compareOperatorSummary: InventoryCompareOperatorSummaryMetadata,
+  compareOperatorTimeline: InventoryCompareOperatorTimelineMetadata,
+  compareConfidence: InventoryCompareConfidenceMetadata,
+  compareProjectionFreshness: InventoryCompareProjectionFreshnessMetadata,
+  compareProjections: readonly InventoryCompareProjection[],
+): InventoryCompareTruthAggregationQualityMetadata {
+  const firstUnavailableQuality = compareProjections.find(
+    (projection) =>
+      projection.metadata.compareTruthAggregationQuality?.truthAggregationQuality ===
+      "truth_quality_unavailable",
+  )?.metadata.compareTruthAggregationQuality;
+  if (firstUnavailableQuality) return firstUnavailableQuality;
+
+  const firstUnverifiedQuality = compareProjections.find(
+    (projection) =>
+      projection.metadata.compareTruthAggregationQuality?.truthAggregationQuality ===
+      "truth_quality_unverified",
+  )?.metadata.compareTruthAggregationQuality;
+  if (firstUnverifiedQuality) return firstUnverifiedQuality;
+
+  const firstIncompleteQuality = compareProjections.find(
+    (projection) =>
+      projection.metadata.compareTruthAggregationQuality?.truthAggregationQuality ===
+      "truth_quality_incomplete",
+  )?.metadata.compareTruthAggregationQuality;
+  if (firstIncompleteQuality) return firstIncompleteQuality;
+
+  const firstWarningQuality = compareProjections.find(
+    (projection) =>
+      projection.metadata.compareTruthAggregationQuality?.truthAggregationQuality ===
+      "truth_quality_warning",
+  )?.metadata.compareTruthAggregationQuality;
+  if (firstWarningQuality) return firstWarningQuality;
+
+  return createCompareTruthAggregationQualityMetadata({
+    truthAggregationQuality: truthAggregationQualityForSemantics({
+      compareHardening,
+      compareConfidence: compareConfidence.compareConfidence,
+      projectionFreshness: compareProjectionFreshness.projectionFreshness,
+      classification: compareOperatorTimeline.classification,
+      severity: compareOperatorTimeline.severity,
+      operatorSummary: compareOperatorSummary.operatorSummary,
+      operatorTimeline: compareOperatorTimeline.operatorTimeline,
+    }),
+    compareHardening,
+    compareConfidence: compareConfidence.compareConfidence,
+    projectionFreshness: compareProjectionFreshness.projectionFreshness,
+    classification: compareOperatorTimeline.classification,
+    severity: compareOperatorTimeline.severity,
+    operatorSummary: compareOperatorSummary.operatorSummary,
+    operatorTimeline: compareOperatorTimeline.operatorTimeline,
+    truthQualitySource: "response_level_truth_source_semantics_chain",
+    truthQualitySignals: [
+      compareProjectionFreshness.projectionFreshness,
+      compareConfidence.compareConfidence,
+      compareOperatorSummary.operatorSummary,
+      compareOperatorTimeline.operatorTimeline,
+      compareOperatorTimeline.operatorMessage,
+      compareOperatorTimeline.operatorGuidance,
+      compareOperatorTimeline.ownerActionability,
+      compareOperatorTimeline.ownership,
+      compareOperatorTimeline.operationalPriority,
+      compareOperatorTimeline.escalationReadiness,
+      compareOperatorTimeline.reviewReadiness,
+      compareOperatorTimeline.severity,
+      compareOperatorTimeline.classification,
+      compareHardening.sourceStatus,
+      compareHardening.resultStatus,
+      compareHardening.scopeStatus,
+    ],
+  });
+}
+
 export async function GET(req: NextRequest) {
   const guard = await requireAdminDashboardRole(req);
   if (!guard.ok) {
@@ -2916,6 +3211,14 @@ export async function GET(req: NextRequest) {
     compareConfidence,
     readOnlyData.compareProjections,
   );
+  const compareTruthAggregationQuality = resolveResponseTruthAggregationQuality(
+    compareHardening,
+    compareOperatorSummary,
+    compareOperatorTimeline,
+    compareConfidence,
+    compareProjectionFreshness,
+    readOnlyData.compareProjections,
+  );
   const endpointContract = createInventoryIntegrityReadOnlyEndpointContract(endpointPath);
   const request = createInventoryIntegrityReadOnlyEdgeRequest(endpointContract);
   const fetchResult = createInventoryIntegrityFetchResult(
@@ -2938,6 +3241,7 @@ export async function GET(req: NextRequest) {
     compareOperatorTimeline,
     compareConfidence,
     compareProjectionFreshness,
+    compareTruthAggregationQuality,
   );
   const payload = adaptFetchResponseToPayload(fetchResult);
   const mappedResponse = mapEdgeProjectionResponse({
@@ -2967,6 +3271,7 @@ export async function GET(req: NextRequest) {
     compareOperatorTimeline,
     compareConfidence,
     compareProjectionFreshness,
+    compareTruthAggregationQuality,
     normalizedData: mappedResponse.normalizedData,
     metadata: mappedResponse.metadata,
     statusSemantics: mappedResponse.statusSemantics,
