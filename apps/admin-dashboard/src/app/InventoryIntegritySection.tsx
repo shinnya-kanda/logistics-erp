@@ -38,6 +38,7 @@ import type {
   InventoryCompareSeverity,
   InventoryCompareReason,
   InventoryCompareClassificationMetadata,
+  InventoryCompareConfidenceMetadata,
   InventoryCompareHardeningMetadata,
   InventoryCompareMismatchClassification,
   InventoryCompareOperatorGuidanceMetadata,
@@ -351,6 +352,21 @@ function extractCompareOperatorTimeline(
     : null;
 }
 
+function extractCompareConfidence(value: unknown): InventoryCompareConfidenceMetadata | null {
+  if (!value || typeof value !== "object") return null;
+
+  const candidate = value as { readonly compareConfidence?: unknown };
+  if (!candidate.compareConfidence || typeof candidate.compareConfidence !== "object") {
+    return null;
+  }
+
+  const confidence = candidate.compareConfidence as Partial<InventoryCompareConfidenceMetadata>;
+  return typeof confidence.compareConfidence === "string" &&
+    typeof confidence.confidenceText === "string"
+    ? (confidence as InventoryCompareConfidenceMetadata)
+    : null;
+}
+
 function readableSignals(signals: readonly string[], limit = 4): string {
   const visibleSignals = signals.slice(0, limit).join(" / ");
   return signals.length > limit
@@ -487,6 +503,8 @@ export function InventoryIntegritySection() {
     useState<InventoryCompareOperatorSummaryMetadata | null>(null);
   const [compareOperatorTimeline, setCompareOperatorTimeline] =
     useState<InventoryCompareOperatorTimelineMetadata | null>(null);
+  const [compareConfidence, setCompareConfidence] =
+    useState<InventoryCompareConfidenceMetadata | null>(null);
 
   useEffect(() => {
     const token = session?.access_token;
@@ -498,6 +516,7 @@ export function InventoryIntegritySection() {
       setCompareOperatorMessage(null);
       setCompareOperatorSummary(null);
       setCompareOperatorTimeline(null);
+      setCompareConfidence(null);
       return;
     }
 
@@ -523,6 +542,7 @@ export function InventoryIntegritySection() {
           setCompareOperatorMessage(extractCompareOperatorMessage(responseBody));
           setCompareOperatorSummary(extractCompareOperatorSummary(responseBody));
           setCompareOperatorTimeline(extractCompareOperatorTimeline(responseBody));
+          setCompareConfidence(extractCompareConfidence(responseBody));
           return;
         }
 
@@ -533,6 +553,7 @@ export function InventoryIntegritySection() {
         setCompareOperatorMessage(extractCompareOperatorMessage(responseBody));
         setCompareOperatorSummary(extractCompareOperatorSummary(responseBody));
         setCompareOperatorTimeline(extractCompareOperatorTimeline(responseBody));
+        setCompareConfidence(extractCompareConfidence(responseBody));
         const readOnlyData = extractInventoryIntegrityReadOnlyData(responseBody);
         if (!readOnlyData) {
           setCompareSourceLabel("static fallback");
@@ -550,6 +571,7 @@ export function InventoryIntegritySection() {
           setCompareOperatorMessage(null);
           setCompareOperatorSummary(null);
           setCompareOperatorTimeline(null);
+          setCompareConfidence(null);
         }
       }
     }
@@ -657,6 +679,19 @@ export function InventoryIntegritySection() {
               </span>
             </>
           ) : null}
+          {compareConfidence ? (
+            <>
+              <span style={styles.summaryText}>{compareConfidence.confidenceText}</span>
+              <span style={styles.supportingText}>
+                compare confidence: {compareConfidence.compareConfidence} /{" "}
+                {compareConfidence.confidenceReason}
+              </span>
+              <span style={styles.supportingText}>
+                source: {compareConfidence.confidenceSource} / signals:{" "}
+                {readableSignals(compareConfidence.confidenceSignals)}
+              </span>
+            </>
+          ) : null}
           {compareOperatorTimeline ? (
             <span style={styles.supportingText}>
               operator timeline: {compareOperatorTimeline.timelineText} /{" "}
@@ -691,6 +726,9 @@ export function InventoryIntegritySection() {
           : ""}
         {compareOperatorTimeline
           ? ` operator timeline ${compareOperatorTimeline.operatorTimeline}.`
+          : ""}
+        {compareConfidence
+          ? ` compare confidence ${compareConfidence.compareConfidence}.`
           : ""}
       </div>
 
@@ -810,6 +848,11 @@ export function InventoryIntegritySection() {
                   operator message: {projection.metadata.compareOperatorMessage.messageText}
                 </p>
               ) : null}
+              {projection.metadata.compareConfidence ? (
+                <p style={styles.description}>
+                  compare confidence: {projection.metadata.compareConfidence.confidenceText}
+                </p>
+              ) : null}
               {projection.metadata.compareOperatorGuidance ? (
                 <p style={styles.description}>
                   operator guidance: {projection.metadata.compareOperatorGuidance.operatorGuidance}
@@ -888,6 +931,13 @@ export function InventoryIntegritySection() {
                   timeline reason: {projection.metadata.compareOperatorTimeline.timelineReason} / source:{" "}
                   {projection.metadata.compareOperatorTimeline.timelineSource} / signals:{" "}
                   {readableSignals(projection.metadata.compareOperatorTimeline.timelineSignals)}
+                </p>
+              ) : null}
+              {projection.metadata.compareConfidence ? (
+                <p style={styles.supportingText}>
+                  confidence reason: {projection.metadata.compareConfidence.confidenceReason} / source:{" "}
+                  {projection.metadata.compareConfidence.confidenceSource} / signals:{" "}
+                  {readableSignals(projection.metadata.compareConfidence.confidenceSignals)}
                 </p>
               ) : null}
               {projection.metadata.compareOwnerActionability ? (

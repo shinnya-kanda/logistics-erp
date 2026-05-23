@@ -1551,6 +1551,36 @@ export type InventoryCompareOperatorTimelineMetadata = {
   readonly executionBoundary: InventoryIntegrityExecutionBoundary;
 };
 
+export type InventoryCompareConfidence =
+  | "confidence_high"
+  | "confidence_medium"
+  | "confidence_low"
+  | "confidence_unverified"
+  | "confidence_blocked";
+
+export type InventoryCompareConfidenceMetadata = {
+  readonly confidenceId: string;
+  readonly compareConfidence: InventoryCompareConfidence;
+  readonly confidenceText: string;
+  readonly confidenceReason: string;
+  readonly confidenceSource: string;
+  readonly confidenceSignals: readonly string[];
+  readonly label: string;
+  readonly interpretation: string;
+  readonly noExecutionMeaning: string;
+  readonly sourceStatus: InventoryCompareSourceStatus;
+  readonly resultStatus: InventoryCompareResultVisibilityStatus;
+  readonly scopeStatus: InventoryCompareScopeValidationStatus;
+  readonly classification: InventoryCompareMismatchClassification;
+  readonly severity: InventoryCompareSeverity;
+  readonly operatorSummary?: InventoryCompareOperatorSummary;
+  readonly operatorTimeline?: InventoryCompareOperatorTimeline;
+  readonly truthSource: InventoryIntegrityTruthSource;
+  readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
 export type InventoryCompareHardeningMetadata = {
   readonly hardeningId: string;
   readonly sourceStatus: InventoryCompareSourceStatus;
@@ -1664,6 +1694,7 @@ export type InventoryIntegrityProjectionMetadata = {
   readonly compareOperatorGuidance?: InventoryCompareOperatorGuidanceMetadata;
   readonly compareOperatorMessage?: InventoryCompareOperatorMessageMetadata;
   readonly compareOperatorTimeline?: InventoryCompareOperatorTimelineMetadata;
+  readonly compareConfidence?: InventoryCompareConfidenceMetadata;
   readonly confidence: InventoryIntegrityConfidenceMetadata;
   readonly freshness: InventoryIntegrityFreshnessMetadata;
   readonly completeness: InventoryIntegrityCompletenessMetadata;
@@ -1931,6 +1962,7 @@ export type ProjectionResponseMetadata = {
   readonly compareOperatorMessage?: InventoryCompareOperatorMessageMetadata;
   readonly compareOperatorSummary?: InventoryCompareOperatorSummaryMetadata;
   readonly compareOperatorTimeline?: InventoryCompareOperatorTimelineMetadata;
+  readonly compareConfidence?: InventoryCompareConfidenceMetadata;
   readonly responseContractVersion: string;
   readonly readability: string;
   readonly adapterInputBoundary: string;
@@ -1988,6 +2020,7 @@ export type RawProjectionMetadataPayload = {
   readonly compareOperatorMessage?: InventoryCompareOperatorMessageMetadata;
   readonly compareOperatorSummary?: InventoryCompareOperatorSummaryMetadata;
   readonly compareOperatorTimeline?: InventoryCompareOperatorTimelineMetadata;
+  readonly compareConfidence?: InventoryCompareConfidenceMetadata;
   readonly payloadVersion: string;
   readonly readability: string;
   readonly adapterInputBoundary: string;
@@ -2069,6 +2102,7 @@ export type InventoryIntegrityFetchResultMetadata = {
   readonly compareOperatorMessage?: InventoryCompareOperatorMessageMetadata;
   readonly compareOperatorSummary?: InventoryCompareOperatorSummaryMetadata;
   readonly compareOperatorTimeline?: InventoryCompareOperatorTimelineMetadata;
+  readonly compareConfidence?: InventoryCompareConfidenceMetadata;
   readonly responseStatus: ProjectionResponseStatusSemantics;
   readonly resultVersion: string;
   readonly readability: string;

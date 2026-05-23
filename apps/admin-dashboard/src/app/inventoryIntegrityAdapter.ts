@@ -159,6 +159,12 @@ function normalizeProjectionMetadata(
           timelineSignals: [...metadata.compareOperatorTimeline.timelineSignals],
         }
       : undefined,
+    compareConfidence: metadata.compareConfidence
+      ? {
+          ...metadata.compareConfidence,
+          confidenceSignals: [...metadata.compareConfidence.confidenceSignals],
+        }
+      : undefined,
     confidence: normalizeConfidence(metadata.confidence),
     freshness: normalizeFreshness(metadata.freshness),
     completeness: normalizeCompleteness(metadata.completeness),
