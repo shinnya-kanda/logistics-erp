@@ -1235,6 +1235,8 @@ export function createInventoryIntegrityFetchResult(
   responseStatus: ProjectionResponseStatusSemantics = inventoryIntegrityResponseStatusSemantics,
   compareHardening?: InventoryIntegrityFetchResult["metadata"]["compareHardening"],
   compareClassification?: InventoryIntegrityFetchResult["metadata"]["compareClassification"],
+  compareSeverity?: InventoryIntegrityFetchResult["metadata"]["compareSeverity"],
+  compareReviewReadiness?: InventoryIntegrityFetchResult["metadata"]["compareReviewReadiness"],
 ): InventoryIntegrityFetchResult {
   return {
     metadata: {
@@ -1281,6 +1283,8 @@ export function createInventoryIntegrityFetchResult(
         inventoryIntegrityOperationalSustainabilitySemantics,
       compareHardening,
       compareClassification,
+      compareSeverity,
+      compareReviewReadiness,
       responseStatus,
       resultVersion: "inventory-integrity-static-fetch-result-v1",
       readability:

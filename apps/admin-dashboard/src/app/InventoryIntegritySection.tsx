@@ -73,14 +73,16 @@ function levelStyle(level: InventoryIntegrityLevel): CSSProperties {
 
 function severityLabel(severity: InventoryCompareSeverity): string {
   if (severity === "critical") return "差異重要度: 重大";
+  if (severity === "high") return "差異重要度: 高";
   if (severity === "warning") return "差異重要度: 警戒";
-  if (severity === "watch") return "差異重要度: 注意";
+  if (severity === "unverified") return "差異重要度: 未検証";
   return "差異重要度: 参考";
 }
 
 function severityStyle(severity: InventoryCompareSeverity): CSSProperties {
   if (severity === "critical") return { borderColor: "#c62828", background: "#ffebee" };
-  if (severity === "warning" || severity === "watch") {
+  if (severity === "high") return { borderColor: "#ad1457", background: "#fce4ec" };
+  if (severity === "warning" || severity === "unverified") {
     return { borderColor: "#ef6c00", background: "#fff3e0" };
   }
   return { borderColor: "#90caf9", background: "#e3f2fd" };
@@ -664,6 +666,18 @@ export function InventoryIntegritySection() {
               {projection.metadata.compareClassification ? (
                 <p style={styles.description}>
                   classification reason: {projection.metadata.compareClassification.reason}
+                </p>
+              ) : null}
+              {projection.metadata.compareSeverity ? (
+                <p style={styles.description}>
+                  compare severity: {severityLabel(projection.metadata.compareSeverity.severity)} /{" "}
+                  {projection.metadata.compareSeverity.reason}
+                </p>
+              ) : null}
+              {projection.metadata.compareReviewReadiness ? (
+                <p style={styles.description}>
+                  review readiness: {projection.metadata.compareReviewReadiness.readiness} /{" "}
+                  {projection.metadata.compareReviewReadiness.reason}
                 </p>
               ) : null}
               <p style={styles.description}>truth の見方: {projection.truthStatement}</p>
