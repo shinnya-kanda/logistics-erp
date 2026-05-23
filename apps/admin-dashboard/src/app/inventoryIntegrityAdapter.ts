@@ -179,6 +179,12 @@ function normalizeProjectionMetadata(
           ],
         }
       : undefined,
+    compareEvidence: metadata.compareEvidence
+      ? {
+          ...metadata.compareEvidence,
+          evidenceSignals: [...metadata.compareEvidence.evidenceSignals],
+        }
+      : undefined,
     confidence: normalizeConfidence(metadata.confidence),
     freshness: normalizeFreshness(metadata.freshness),
     completeness: normalizeCompleteness(metadata.completeness),
