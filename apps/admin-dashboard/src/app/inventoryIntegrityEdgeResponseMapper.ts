@@ -89,6 +89,12 @@ export function mapEdgeProjectionMetadata(
           guidanceSignals: [...metadata.compareOperatorGuidance.guidanceSignals],
         }
       : undefined,
+    compareOperatorMessage: metadata.compareOperatorMessage
+      ? {
+          ...metadata.compareOperatorMessage,
+          messageSignals: [...metadata.compareOperatorMessage.messageSignals],
+        }
+      : undefined,
     responseContractVersion: metadata.payloadVersion,
     readability: metadata.readability,
     adapterInputBoundary: metadata.adapterInputBoundary,

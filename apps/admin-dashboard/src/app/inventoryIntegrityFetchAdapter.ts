@@ -91,6 +91,12 @@ export function adaptFetchMetadataToPayload(
           guidanceSignals: [...metadata.compareOperatorGuidance.guidanceSignals],
         }
       : undefined,
+    compareOperatorMessage: metadata.compareOperatorMessage
+      ? {
+          ...metadata.compareOperatorMessage,
+          messageSignals: [...metadata.compareOperatorMessage.messageSignals],
+        }
+      : undefined,
     payloadVersion: metadata.resultVersion,
     readability:
       `${metadata.readability} fetch adapter は future fetch result を payload semantics として読む境界であり、${metadata.endpoint.endpointId} の network response handling 実装ではありません。${metadata.transportSemantics.state}、${metadata.cacheSemantics.state}、${metadata.offlineSemantics.state}、${metadata.retrySemantics.state}、${metadata.consistencySemantics.state}、${metadata.degradationSemantics.state}、${metadata.authoritySemantics.state}、${metadata.snapshotSemantics.state}、${metadata.provenanceSemantics.state}、${metadata.evidenceSemantics.state}、${metadata.fallbackSemantics.state}、${metadata.traceSemantics.state}、${metadata.governanceSemantics.state}、${metadata.reviewSemantics.state}、${metadata.decisionSemantics.state}、${metadata.attentionSemantics.state}、${metadata.escalationSemantics.state}、${metadata.telemetrySemantics.state}、${metadata.latencySemantics.state}、${metadata.availabilitySemantics.state}、${metadata.diagnosticSemantics.state}、${metadata.confidenceSemantics.state}、${metadata.healthSemantics.state}、${metadata.resilienceSemantics.state}、${metadata.stabilitySemantics.state}、${metadata.recoverabilitySemantics.state}、${metadata.durabilitySemantics.state}、${metadata.continuitySemantics.state}、${metadata.integrityAssuranceSemantics.state}、${metadata.survivabilitySemantics.state}、${metadata.trustworthinessSemantics.state}、${metadata.operationalSustainabilitySemantics.state}、${metadata.fetchExecution.state}、${metadata.responseStatus.status} は read-only semantic state であり実行結果ではありません。`,

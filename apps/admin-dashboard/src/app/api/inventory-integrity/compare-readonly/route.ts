@@ -23,6 +23,8 @@ import type {
   InventoryCompareOwnerActionabilityMetadata,
   InventoryCompareOperatorGuidance,
   InventoryCompareOperatorGuidanceMetadata,
+  InventoryCompareOperatorMessage,
+  InventoryCompareOperatorMessageMetadata,
   InventoryCompareProjection,
   InventoryCompareReviewReadiness,
   InventoryCompareReviewReadinessMetadata,
@@ -727,6 +729,151 @@ function createCompareOperatorGuidanceMetadata({
   };
 }
 
+function messageForGuidance({
+  compareHardening,
+  operatorGuidance,
+  ownerActionability,
+  ownership,
+  operationalPriority,
+  severity,
+  classification,
+}: {
+  readonly compareHardening: InventoryCompareHardeningMetadata;
+  readonly operatorGuidance: InventoryCompareOperatorGuidance;
+  readonly ownerActionability: InventoryCompareOwnerActionability;
+  readonly ownership: InventoryCompareOwnership;
+  readonly operationalPriority: InventoryCompareOperationalPriority;
+  readonly severity: InventoryCompareSeverity;
+  readonly classification: InventoryCompareMismatchClassification;
+}): InventoryCompareOperatorMessage {
+  if (
+    operatorGuidance === "guidance_wait_for_source" ||
+    ownerActionability === "blocked_unverified" ||
+    ownership === "owner_unknown" ||
+    classification === "compare_unverified" ||
+    severity === "unverified" ||
+    compareHardening.sourceStatus === "compare_source_unavailable"
+  ) {
+    return "message_wait_for_compare_source";
+  }
+  if (
+    operatorGuidance === "guidance_assign_owner_later" ||
+    ownerActionability === "unassigned_action" ||
+    ownership === "owner_unassigned" ||
+    compareHardening.sourceStatus === "compare_source_degraded" ||
+    compareHardening.scopeStatus !== "valid_scope" ||
+    compareHardening.resultStatus === "compare_result_partial"
+  ) {
+    return "message_owner_not_assigned";
+  }
+  if (
+    operatorGuidance === "guidance_verify_truth_source" ||
+    ownerActionability === "action_required" ||
+    ownership === "owner_required" ||
+    operationalPriority === "priority_p0" ||
+    severity === "critical"
+  ) {
+    return "message_verify_transaction_history";
+  }
+  if (
+    operatorGuidance === "guidance_review_projection" ||
+    ownerActionability === "action_recommended" ||
+    operationalPriority === "priority_p1" ||
+    operationalPriority === "priority_p2" ||
+    severity === "high" ||
+    classification === "aggregation_mismatch" ||
+    classification === "quantity_mismatch"
+  ) {
+    return "message_check_projection_cache";
+  }
+  return "message_monitor_minor_difference";
+}
+
+function messageText(message: InventoryCompareOperatorMessage): string {
+  if (message === "message_verify_transaction_history") {
+    return "transaction history の確認候補です";
+  }
+  if (message === "message_check_projection_cache") {
+    return "projection cache の差異確認候補です";
+  }
+  if (message === "message_monitor_minor_difference") {
+    return "軽微な差異として監視する表示です";
+  }
+  if (message === "message_owner_not_assigned") {
+    return "owner 未確定のため確認担当の整理が必要そうです";
+  }
+  return "compare source の検証後に判断する表示です";
+}
+
+function messageReason(message: InventoryCompareOperatorMessage): string {
+  if (message === "message_verify_transaction_history") {
+    return "truth source の履歴確認候補として読むための短い表示文です";
+  }
+  if (message === "message_check_projection_cache") {
+    return "projection cache 側の差異確認候補として読むための短い表示文です";
+  }
+  if (message === "message_monitor_minor_difference") {
+    return "監視中心で読む候補として整理するための短い表示文です";
+  }
+  if (message === "message_owner_not_assigned") {
+    return "owner が未確定に見える状態を担当設定済みと誤読しないための短い表示文です";
+  }
+  return "compare source が未検証に見える状態を確定情報と誤読しないための短い表示文です";
+}
+
+function createCompareOperatorMessageMetadata({
+  operatorMessage,
+  operatorGuidance,
+  ownerActionability,
+  ownership,
+  operationalPriority,
+  escalationReadiness,
+  reviewReadiness,
+  severity,
+  classification,
+  messageSource,
+  messageSignals,
+}: {
+  readonly operatorMessage: InventoryCompareOperatorMessage;
+  readonly operatorGuidance: InventoryCompareOperatorGuidance;
+  readonly ownerActionability: InventoryCompareOwnerActionability;
+  readonly ownership: InventoryCompareOwnership;
+  readonly operationalPriority: InventoryCompareOperationalPriority;
+  readonly escalationReadiness: InventoryCompareEscalationReadiness;
+  readonly reviewReadiness: InventoryCompareReviewReadiness;
+  readonly severity: InventoryCompareSeverity;
+  readonly classification: InventoryCompareMismatchClassification;
+  readonly messageSource: string;
+  readonly messageSignals: readonly string[];
+}): InventoryCompareOperatorMessageMetadata {
+  return {
+    messageId: `inventory-integrity-compare-readonly-${classification}-${operatorMessage}`,
+    operatorMessage,
+    messageText: messageText(operatorMessage),
+    messageReason: messageReason(operatorMessage),
+    messageSource,
+    messageSignals,
+    label: "read-only operator message semantics",
+    interpretation:
+      "operator message は担当者が差異を短く理解するための governance / operational observability metadata です。",
+    noExecutionMeaning:
+      "operator message は在庫操作、外部連携、担当設定の変更、案内文に基づく実行、在庫変更を開始しません。",
+    operatorGuidance,
+    ownerActionability,
+    ownership,
+    operationalPriority,
+    escalationReadiness,
+    reviewReadiness,
+    severity,
+    classification,
+    truthSource: "inventory_transactions",
+    cacheCompareTarget: "inventory_current",
+    semanticBoundary: "reasoning_visualization_only",
+    executionBoundary:
+      "InventoryCompareOperatorMessageMetadata は read-only message visibility です。操作導線、担当設定の変更、在庫変更は実行しません。",
+  };
+}
+
 function createUnavailableReadOnlyResponse({
   status,
   error,
@@ -820,6 +967,25 @@ function createUnavailableReadOnlyResponse({
       compareHardening.sourceStatus,
     ],
   });
+  const compareOperatorMessage = createCompareOperatorMessageMetadata({
+    operatorMessage: "message_wait_for_compare_source",
+    operatorGuidance: compareOperatorGuidance.operatorGuidance,
+    ownerActionability: compareOperatorGuidance.ownerActionability,
+    ownership: compareOperatorGuidance.ownership,
+    operationalPriority: compareOperatorGuidance.operationalPriority,
+    escalationReadiness: compareOperatorGuidance.escalationReadiness,
+    reviewReadiness: compareOperatorGuidance.reviewReadiness,
+    severity: compareOperatorGuidance.severity,
+    classification: compareOperatorGuidance.classification,
+    messageSource: "compare_source_unavailable",
+    messageSignals: [
+      compareOperatorGuidance.operatorGuidance,
+      compareOwnerActionability.ownerActionability,
+      compareOwnership.ownership,
+      compareClassification.classification,
+      compareHardening.sourceStatus,
+    ],
+  });
 
   return NextResponse.json(
     {
@@ -838,6 +1004,7 @@ function createUnavailableReadOnlyResponse({
       compareOwnership,
       compareOwnerActionability,
       compareOperatorGuidance,
+      compareOperatorMessage,
       semanticBoundary: "reasoning_visualization_only",
       executionBoundary:
         "compare-readonly endpoint failure は read-only unavailable visibility です。修正、再生成、在庫変更は実行しません。",
@@ -1140,6 +1307,39 @@ function buildCompareProjection(
       compareHardening.scopeStatus,
     ],
   });
+  const compareOperatorMessage = createCompareOperatorMessageMetadata({
+    operatorMessage: messageForGuidance({
+      compareHardening,
+      operatorGuidance: compareOperatorGuidance.operatorGuidance,
+      ownerActionability: compareOperatorGuidance.ownerActionability,
+      ownership: compareOperatorGuidance.ownership,
+      operationalPriority: compareOperatorGuidance.operationalPriority,
+      severity: compareOperatorGuidance.severity,
+      classification: compareOperatorGuidance.classification,
+    }),
+    operatorGuidance: compareOperatorGuidance.operatorGuidance,
+    ownerActionability: compareOperatorGuidance.ownerActionability,
+    ownership: compareOperatorGuidance.ownership,
+    operationalPriority: compareOperatorGuidance.operationalPriority,
+    escalationReadiness: compareOperatorGuidance.escalationReadiness,
+    reviewReadiness: compareOperatorGuidance.reviewReadiness,
+    severity: compareOperatorGuidance.severity,
+    classification: compareOperatorGuidance.classification,
+    messageSource: "compare_operator_guidance_semantics_chain",
+    messageSignals: [
+      compareOperatorGuidance.operatorGuidance,
+      compareOwnerActionability.ownerActionability,
+      compareOwnership.ownership,
+      compareOperationalPriority.priority,
+      compareEscalationReadiness.readiness,
+      compareReviewReadiness.readiness,
+      compareSeverity.severity,
+      mismatchClassification,
+      compareHardening.sourceStatus,
+      compareHardening.resultStatus,
+      compareHardening.scopeStatus,
+    ],
+  });
   const projectionId = `real-compare-${row.warehouseCode}-${row.partNo}`;
 
   return {
@@ -1204,6 +1404,7 @@ function buildCompareProjection(
       compareOwnership,
       compareOwnerActionability,
       compareOperatorGuidance,
+      compareOperatorMessage,
       confidence: {
         level: "medium",
         reason: "real read-only compare rows から作成した visibility です。",
@@ -1566,6 +1767,52 @@ function resolveResponseOperatorGuidance(
   );
 }
 
+function resolveResponseOperatorMessage(
+  compareHardening: InventoryCompareHardeningMetadata,
+  compareOperatorGuidance: InventoryCompareOperatorGuidanceMetadata,
+  compareProjections: readonly InventoryCompareProjection[],
+): InventoryCompareOperatorMessageMetadata {
+  const firstVisibleMessage = compareProjections.find(
+    (projection) => projection.metadata.compareOperatorMessage,
+  )?.metadata.compareOperatorMessage;
+
+  return (
+    firstVisibleMessage ??
+    createCompareOperatorMessageMetadata({
+      operatorMessage: messageForGuidance({
+        compareHardening,
+        operatorGuidance: compareOperatorGuidance.operatorGuidance,
+        ownerActionability: compareOperatorGuidance.ownerActionability,
+        ownership: compareOperatorGuidance.ownership,
+        operationalPriority: compareOperatorGuidance.operationalPriority,
+        severity: compareOperatorGuidance.severity,
+        classification: compareOperatorGuidance.classification,
+      }),
+      operatorGuidance: compareOperatorGuidance.operatorGuidance,
+      ownerActionability: compareOperatorGuidance.ownerActionability,
+      ownership: compareOperatorGuidance.ownership,
+      operationalPriority: compareOperatorGuidance.operationalPriority,
+      escalationReadiness: compareOperatorGuidance.escalationReadiness,
+      reviewReadiness: compareOperatorGuidance.reviewReadiness,
+      severity: compareOperatorGuidance.severity,
+      classification: compareOperatorGuidance.classification,
+      messageSource: "response_level_compare_guidance_chain",
+      messageSignals: [
+        compareOperatorGuidance.operatorGuidance,
+        compareOperatorGuidance.ownerActionability,
+        compareOperatorGuidance.ownership,
+        compareOperatorGuidance.operationalPriority,
+        compareOperatorGuidance.escalationReadiness,
+        compareOperatorGuidance.severity,
+        compareOperatorGuidance.classification,
+        compareHardening.sourceStatus,
+        compareHardening.resultStatus,
+        compareHardening.scopeStatus,
+      ],
+    })
+  );
+}
+
 export async function GET(req: NextRequest) {
   const guard = await requireAdminDashboardRole(req);
   if (!guard.ok) {
@@ -1692,6 +1939,11 @@ export async function GET(req: NextRequest) {
     compareOwnerActionability,
     readOnlyData.compareProjections,
   );
+  const compareOperatorMessage = resolveResponseOperatorMessage(
+    compareHardening,
+    compareOperatorGuidance,
+    readOnlyData.compareProjections,
+  );
   const endpointContract = createInventoryIntegrityReadOnlyEndpointContract(endpointPath);
   const request = createInventoryIntegrityReadOnlyEdgeRequest(endpointContract);
   const fetchResult = createInventoryIntegrityFetchResult(
@@ -1709,6 +1961,7 @@ export async function GET(req: NextRequest) {
     compareOwnership,
     compareOwnerActionability,
     compareOperatorGuidance,
+    compareOperatorMessage,
   );
   const payload = adaptFetchResponseToPayload(fetchResult);
   const mappedResponse = mapEdgeProjectionResponse({
@@ -1733,6 +1986,7 @@ export async function GET(req: NextRequest) {
     compareOwnership,
     compareOwnerActionability,
     compareOperatorGuidance,
+    compareOperatorMessage,
     normalizedData: mappedResponse.normalizedData,
     metadata: mappedResponse.metadata,
     statusSemantics: mappedResponse.statusSemantics,

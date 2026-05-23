@@ -147,6 +147,12 @@ function normalizeProjectionMetadata(
           guidanceSignals: [...metadata.compareOperatorGuidance.guidanceSignals],
         }
       : undefined,
+    compareOperatorMessage: metadata.compareOperatorMessage
+      ? {
+          ...metadata.compareOperatorMessage,
+          messageSignals: [...metadata.compareOperatorMessage.messageSignals],
+        }
+      : undefined,
     confidence: normalizeConfidence(metadata.confidence),
     freshness: normalizeFreshness(metadata.freshness),
     completeness: normalizeCompleteness(metadata.completeness),
