@@ -1244,6 +1244,12 @@ export type InventoryCompareReason =
   | "project_scope_gap"
   | "not_compared";
 
+export type InventoryCompareStatus =
+  | "matched"
+  | "mismatched"
+  | "missing_projection"
+  | "orphan_projection";
+
 export type InventoryCompareScope =
   | "part"
   | "location"
@@ -1343,6 +1349,7 @@ export type InventoryCompareDifference = {
   readonly currentReadModelQuantity: string;
   readonly transactionAggregationQuantity: string;
   readonly differenceQuantity: string;
+  readonly compareStatus?: InventoryCompareStatus;
   readonly reason: InventoryCompareReason;
   readonly severity: InventoryCompareSeverity;
 };
