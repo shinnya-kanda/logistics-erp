@@ -37,7 +37,9 @@ import {
 import type {
   InventoryCompareSeverity,
   InventoryCompareReason,
+  InventoryCompareClassificationMetadata,
   InventoryCompareHardeningMetadata,
+  InventoryCompareMismatchClassification,
   InventoryCompareScope,
   InventoryCompareStatus,
   InventoryIntegrityAttentionLevel,
@@ -104,6 +106,22 @@ function compareStatusLabel(status?: InventoryCompareStatus): string {
   if (status === "mismatched") return "mismatched";
   if (status === "missing_projection") return "missing_projection";
   if (status === "orphan_projection") return "orphan_projection";
+  return "static_visibility";
+}
+
+function mismatchClassificationLabel(
+  classification?: InventoryCompareMismatchClassification,
+): string {
+  if (classification === "quantity_mismatch") return "quantity_mismatch";
+  if (classification === "negative_projection") return "negative_projection";
+  if (classification === "negative_truth") return "negative_truth";
+  if (classification === "stale_projection") return "stale_projection";
+  if (classification === "aggregation_mismatch") return "aggregation_mismatch";
+  if (classification === "scope_mismatch") return "scope_mismatch";
+  if (classification === "compare_unverified") return "compare_unverified";
+  if (classification === "compare_partial") return "compare_partial";
+  if (classification === "degraded_projection") return "degraded_projection";
+  if (classification === "unavailable_projection") return "unavailable_projection";
   return "static_visibility";
 }
 
@@ -237,6 +255,24 @@ function extractCompareHardening(value: unknown): InventoryCompareHardeningMetad
     : null;
 }
 
+function extractCompareClassification(
+  value: unknown,
+): InventoryCompareClassificationMetadata | null {
+  if (!value || typeof value !== "object") return null;
+
+  const candidate = value as { readonly compareClassification?: unknown };
+  if (!candidate.compareClassification || typeof candidate.compareClassification !== "object") {
+    return null;
+  }
+
+  const classification =
+    candidate.compareClassification as Partial<InventoryCompareClassificationMetadata>;
+  return typeof classification.classification === "string" &&
+    typeof classification.reason === "string"
+    ? (classification as InventoryCompareClassificationMetadata)
+    : null;
+}
+
 const styles: Record<string, CSSProperties> = {
   panel: {
     marginTop: "2rem",
@@ -336,12 +372,15 @@ export function InventoryIntegritySection() {
   const [compareSourceLabel, setCompareSourceLabel] = useState("static fallback");
   const [compareHardening, setCompareHardening] =
     useState<InventoryCompareHardeningMetadata | null>(null);
+  const [compareClassification, setCompareClassification] =
+    useState<InventoryCompareClassificationMetadata | null>(null);
 
   useEffect(() => {
     const token = session?.access_token;
     if (!token) {
       setCompareSourceLabel("static fallback");
       setCompareHardening(null);
+      setCompareClassification(null);
       return;
     }
 
@@ -362,11 +401,13 @@ export function InventoryIntegritySection() {
           setCompareSourceLabel("static fallback");
           const responseBody: unknown = await response.json().catch(() => null);
           setCompareHardening(extractCompareHardening(responseBody));
+          setCompareClassification(extractCompareClassification(responseBody));
           return;
         }
 
         const responseBody: unknown = await response.json();
         setCompareHardening(extractCompareHardening(responseBody));
+        setCompareClassification(extractCompareClassification(responseBody));
         const readOnlyData = extractInventoryIntegrityReadOnlyData(responseBody);
         if (!readOnlyData) {
           setCompareSourceLabel("static fallback");
@@ -379,6 +420,7 @@ export function InventoryIntegritySection() {
         if (!controller.signal.aborted) {
           setCompareSourceLabel("static fallback");
           setCompareHardening(null);
+          setCompareClassification(null);
         }
       }
     }
@@ -483,6 +525,9 @@ export function InventoryIntegritySection() {
         {" / "}source {compareSourceLabel}.
         {compareHardening
           ? ` hardening ${compareHardening.sourceStatus} / ${compareHardening.resultStatus} / ${compareHardening.scopeStatus}.`
+          : ""}
+        {compareClassification
+          ? ` classification ${compareClassification.classification}.`
           : ""}
       </div>
 
@@ -605,11 +650,20 @@ export function InventoryIntegritySection() {
               <p style={styles.description}>
                 compare status: {compareStatusLabel(projection.difference.compareStatus)}
               </p>
+              <p style={styles.description}>
+                mismatch classification:{" "}
+                {mismatchClassificationLabel(projection.difference.mismatchClassification)}
+              </p>
               {projection.metadata.compareHardening ? (
                 <p style={styles.description}>
                   hardening: {projection.metadata.compareHardening.sourceStatus} /{" "}
                   {projection.metadata.compareHardening.resultStatus} /{" "}
                   {projection.metadata.compareHardening.scopeStatus}
+                </p>
+              ) : null}
+              {projection.metadata.compareClassification ? (
+                <p style={styles.description}>
+                  classification reason: {projection.metadata.compareClassification.reason}
                 </p>
               ) : null}
               <p style={styles.description}>truth の見方: {projection.truthStatement}</p>
