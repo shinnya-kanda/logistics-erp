@@ -133,6 +133,14 @@ function normalizeProjectionMetadata(
           ownershipSignals: [...metadata.compareOwnership.ownershipSignals],
         }
       : undefined,
+    compareOwnerActionability: metadata.compareOwnerActionability
+      ? {
+          ...metadata.compareOwnerActionability,
+          actionabilitySignals: [
+            ...metadata.compareOwnerActionability.actionabilitySignals,
+          ],
+        }
+      : undefined,
     confidence: normalizeConfidence(metadata.confidence),
     freshness: normalizeFreshness(metadata.freshness),
     completeness: normalizeCompleteness(metadata.completeness),

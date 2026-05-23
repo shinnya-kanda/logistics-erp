@@ -1240,6 +1240,7 @@ export function createInventoryIntegrityFetchResult(
   compareEscalationReadiness?: InventoryIntegrityFetchResult["metadata"]["compareEscalationReadiness"],
   compareOperationalPriority?: InventoryIntegrityFetchResult["metadata"]["compareOperationalPriority"],
   compareOwnership?: InventoryIntegrityFetchResult["metadata"]["compareOwnership"],
+  compareOwnerActionability?: InventoryIntegrityFetchResult["metadata"]["compareOwnerActionability"],
 ): InventoryIntegrityFetchResult {
   return {
     metadata: {
@@ -1291,6 +1292,7 @@ export function createInventoryIntegrityFetchResult(
       compareEscalationReadiness,
       compareOperationalPriority,
       compareOwnership,
+      compareOwnerActionability,
       responseStatus,
       resultVersion: "inventory-integrity-static-fetch-result-v1",
       readability:

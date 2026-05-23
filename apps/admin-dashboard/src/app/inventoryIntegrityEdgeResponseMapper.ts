@@ -75,6 +75,14 @@ export function mapEdgeProjectionMetadata(
           ownershipSignals: [...metadata.compareOwnership.ownershipSignals],
         }
       : undefined,
+    compareOwnerActionability: metadata.compareOwnerActionability
+      ? {
+          ...metadata.compareOwnerActionability,
+          actionabilitySignals: [
+            ...metadata.compareOwnerActionability.actionabilitySignals,
+          ],
+        }
+      : undefined,
     responseContractVersion: metadata.payloadVersion,
     readability: metadata.readability,
     adapterInputBoundary: metadata.adapterInputBoundary,
