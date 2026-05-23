@@ -37,6 +37,7 @@ import {
 import type {
   InventoryCompareSeverity,
   InventoryCompareReason,
+  InventoryCompareHardeningMetadata,
   InventoryCompareScope,
   InventoryCompareStatus,
   InventoryIntegrityAttentionLevel,
@@ -220,6 +221,22 @@ function extractInventoryIntegrityReadOnlyData(value: unknown): InventoryIntegri
     : null;
 }
 
+function extractCompareHardening(value: unknown): InventoryCompareHardeningMetadata | null {
+  if (!value || typeof value !== "object") return null;
+
+  const candidate = value as { readonly compareHardening?: unknown };
+  if (!candidate.compareHardening || typeof candidate.compareHardening !== "object") {
+    return null;
+  }
+
+  const hardening = candidate.compareHardening as Partial<InventoryCompareHardeningMetadata>;
+  return typeof hardening.sourceStatus === "string" &&
+    typeof hardening.resultStatus === "string" &&
+    typeof hardening.scopeStatus === "string"
+    ? (hardening as InventoryCompareHardeningMetadata)
+    : null;
+}
+
 const styles: Record<string, CSSProperties> = {
   panel: {
     marginTop: "2rem",
@@ -317,11 +334,14 @@ export function InventoryIntegritySection() {
     getInventoryIntegrityMockData(),
   );
   const [compareSourceLabel, setCompareSourceLabel] = useState("static fallback");
+  const [compareHardening, setCompareHardening] =
+    useState<InventoryCompareHardeningMetadata | null>(null);
 
   useEffect(() => {
     const token = session?.access_token;
     if (!token) {
       setCompareSourceLabel("static fallback");
+      setCompareHardening(null);
       return;
     }
 
@@ -340,10 +360,13 @@ export function InventoryIntegritySection() {
 
         if (!response.ok) {
           setCompareSourceLabel("static fallback");
+          const responseBody: unknown = await response.json().catch(() => null);
+          setCompareHardening(extractCompareHardening(responseBody));
           return;
         }
 
         const responseBody: unknown = await response.json();
+        setCompareHardening(extractCompareHardening(responseBody));
         const readOnlyData = extractInventoryIntegrityReadOnlyData(responseBody);
         if (!readOnlyData) {
           setCompareSourceLabel("static fallback");
@@ -355,6 +378,7 @@ export function InventoryIntegritySection() {
       } catch {
         if (!controller.signal.aborted) {
           setCompareSourceLabel("static fallback");
+          setCompareHardening(null);
         }
       }
     }
@@ -457,6 +481,9 @@ export function InventoryIntegritySection() {
         {" / "}差異理由 {compareReasonSummary.map((item) => `${reasonLabel(item.reason)} ${item.count}`).join(", ")}
         {" / "}範囲 {compareScopeSummary.map((item) => `${scopeLabel(item.scope)} ${item.count}`).join(", ")}.
         {" / "}source {compareSourceLabel}.
+        {compareHardening
+          ? ` hardening ${compareHardening.sourceStatus} / ${compareHardening.resultStatus} / ${compareHardening.scopeStatus}.`
+          : ""}
       </div>
 
       <div style={{ ...styles.notice, ...styles.neutralNotice }}>
@@ -578,6 +605,13 @@ export function InventoryIntegritySection() {
               <p style={styles.description}>
                 compare status: {compareStatusLabel(projection.difference.compareStatus)}
               </p>
+              {projection.metadata.compareHardening ? (
+                <p style={styles.description}>
+                  hardening: {projection.metadata.compareHardening.sourceStatus} /{" "}
+                  {projection.metadata.compareHardening.resultStatus} /{" "}
+                  {projection.metadata.compareHardening.scopeStatus}
+                </p>
+              ) : null}
               <p style={styles.description}>truth の見方: {projection.truthStatement}</p>
               <p style={styles.description}>
                 観測時点(snapshot): {projection.metadata.snapshot.snapshotId} /{" "}
