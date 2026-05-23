@@ -42,6 +42,7 @@ import type {
   InventoryCompareMismatchClassification,
   InventoryCompareOperatorGuidanceMetadata,
   InventoryCompareOperatorMessageMetadata,
+  InventoryCompareOperatorSummaryMetadata,
   InventoryCompareScope,
   InventoryCompareStatus,
   InventoryIntegrityAttentionLevel,
@@ -313,6 +314,24 @@ function extractCompareOperatorMessage(
     : null;
 }
 
+function extractCompareOperatorSummary(
+  value: unknown,
+): InventoryCompareOperatorSummaryMetadata | null {
+  if (!value || typeof value !== "object") return null;
+
+  const candidate = value as { readonly compareOperatorSummary?: unknown };
+  if (!candidate.compareOperatorSummary || typeof candidate.compareOperatorSummary !== "object") {
+    return null;
+  }
+
+  const summary =
+    candidate.compareOperatorSummary as Partial<InventoryCompareOperatorSummaryMetadata>;
+  return typeof summary.operatorSummary === "string" &&
+    typeof summary.summaryText === "string"
+    ? (summary as InventoryCompareOperatorSummaryMetadata)
+    : null;
+}
+
 const styles: Record<string, CSSProperties> = {
   panel: {
     marginTop: "2rem",
@@ -418,6 +437,8 @@ export function InventoryIntegritySection() {
     useState<InventoryCompareOperatorGuidanceMetadata | null>(null);
   const [compareOperatorMessage, setCompareOperatorMessage] =
     useState<InventoryCompareOperatorMessageMetadata | null>(null);
+  const [compareOperatorSummary, setCompareOperatorSummary] =
+    useState<InventoryCompareOperatorSummaryMetadata | null>(null);
 
   useEffect(() => {
     const token = session?.access_token;
@@ -427,6 +448,7 @@ export function InventoryIntegritySection() {
       setCompareClassification(null);
       setCompareOperatorGuidance(null);
       setCompareOperatorMessage(null);
+      setCompareOperatorSummary(null);
       return;
     }
 
@@ -450,6 +472,7 @@ export function InventoryIntegritySection() {
           setCompareClassification(extractCompareClassification(responseBody));
           setCompareOperatorGuidance(extractCompareOperatorGuidance(responseBody));
           setCompareOperatorMessage(extractCompareOperatorMessage(responseBody));
+          setCompareOperatorSummary(extractCompareOperatorSummary(responseBody));
           return;
         }
 
@@ -458,6 +481,7 @@ export function InventoryIntegritySection() {
         setCompareClassification(extractCompareClassification(responseBody));
         setCompareOperatorGuidance(extractCompareOperatorGuidance(responseBody));
         setCompareOperatorMessage(extractCompareOperatorMessage(responseBody));
+        setCompareOperatorSummary(extractCompareOperatorSummary(responseBody));
         const readOnlyData = extractInventoryIntegrityReadOnlyData(responseBody);
         if (!readOnlyData) {
           setCompareSourceLabel("static fallback");
@@ -473,6 +497,7 @@ export function InventoryIntegritySection() {
           setCompareClassification(null);
           setCompareOperatorGuidance(null);
           setCompareOperatorMessage(null);
+          setCompareOperatorSummary(null);
         }
       }
     }
@@ -567,6 +592,9 @@ export function InventoryIntegritySection() {
       <div style={{ ...styles.notice, ...styles.neutralNotice }}>
         整合性サマリー: 状態 {levelSummary.map((item) => `${levelLabel(item.level)} ${item.count}`).join(", ")}
         {" / "}分類 {statusSummary.map((item) => `${statusLabel(item.status)} ${item.count}`).join(", ")}.
+        {compareOperatorSummary
+          ? ` operator summary ${compareOperatorSummary.operatorSummary}: ${compareOperatorSummary.summaryText}. ${compareOperatorSummary.summaryReason}`
+          : ""}
       </div>
 
       <div style={{ ...styles.notice, ...styles.neutralNotice }}>
@@ -586,6 +614,9 @@ export function InventoryIntegritySection() {
           : ""}
         {compareOperatorMessage
           ? ` operator message ${compareOperatorMessage.operatorMessage}.`
+          : ""}
+        {compareOperatorSummary
+          ? ` operator summary ${compareOperatorSummary.operatorSummary}.`
           : ""}
       </div>
 
