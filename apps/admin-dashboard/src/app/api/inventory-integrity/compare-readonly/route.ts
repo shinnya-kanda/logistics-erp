@@ -11,6 +11,8 @@ import {
 import { realReadOnlyProjectionSourceMetadata } from "../../../inventoryIntegritySource";
 import type {
   InventoryCompareClassificationMetadata,
+  InventoryCompareConfidence,
+  InventoryCompareConfidenceMetadata,
   InventoryCompareEscalationReadiness,
   InventoryCompareEscalationReadinessMetadata,
   InventoryCompareHardeningMetadata,
@@ -1169,6 +1171,142 @@ function createCompareOperatorTimelineMetadata({
   };
 }
 
+function confidenceForSemantics({
+  compareHardening,
+  classification,
+  severity,
+  operatorSummary,
+  operatorTimeline,
+  compareStatus,
+}: {
+  readonly compareHardening: InventoryCompareHardeningMetadata;
+  readonly classification: InventoryCompareMismatchClassification;
+  readonly severity: InventoryCompareSeverity;
+  readonly operatorSummary?: InventoryCompareOperatorSummary;
+  readonly operatorTimeline?: InventoryCompareOperatorTimeline;
+  readonly compareStatus?: InventoryCompareStatus;
+}): InventoryCompareConfidence {
+  if (
+    compareHardening.sourceStatus === "compare_source_unavailable" ||
+    compareHardening.scopeStatus === "invalid_scope" ||
+    compareHardening.scopeStatus === "unavailable_scope" ||
+    compareHardening.resultStatus === "compare_result_unverified" ||
+    classification === "unavailable_projection"
+  ) {
+    return "confidence_blocked";
+  }
+  if (
+    classification === "compare_unverified" ||
+    severity === "unverified" ||
+    operatorSummary === "summary_source_unverified" ||
+    operatorTimeline === "timeline_wait_for_confirmation"
+  ) {
+    return "confidence_unverified";
+  }
+  if (
+    compareHardening.sourceStatus === "compare_source_degraded" ||
+    compareHardening.scopeStatus === "degraded_scope" ||
+    compareHardening.resultStatus === "compare_result_empty" ||
+    classification === "stale_projection" ||
+    classification === "degraded_projection" ||
+    classification === "scope_mismatch" ||
+    (classification === "compare_partial" && compareStatus !== "matched") ||
+    operatorTimeline === "timeline_review_owner_boundary"
+  ) {
+    return "confidence_low";
+  }
+  if (
+    classification === "quantity_mismatch" ||
+    classification === "aggregation_mismatch" ||
+    classification === "negative_projection" ||
+    classification === "negative_truth" ||
+    operatorTimeline === "timeline_review_projection" ||
+    severity === "high" ||
+    severity === "critical"
+  ) {
+    return "confidence_medium";
+  }
+  return "confidence_high";
+}
+
+function confidenceText(confidence: InventoryCompareConfidence): string {
+  if (confidence === "confidence_high") {
+    return "compare 結果は高信頼です";
+  }
+  if (confidence === "confidence_medium") {
+    return "compare 結果は条件付きで確認できます";
+  }
+  if (confidence === "confidence_low") {
+    return "compare 結果は低信頼として扱います";
+  }
+  if (confidence === "confidence_unverified") {
+    return "compare source 未検証のため信頼度未確定です";
+  }
+  return "compare source unavailable のため判断保留です";
+}
+
+function confidenceReason(confidence: InventoryCompareConfidence): string {
+  if (confidence === "confidence_high") {
+    return "source / scope が確認可能で、強い制限 signal が見えないため、説明材料が比較的そろっている表示です";
+  }
+  if (confidence === "confidence_medium") {
+    return "source / scope は確認可能ですが、差異や確認候補が見えるため、条件付きの説明材料として表示します";
+  }
+  if (confidence === "confidence_low") {
+    return "partial / degraded / stale / scope 制限が見えるため、過信しない表示として整理します";
+  }
+  if (confidence === "confidence_unverified") {
+    return "compare source または判定材料が未検証に見えるため、信頼度を確定しない表示として整理します";
+  }
+  return "compare source または scope が利用できないため、判断保留の表示として整理します";
+}
+
+function createCompareConfidenceMetadata({
+  compareConfidence,
+  compareHardening,
+  classification,
+  severity,
+  operatorSummary,
+  operatorTimeline,
+  confidenceSource,
+  confidenceSignals,
+}: {
+  readonly compareConfidence: InventoryCompareConfidence;
+  readonly compareHardening: InventoryCompareHardeningMetadata;
+  readonly classification: InventoryCompareMismatchClassification;
+  readonly severity: InventoryCompareSeverity;
+  readonly operatorSummary?: InventoryCompareOperatorSummary;
+  readonly operatorTimeline?: InventoryCompareOperatorTimeline;
+  readonly confidenceSource: string;
+  readonly confidenceSignals: readonly string[];
+}): InventoryCompareConfidenceMetadata {
+  return {
+    confidenceId: `inventory-integrity-compare-readonly-${classification}-${compareConfidence}`,
+    compareConfidence,
+    confidenceText: confidenceText(compareConfidence),
+    confidenceReason: confidenceReason(compareConfidence),
+    confidenceSource,
+    confidenceSignals,
+    label: "read-only compare confidence semantics",
+    interpretation:
+      "compare confidence は compare 結果の説明材料がどの程度そろって見えるかを示す governance / operational observability metadata です。",
+    noExecutionMeaning:
+      "compare confidence は在庫操作、外部連携、担当設定の変更、信頼度に基づく在庫変更を開始しません。",
+    sourceStatus: compareHardening.sourceStatus,
+    resultStatus: compareHardening.resultStatus,
+    scopeStatus: compareHardening.scopeStatus,
+    classification,
+    severity,
+    operatorSummary,
+    operatorTimeline,
+    truthSource: "inventory_transactions",
+    cacheCompareTarget: "inventory_current",
+    semanticBoundary: "reasoning_visualization_only",
+    executionBoundary:
+      "InventoryCompareConfidenceMetadata は read-only confidence visibility です。操作導線、担当設定の変更、在庫変更は実行しません。",
+  };
+}
+
 function createUnavailableReadOnlyResponse({
   status,
   error,
@@ -1317,6 +1455,27 @@ function createUnavailableReadOnlyResponse({
       compareHardening.sourceStatus,
     ],
   });
+  const compareConfidence = createCompareConfidenceMetadata({
+    compareConfidence: "confidence_blocked",
+    compareHardening,
+    classification: compareClassification.classification,
+    severity: compareSeverity.severity,
+    operatorSummary: compareOperatorSummary.operatorSummary,
+    operatorTimeline: compareOperatorTimeline.operatorTimeline,
+    confidenceSource: "compare_source_unavailable",
+    confidenceSignals: [
+      compareOperatorTimeline.operatorTimeline,
+      compareOperatorSummary.operatorSummary,
+      compareOperatorMessage.operatorMessage,
+      compareOperatorGuidance.operatorGuidance,
+      compareOwnerActionability.ownerActionability,
+      compareOwnership.ownership,
+      compareClassification.classification,
+      compareHardening.sourceStatus,
+      compareHardening.resultStatus,
+      compareHardening.scopeStatus,
+    ],
+  });
 
   return NextResponse.json(
     {
@@ -1338,6 +1497,7 @@ function createUnavailableReadOnlyResponse({
       compareOperatorMessage,
       compareOperatorSummary,
       compareOperatorTimeline,
+      compareConfidence,
       semanticBoundary: "reasoning_visualization_only",
       executionBoundary:
         "compare-readonly endpoint failure は read-only unavailable visibility です。修正、再生成、在庫変更は実行しません。",
@@ -1708,6 +1868,36 @@ function buildCompareProjection(
       compareHardening.scopeStatus,
     ],
   });
+  const compareConfidence = createCompareConfidenceMetadata({
+    compareConfidence: confidenceForSemantics({
+      compareHardening,
+      classification: mismatchClassification,
+      severity: compareSeverity.severity,
+      operatorTimeline: compareOperatorTimeline.operatorTimeline,
+      compareStatus,
+    }),
+    compareHardening,
+    classification: mismatchClassification,
+    severity: compareSeverity.severity,
+    operatorTimeline: compareOperatorTimeline.operatorTimeline,
+    confidenceSource: "compare_operator_timeline_semantics_chain",
+    confidenceSignals: [
+      compareOperatorTimeline.operatorTimeline,
+      compareOperatorMessage.operatorMessage,
+      compareOperatorGuidance.operatorGuidance,
+      compareOwnerActionability.ownerActionability,
+      compareOwnership.ownership,
+      compareOperationalPriority.priority,
+      compareEscalationReadiness.readiness,
+      compareReviewReadiness.readiness,
+      compareSeverity.severity,
+      mismatchClassification,
+      compareHardening.sourceStatus,
+      compareHardening.resultStatus,
+      compareHardening.scopeStatus,
+      compareStatus,
+    ],
+  });
   const projectionId = `real-compare-${row.warehouseCode}-${row.partNo}`;
 
   return {
@@ -1774,6 +1964,7 @@ function buildCompareProjection(
       compareOperatorGuidance,
       compareOperatorMessage,
       compareOperatorTimeline,
+      compareConfidence,
       confidence: {
         level: "medium",
         reason: "real read-only compare rows から作成した visibility です。",
@@ -2239,6 +2430,66 @@ function resolveResponseOperatorTimeline(
   });
 }
 
+function resolveResponseConfidence(
+  compareHardening: InventoryCompareHardeningMetadata,
+  compareOperatorSummary: InventoryCompareOperatorSummaryMetadata,
+  compareOperatorTimeline: InventoryCompareOperatorTimelineMetadata,
+  compareProjections: readonly InventoryCompareProjection[],
+): InventoryCompareConfidenceMetadata {
+  const firstBlockedConfidence = compareProjections.find(
+    (projection) => projection.metadata.compareConfidence?.compareConfidence === "confidence_blocked",
+  )?.metadata.compareConfidence;
+  if (firstBlockedConfidence) return firstBlockedConfidence;
+
+  const firstUnverifiedConfidence = compareProjections.find(
+    (projection) =>
+      projection.metadata.compareConfidence?.compareConfidence === "confidence_unverified",
+  )?.metadata.compareConfidence;
+  if (firstUnverifiedConfidence) return firstUnverifiedConfidence;
+
+  const firstLowConfidence = compareProjections.find(
+    (projection) => projection.metadata.compareConfidence?.compareConfidence === "confidence_low",
+  )?.metadata.compareConfidence;
+  if (firstLowConfidence) return firstLowConfidence;
+
+  const firstMediumConfidence = compareProjections.find(
+    (projection) => projection.metadata.compareConfidence?.compareConfidence === "confidence_medium",
+  )?.metadata.compareConfidence;
+  if (firstMediumConfidence) return firstMediumConfidence;
+
+  return createCompareConfidenceMetadata({
+    compareConfidence: confidenceForSemantics({
+      compareHardening,
+      classification: compareOperatorTimeline.classification,
+      severity: compareOperatorTimeline.severity,
+      operatorSummary: compareOperatorSummary.operatorSummary,
+      operatorTimeline: compareOperatorTimeline.operatorTimeline,
+    }),
+    compareHardening,
+    classification: compareOperatorTimeline.classification,
+    severity: compareOperatorTimeline.severity,
+    operatorSummary: compareOperatorSummary.operatorSummary,
+    operatorTimeline: compareOperatorTimeline.operatorTimeline,
+    confidenceSource: "response_level_operator_timeline_chain",
+    confidenceSignals: [
+      compareOperatorSummary.operatorSummary,
+      compareOperatorTimeline.operatorTimeline,
+      compareOperatorTimeline.operatorMessage,
+      compareOperatorTimeline.operatorGuidance,
+      compareOperatorTimeline.ownerActionability,
+      compareOperatorTimeline.ownership,
+      compareOperatorTimeline.operationalPriority,
+      compareOperatorTimeline.escalationReadiness,
+      compareOperatorTimeline.reviewReadiness,
+      compareOperatorTimeline.severity,
+      compareOperatorTimeline.classification,
+      compareHardening.sourceStatus,
+      compareHardening.resultStatus,
+      compareHardening.scopeStatus,
+    ],
+  });
+}
+
 export async function GET(req: NextRequest) {
   const guard = await requireAdminDashboardRole(req);
   if (!guard.ok) {
@@ -2378,6 +2629,12 @@ export async function GET(req: NextRequest) {
     compareOperatorMessage,
     compareOperatorSummary,
   );
+  const compareConfidence = resolveResponseConfidence(
+    compareHardening,
+    compareOperatorSummary,
+    compareOperatorTimeline,
+    readOnlyData.compareProjections,
+  );
   const endpointContract = createInventoryIntegrityReadOnlyEndpointContract(endpointPath);
   const request = createInventoryIntegrityReadOnlyEdgeRequest(endpointContract);
   const fetchResult = createInventoryIntegrityFetchResult(
@@ -2398,6 +2655,7 @@ export async function GET(req: NextRequest) {
     compareOperatorMessage,
     compareOperatorSummary,
     compareOperatorTimeline,
+    compareConfidence,
   );
   const payload = adaptFetchResponseToPayload(fetchResult);
   const mappedResponse = mapEdgeProjectionResponse({
@@ -2425,6 +2683,7 @@ export async function GET(req: NextRequest) {
     compareOperatorMessage,
     compareOperatorSummary,
     compareOperatorTimeline,
+    compareConfidence,
     normalizedData: mappedResponse.normalizedData,
     metadata: mappedResponse.metadata,
     statusSemantics: mappedResponse.statusSemantics,
