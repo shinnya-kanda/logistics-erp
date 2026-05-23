@@ -43,6 +43,7 @@ import type {
   InventoryCompareOperatorGuidanceMetadata,
   InventoryCompareOperatorMessageMetadata,
   InventoryCompareOperatorSummaryMetadata,
+  InventoryCompareOperatorTimelineMetadata,
   InventoryCompareScope,
   InventoryCompareStatus,
   InventoryIntegrityAttentionLevel,
@@ -332,6 +333,24 @@ function extractCompareOperatorSummary(
     : null;
 }
 
+function extractCompareOperatorTimeline(
+  value: unknown,
+): InventoryCompareOperatorTimelineMetadata | null {
+  if (!value || typeof value !== "object") return null;
+
+  const candidate = value as { readonly compareOperatorTimeline?: unknown };
+  if (!candidate.compareOperatorTimeline || typeof candidate.compareOperatorTimeline !== "object") {
+    return null;
+  }
+
+  const timeline =
+    candidate.compareOperatorTimeline as Partial<InventoryCompareOperatorTimelineMetadata>;
+  return typeof timeline.operatorTimeline === "string" &&
+    typeof timeline.timelineText === "string"
+    ? (timeline as InventoryCompareOperatorTimelineMetadata)
+    : null;
+}
+
 function readableSignals(signals: readonly string[], limit = 4): string {
   const visibleSignals = signals.slice(0, limit).join(" / ");
   return signals.length > limit
@@ -466,6 +485,8 @@ export function InventoryIntegritySection() {
     useState<InventoryCompareOperatorMessageMetadata | null>(null);
   const [compareOperatorSummary, setCompareOperatorSummary] =
     useState<InventoryCompareOperatorSummaryMetadata | null>(null);
+  const [compareOperatorTimeline, setCompareOperatorTimeline] =
+    useState<InventoryCompareOperatorTimelineMetadata | null>(null);
 
   useEffect(() => {
     const token = session?.access_token;
@@ -476,6 +497,7 @@ export function InventoryIntegritySection() {
       setCompareOperatorGuidance(null);
       setCompareOperatorMessage(null);
       setCompareOperatorSummary(null);
+      setCompareOperatorTimeline(null);
       return;
     }
 
@@ -500,6 +522,7 @@ export function InventoryIntegritySection() {
           setCompareOperatorGuidance(extractCompareOperatorGuidance(responseBody));
           setCompareOperatorMessage(extractCompareOperatorMessage(responseBody));
           setCompareOperatorSummary(extractCompareOperatorSummary(responseBody));
+          setCompareOperatorTimeline(extractCompareOperatorTimeline(responseBody));
           return;
         }
 
@@ -509,6 +532,7 @@ export function InventoryIntegritySection() {
         setCompareOperatorGuidance(extractCompareOperatorGuidance(responseBody));
         setCompareOperatorMessage(extractCompareOperatorMessage(responseBody));
         setCompareOperatorSummary(extractCompareOperatorSummary(responseBody));
+        setCompareOperatorTimeline(extractCompareOperatorTimeline(responseBody));
         const readOnlyData = extractInventoryIntegrityReadOnlyData(responseBody);
         if (!readOnlyData) {
           setCompareSourceLabel("static fallback");
@@ -525,6 +549,7 @@ export function InventoryIntegritySection() {
           setCompareOperatorGuidance(null);
           setCompareOperatorMessage(null);
           setCompareOperatorSummary(null);
+          setCompareOperatorTimeline(null);
         }
       }
     }
@@ -632,6 +657,13 @@ export function InventoryIntegritySection() {
               </span>
             </>
           ) : null}
+          {compareOperatorTimeline ? (
+            <span style={styles.supportingText}>
+              operator timeline: {compareOperatorTimeline.timelineText} /{" "}
+              {compareOperatorTimeline.operatorTimeline} /{" "}
+              {compareOperatorTimeline.timelineReason}
+            </span>
+          ) : null}
           <span style={styles.supportingText}>
             状態 {levelSummary.map((item) => `${levelLabel(item.level)} ${item.count}`).join(", ")}
             {" / "}分類 {statusSummary.map((item) => `${statusLabel(item.status)} ${item.count}`).join(", ")}
@@ -656,6 +688,9 @@ export function InventoryIntegritySection() {
           : ""}
         {compareOperatorMessage
           ? ` operator message ${compareOperatorMessage.operatorMessage}.`
+          : ""}
+        {compareOperatorTimeline
+          ? ` operator timeline ${compareOperatorTimeline.operatorTimeline}.`
           : ""}
       </div>
 
@@ -780,6 +815,11 @@ export function InventoryIntegritySection() {
                   operator guidance: {projection.metadata.compareOperatorGuidance.operatorGuidance}
                 </p>
               ) : null}
+              {projection.metadata.compareOperatorTimeline ? (
+                <p style={styles.supportingText}>
+                  operator timeline: {projection.metadata.compareOperatorTimeline.timelineText}
+                </p>
+              ) : null}
               {projection.metadata.compareOwnerActionability ? (
                 <p style={styles.description}>
                   owner actionability:{" "}
@@ -841,6 +881,13 @@ export function InventoryIntegritySection() {
                   guidance reason: {projection.metadata.compareOperatorGuidance.guidanceReason} / source:{" "}
                   {projection.metadata.compareOperatorGuidance.guidanceSource} / signals:{" "}
                   {readableSignals(projection.metadata.compareOperatorGuidance.guidanceSignals)}
+                </p>
+              ) : null}
+              {projection.metadata.compareOperatorTimeline ? (
+                <p style={styles.supportingText}>
+                  timeline reason: {projection.metadata.compareOperatorTimeline.timelineReason} / source:{" "}
+                  {projection.metadata.compareOperatorTimeline.timelineSource} / signals:{" "}
+                  {readableSignals(projection.metadata.compareOperatorTimeline.timelineSignals)}
                 </p>
               ) : null}
               {projection.metadata.compareOwnerActionability ? (
