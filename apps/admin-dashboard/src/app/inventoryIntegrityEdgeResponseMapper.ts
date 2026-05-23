@@ -43,6 +43,7 @@ export function mapEdgeProjectionMetadata(
     healthSemantics: metadata.healthSemantics,
     resilienceSemantics: metadata.resilienceSemantics,
     stabilitySemantics: metadata.stabilitySemantics,
+    recoverabilitySemantics: metadata.recoverabilitySemantics,
     responseContractVersion: metadata.payloadVersion,
     readability: metadata.readability,
     adapterInputBoundary: metadata.adapterInputBoundary,
