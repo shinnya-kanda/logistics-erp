@@ -30,6 +30,7 @@ import type {
   ProjectionFetchExecutionSemantics,
   ProjectionGovernanceSemantics,
   ProjectionHealthSemantics,
+  ProjectionIntegrityAssuranceSemantics,
   ProjectionLatencySemantics,
   ProjectionOfflineSemantics,
   ProjectionProvenanceSemantics,
@@ -162,11 +163,40 @@ export const inventoryIntegrityRetrySemantics: ProjectionRetrySemantics = {
     "ProjectionRetrySemantics は execution authority を持ちません。retry scheduling、backoff、network request、mutation は実行しません。",
 };
 
+export const inventoryIntegrityIntegrityAssuranceSemantics: ProjectionIntegrityAssuranceSemantics =
+  {
+    semanticsId:
+      "inventory-integrity-static-read-only-integrity-assurance-semantics",
+    state: "integrity_unverified",
+    label: "static integrity-unverified interpretation",
+    readability:
+      "integrity_unverified は static fallback flow で integrity assurance を検証済みとして扱わない状態を示します。integrity verification、trust enforcement、assurance execution ではありません。",
+    operationalIntegrityAssuranceInterpretation:
+      "integrity_assured / integrity_degraded は将来 operational integrity assurance をどう読むかの状態であり、integrity verification、trust enforcement、assurance execution を実行しません。",
+    degradedIntegrityVisibilityInterpretation:
+      "degraded integrity visibility は integrity assurance が限定的に見える状態の表示解釈であり、error 確定、alert、運用処理を開始しません。",
+    governanceAssuranceInterpretation:
+      "governance assurance dashboard 用の意味境界であり、承認、監査確定、policy enforcement、正当性保証ではありません。",
+    trustBoundaryInterpretation:
+      "trust boundary interpretation は trust の読み方を整理する metadata であり、trust enforcement、access control、承認更新を実行しません。",
+    observabilityAssuranceInterpretation:
+      "observability assurance interpretation は continuity / durability / recoverability metadata の見え方であり、外部送出、検証用の計測追加、monitoring を追加しません。",
+    noExecutionMeaning:
+      "integrity assurance semantics は integrity verification implementation ではありません。integrity verification、trust enforcement、assurance execution、外部送出、変更処理は実行しません。",
+    truthSource: "inventory_transactions",
+    cacheCompareTarget: "inventory_current",
+    semanticBoundary: "reasoning_visualization_only",
+    executionBoundary:
+      "ProjectionIntegrityAssuranceSemantics は execution authority を持ちません。integrity verification、trust enforcement、assurance execution、計測追加は実行しません。",
+  };
+
 export const inventoryIntegrityContinuitySemantics: ProjectionContinuitySemantics =
   {
     semanticsId: "inventory-integrity-static-read-only-continuity-semantics",
     state: "continuity_unverified",
     label: "static continuity-unverified interpretation",
+    integrityAssuranceSemantics:
+      inventoryIntegrityIntegrityAssuranceSemantics,
     readability:
       "continuity_unverified は static fallback flow で continuity を検証済みとして扱わない状態を示します。continuity orchestration、failover execution、継続性確定ではありません。",
     operationalContinuityInterpretation:
@@ -194,6 +224,8 @@ export const inventoryIntegrityDurabilitySemantics: ProjectionDurabilitySemantic
     state: "durability_unverified",
     label: "static durability-unverified interpretation",
     continuitySemantics: inventoryIntegrityContinuitySemantics,
+    integrityAssuranceSemantics:
+      inventoryIntegrityIntegrityAssuranceSemantics,
     readability:
       "durability_unverified は static fallback flow で durability を検証済みとして扱わない状態を示します。persistence execution、storage orchestration、保持確定ではありません。",
     operationalDurabilityInterpretation:
@@ -222,6 +254,8 @@ export const inventoryIntegrityRecoverabilitySemantics: ProjectionRecoverability
     label: "static recoverability-unverified interpretation",
     durabilitySemantics: inventoryIntegrityDurabilitySemantics,
     continuitySemantics: inventoryIntegrityContinuitySemantics,
+    integrityAssuranceSemantics:
+      inventoryIntegrityIntegrityAssuranceSemantics,
     readability:
       "recoverability_unverified は static fallback flow で recoverability を検証済みとして扱わない状態を示します。recovery execution、rebuild orchestration、復旧可能性確定ではありません。",
     operationalRecoverabilityInterpretation:
@@ -925,6 +959,7 @@ export const inventoryIntegrityResponseStatusSemantics: ProjectionResponseStatus
   recoverabilitySemantics: inventoryIntegrityRecoverabilitySemantics,
   durabilitySemantics: inventoryIntegrityDurabilitySemantics,
   continuitySemantics: inventoryIntegrityContinuitySemantics,
+  integrityAssuranceSemantics: inventoryIntegrityIntegrityAssuranceSemantics,
   readability:
     "response_accepted は static mock response を read-only interpretation boundary として読める状態を示します。network response success ではありません。",
   interpretation:
@@ -962,6 +997,8 @@ export const inventoryIntegrityUnavailableResponseStatusSemantics: ProjectionRes
     recoverabilitySemantics: inventoryIntegrityRecoverabilitySemantics,
     durabilitySemantics: inventoryIntegrityDurabilitySemantics,
     continuitySemantics: inventoryIntegrityContinuitySemantics,
+    integrityAssuranceSemantics:
+      inventoryIntegrityIntegrityAssuranceSemantics,
     readability:
       "response_unavailable は real read-only fetch PoC で response を採用できない状態を示します。static fallback は維持しますが、成功や correctness guarantee ではありません。",
     interpretation:
@@ -1131,10 +1168,12 @@ export function createInventoryIntegrityFetchResult(
       recoverabilitySemantics: inventoryIntegrityRecoverabilitySemantics,
       durabilitySemantics: inventoryIntegrityDurabilitySemantics,
       continuitySemantics: inventoryIntegrityContinuitySemantics,
+      integrityAssuranceSemantics:
+        inventoryIntegrityIntegrityAssuranceSemantics,
       responseStatus,
       resultVersion: "inventory-integrity-static-fetch-result-v1",
       readability:
-        `read-only source を fetch result と同じ語彙で読むための metadata です。request、${request.endpoint.endpointId}、${request.fetchSemantics.semanticsId}、${request.fetchExecution.state}、${inventoryIntegrityTransportSemantics.state}、${inventoryIntegrityCacheSemantics.state}、${inventoryIntegrityOfflineSemantics.state}、${inventoryIntegrityRetrySemantics.state}、${inventoryIntegrityConsistencySemantics.state}、${inventoryIntegrityDegradationSemantics.state}、${inventoryIntegrityAuthoritySemantics.state}、${inventoryIntegritySnapshotSemantics.state}、${inventoryIntegrityProvenanceSemantics.state}、${inventoryIntegrityEvidenceSemantics.state}、${inventoryIntegrityFallbackSemantics.state}、${inventoryIntegrityTraceSemantics.state}、${inventoryIntegrityGovernanceSemantics.state}、${inventoryIntegrityReviewSemantics.state}、${inventoryIntegrityDecisionSemantics.state}、${inventoryIntegrityAttentionSemantics.state}、${inventoryIntegrityEscalationSemantics.state}、${inventoryIntegrityTelemetrySemantics.state}、${inventoryIntegrityLatencySemantics.state}、${inventoryIntegrityAvailabilitySemantics.state}、${inventoryIntegrityDiagnosticSemantics.state}、${inventoryIntegrityConfidenceSemantics.state}、${inventoryIntegrityHealthSemantics.state}、${inventoryIntegrityResilienceSemantics.state}、${inventoryIntegrityStabilitySemantics.state}、${inventoryIntegrityRecoverabilitySemantics.state}、${inventoryIntegrityDurabilitySemantics.state}、${inventoryIntegrityContinuitySemantics.state}、${responseStatus.status} は読み方の境界であり execution result ではありません。`,
+        `read-only source を fetch result と同じ語彙で読むための metadata です。request、${request.endpoint.endpointId}、${request.fetchSemantics.semanticsId}、${request.fetchExecution.state}、${inventoryIntegrityTransportSemantics.state}、${inventoryIntegrityCacheSemantics.state}、${inventoryIntegrityOfflineSemantics.state}、${inventoryIntegrityRetrySemantics.state}、${inventoryIntegrityConsistencySemantics.state}、${inventoryIntegrityDegradationSemantics.state}、${inventoryIntegrityAuthoritySemantics.state}、${inventoryIntegritySnapshotSemantics.state}、${inventoryIntegrityProvenanceSemantics.state}、${inventoryIntegrityEvidenceSemantics.state}、${inventoryIntegrityFallbackSemantics.state}、${inventoryIntegrityTraceSemantics.state}、${inventoryIntegrityGovernanceSemantics.state}、${inventoryIntegrityReviewSemantics.state}、${inventoryIntegrityDecisionSemantics.state}、${inventoryIntegrityAttentionSemantics.state}、${inventoryIntegrityEscalationSemantics.state}、${inventoryIntegrityTelemetrySemantics.state}、${inventoryIntegrityLatencySemantics.state}、${inventoryIntegrityAvailabilitySemantics.state}、${inventoryIntegrityDiagnosticSemantics.state}、${inventoryIntegrityConfidenceSemantics.state}、${inventoryIntegrityHealthSemantics.state}、${inventoryIntegrityResilienceSemantics.state}、${inventoryIntegrityStabilitySemantics.state}、${inventoryIntegrityRecoverabilitySemantics.state}、${inventoryIntegrityDurabilitySemantics.state}、${inventoryIntegrityContinuitySemantics.state}、${inventoryIntegrityIntegrityAssuranceSemantics.state}、${responseStatus.status} は読み方の境界であり execution result ではありません。`,
       adapterInputBoundary:
         "fetch result は fetch adapter input boundary です。GET read-only response 以外の endpoint implementation、write API、POST、Supabase mutation は含みません。",
       truthSource: "inventory_transactions",
