@@ -127,6 +127,12 @@ function normalizeProjectionMetadata(
     compareOperationalPriority: metadata.compareOperationalPriority
       ? { ...metadata.compareOperationalPriority }
       : undefined,
+    compareOwnership: metadata.compareOwnership
+      ? {
+          ...metadata.compareOwnership,
+          ownershipSignals: [...metadata.compareOwnership.ownershipSignals],
+        }
+      : undefined,
     confidence: normalizeConfidence(metadata.confidence),
     freshness: normalizeFreshness(metadata.freshness),
     completeness: normalizeCompleteness(metadata.completeness),

@@ -1379,6 +1379,33 @@ export type InventoryCompareOperationalPriorityMetadata = {
   readonly executionBoundary: InventoryIntegrityExecutionBoundary;
 };
 
+export type InventoryCompareOwnership =
+  | "owner_required"
+  | "owner_unassigned"
+  | "owner_unknown"
+  | "owner_review_required"
+  | "owner_resolved_candidate";
+
+export type InventoryCompareOwnershipMetadata = {
+  readonly ownershipId: string;
+  readonly ownership: InventoryCompareOwnership;
+  readonly ownershipReason: string;
+  readonly ownershipSource: string;
+  readonly ownershipSignals: readonly string[];
+  readonly label: string;
+  readonly interpretation: string;
+  readonly noExecutionMeaning: string;
+  readonly operationalPriority: InventoryCompareOperationalPriority;
+  readonly escalationReadiness: InventoryCompareEscalationReadiness;
+  readonly reviewReadiness: InventoryCompareReviewReadiness;
+  readonly severity: InventoryCompareSeverity;
+  readonly classification: InventoryCompareMismatchClassification;
+  readonly truthSource: InventoryIntegrityTruthSource;
+  readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
 export type InventoryCompareHardeningMetadata = {
   readonly hardeningId: string;
   readonly sourceStatus: InventoryCompareSourceStatus;
@@ -1487,6 +1514,7 @@ export type InventoryIntegrityProjectionMetadata = {
   readonly compareReviewReadiness?: InventoryCompareReviewReadinessMetadata;
   readonly compareEscalationReadiness?: InventoryCompareEscalationReadinessMetadata;
   readonly compareOperationalPriority?: InventoryCompareOperationalPriorityMetadata;
+  readonly compareOwnership?: InventoryCompareOwnershipMetadata;
   readonly confidence: InventoryIntegrityConfidenceMetadata;
   readonly freshness: InventoryIntegrityFreshnessMetadata;
   readonly completeness: InventoryIntegrityCompletenessMetadata;
@@ -1748,6 +1776,7 @@ export type ProjectionResponseMetadata = {
   readonly compareReviewReadiness?: InventoryCompareReviewReadinessMetadata;
   readonly compareEscalationReadiness?: InventoryCompareEscalationReadinessMetadata;
   readonly compareOperationalPriority?: InventoryCompareOperationalPriorityMetadata;
+  readonly compareOwnership?: InventoryCompareOwnershipMetadata;
   readonly responseContractVersion: string;
   readonly readability: string;
   readonly adapterInputBoundary: string;
@@ -1799,6 +1828,7 @@ export type RawProjectionMetadataPayload = {
   readonly compareReviewReadiness?: InventoryCompareReviewReadinessMetadata;
   readonly compareEscalationReadiness?: InventoryCompareEscalationReadinessMetadata;
   readonly compareOperationalPriority?: InventoryCompareOperationalPriorityMetadata;
+  readonly compareOwnership?: InventoryCompareOwnershipMetadata;
   readonly payloadVersion: string;
   readonly readability: string;
   readonly adapterInputBoundary: string;
@@ -1874,6 +1904,7 @@ export type InventoryIntegrityFetchResultMetadata = {
   readonly compareReviewReadiness?: InventoryCompareReviewReadinessMetadata;
   readonly compareEscalationReadiness?: InventoryCompareEscalationReadinessMetadata;
   readonly compareOperationalPriority?: InventoryCompareOperationalPriorityMetadata;
+  readonly compareOwnership?: InventoryCompareOwnershipMetadata;
   readonly responseStatus: ProjectionResponseStatusSemantics;
   readonly resultVersion: string;
   readonly readability: string;

@@ -69,6 +69,12 @@ export function mapEdgeProjectionMetadata(
     compareOperationalPriority: metadata.compareOperationalPriority
       ? { ...metadata.compareOperationalPriority }
       : undefined,
+    compareOwnership: metadata.compareOwnership
+      ? {
+          ...metadata.compareOwnership,
+          ownershipSignals: [...metadata.compareOwnership.ownershipSignals],
+        }
+      : undefined,
     responseContractVersion: metadata.payloadVersion,
     readability: metadata.readability,
     adapterInputBoundary: metadata.adapterInputBoundary,
