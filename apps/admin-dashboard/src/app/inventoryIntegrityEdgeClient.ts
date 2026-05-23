@@ -1237,6 +1237,7 @@ export function createInventoryIntegrityFetchResult(
   compareClassification?: InventoryIntegrityFetchResult["metadata"]["compareClassification"],
   compareSeverity?: InventoryIntegrityFetchResult["metadata"]["compareSeverity"],
   compareReviewReadiness?: InventoryIntegrityFetchResult["metadata"]["compareReviewReadiness"],
+  compareEscalationReadiness?: InventoryIntegrityFetchResult["metadata"]["compareEscalationReadiness"],
 ): InventoryIntegrityFetchResult {
   return {
     metadata: {
@@ -1285,6 +1286,7 @@ export function createInventoryIntegrityFetchResult(
       compareClassification,
       compareSeverity,
       compareReviewReadiness,
+      compareEscalationReadiness,
       responseStatus,
       resultVersion: "inventory-integrity-static-fetch-result-v1",
       readability:
