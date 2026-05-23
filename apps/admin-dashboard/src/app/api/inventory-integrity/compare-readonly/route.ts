@@ -31,6 +31,8 @@ import type {
   InventoryCompareOperatorSummaryMetadata,
   InventoryCompareOperatorTimeline,
   InventoryCompareOperatorTimelineMetadata,
+  InventoryCompareProjectionFreshness,
+  InventoryCompareProjectionFreshnessMetadata,
   InventoryCompareProjection,
   InventoryCompareReviewReadiness,
   InventoryCompareReviewReadinessMetadata,
@@ -1307,6 +1309,151 @@ function createCompareConfidenceMetadata({
   };
 }
 
+function projectionFreshnessForSemantics({
+  compareHardening,
+  compareConfidence,
+  classification,
+  severity,
+  operatorSummary,
+  operatorTimeline,
+  compareStatus,
+}: {
+  readonly compareHardening: InventoryCompareHardeningMetadata;
+  readonly compareConfidence: InventoryCompareConfidence;
+  readonly classification: InventoryCompareMismatchClassification;
+  readonly severity: InventoryCompareSeverity;
+  readonly operatorSummary?: InventoryCompareOperatorSummary;
+  readonly operatorTimeline?: InventoryCompareOperatorTimeline;
+  readonly compareStatus?: InventoryCompareStatus;
+}): InventoryCompareProjectionFreshness {
+  if (
+    compareConfidence === "confidence_blocked" ||
+    compareHardening.sourceStatus === "compare_source_unavailable" ||
+    compareHardening.scopeStatus === "unavailable_scope" ||
+    classification === "unavailable_projection"
+  ) {
+    return "freshness_unavailable";
+  }
+  if (
+    compareConfidence === "confidence_unverified" ||
+    classification === "compare_unverified" ||
+    severity === "unverified" ||
+    operatorSummary === "summary_source_unverified" ||
+    operatorTimeline === "timeline_wait_for_confirmation" ||
+    compareHardening.resultStatus === "compare_result_unverified"
+  ) {
+    return "freshness_unknown";
+  }
+  if (
+    compareConfidence === "confidence_low" ||
+    compareHardening.sourceStatus === "compare_source_degraded" ||
+    compareHardening.scopeStatus === "degraded_scope" ||
+    compareHardening.scopeStatus === "invalid_scope" ||
+    compareHardening.resultStatus === "compare_result_empty" ||
+    classification === "stale_projection" ||
+    classification === "degraded_projection" ||
+    classification === "scope_mismatch" ||
+    (classification === "compare_partial" && compareStatus !== "matched")
+  ) {
+    return "freshness_stale";
+  }
+  if (
+    compareConfidence === "confidence_medium" ||
+    classification === "quantity_mismatch" ||
+    classification === "aggregation_mismatch" ||
+    classification === "negative_projection" ||
+    classification === "negative_truth" ||
+    operatorTimeline === "timeline_review_projection" ||
+    severity === "warning" ||
+    severity === "high" ||
+    severity === "critical"
+  ) {
+    return "freshness_recent";
+  }
+  return "freshness_current";
+}
+
+function projectionFreshnessText(freshness: InventoryCompareProjectionFreshness): string {
+  if (freshness === "freshness_current") {
+    return "projection は現在状態として扱えます";
+  }
+  if (freshness === "freshness_recent") {
+    return "projection は直近状態として参考表示です";
+  }
+  if (freshness === "freshness_stale") {
+    return "projection は古い可能性があります";
+  }
+  if (freshness === "freshness_unknown") {
+    return "projection 鮮度は未確定です";
+  }
+  return "projection が利用できないため判断保留です";
+}
+
+function projectionFreshnessReason(freshness: InventoryCompareProjectionFreshness): string {
+  if (freshness === "freshness_current") {
+    return "source / scope / confidence が確認可能で、stale や degraded の signal が見えないため、現在状態に近い表示として整理します";
+  }
+  if (freshness === "freshness_recent") {
+    return "source は利用可能ですが、差異や warning が見えるため、直近の参考表示として整理します";
+  }
+  if (freshness === "freshness_stale") {
+    return "stale / degraded / partial / low confidence の signal が見えるため、古い可能性のある表示として整理します";
+  }
+  if (freshness === "freshness_unknown") {
+    return "compare source または判定材料が未検証に見えるため、projection の鮮度を確定しない表示として整理します";
+  }
+  return "projection source または scope が利用できないため、判断保留の表示として整理します";
+}
+
+function createCompareProjectionFreshnessMetadata({
+  projectionFreshness,
+  compareHardening,
+  compareConfidence,
+  classification,
+  severity,
+  operatorSummary,
+  operatorTimeline,
+  freshnessSource,
+  freshnessSignals,
+}: {
+  readonly projectionFreshness: InventoryCompareProjectionFreshness;
+  readonly compareHardening: InventoryCompareHardeningMetadata;
+  readonly compareConfidence: InventoryCompareConfidence;
+  readonly classification: InventoryCompareMismatchClassification;
+  readonly severity: InventoryCompareSeverity;
+  readonly operatorSummary?: InventoryCompareOperatorSummary;
+  readonly operatorTimeline?: InventoryCompareOperatorTimeline;
+  readonly freshnessSource: string;
+  readonly freshnessSignals: readonly string[];
+}): InventoryCompareProjectionFreshnessMetadata {
+  return {
+    freshnessId: `inventory-integrity-compare-readonly-${classification}-${projectionFreshness}`,
+    projectionFreshness,
+    freshnessText: projectionFreshnessText(projectionFreshness),
+    freshnessReason: projectionFreshnessReason(projectionFreshness),
+    freshnessSource,
+    freshnessSignals,
+    label: "read-only compare projection freshness semantics",
+    interpretation:
+      "projection freshness は inventory_current / projection の鮮度や古さを読むための governance / operational observability metadata です。",
+    noExecutionMeaning:
+      "projection freshness は在庫操作、外部連携、担当設定の変更、鮮度に基づく在庫変更を開始しません。",
+    sourceStatus: compareHardening.sourceStatus,
+    resultStatus: compareHardening.resultStatus,
+    scopeStatus: compareHardening.scopeStatus,
+    compareConfidence,
+    classification,
+    severity,
+    operatorSummary,
+    operatorTimeline,
+    truthSource: "inventory_transactions",
+    cacheCompareTarget: "inventory_current",
+    semanticBoundary: "reasoning_visualization_only",
+    executionBoundary:
+      "InventoryCompareProjectionFreshnessMetadata は read-only freshness visibility です。操作導線、担当設定の変更、在庫変更は実行しません。",
+  };
+}
+
 function createUnavailableReadOnlyResponse({
   status,
   error,
@@ -1476,6 +1623,27 @@ function createUnavailableReadOnlyResponse({
       compareHardening.scopeStatus,
     ],
   });
+  const compareProjectionFreshness = createCompareProjectionFreshnessMetadata({
+    projectionFreshness: "freshness_unavailable",
+    compareHardening,
+    compareConfidence: compareConfidence.compareConfidence,
+    classification: compareClassification.classification,
+    severity: compareSeverity.severity,
+    operatorSummary: compareOperatorSummary.operatorSummary,
+    operatorTimeline: compareOperatorTimeline.operatorTimeline,
+    freshnessSource: "compare_source_unavailable",
+    freshnessSignals: [
+      compareConfidence.compareConfidence,
+      compareOperatorTimeline.operatorTimeline,
+      compareOperatorSummary.operatorSummary,
+      compareOperatorMessage.operatorMessage,
+      compareOperatorGuidance.operatorGuidance,
+      compareClassification.classification,
+      compareHardening.sourceStatus,
+      compareHardening.resultStatus,
+      compareHardening.scopeStatus,
+    ],
+  });
 
   return NextResponse.json(
     {
@@ -1498,6 +1666,7 @@ function createUnavailableReadOnlyResponse({
       compareOperatorSummary,
       compareOperatorTimeline,
       compareConfidence,
+      compareProjectionFreshness,
       semanticBoundary: "reasoning_visualization_only",
       executionBoundary:
         "compare-readonly endpoint failure は read-only unavailable visibility です。修正、再生成、在庫変更は実行しません。",
@@ -1898,6 +2067,39 @@ function buildCompareProjection(
       compareStatus,
     ],
   });
+  const compareProjectionFreshness = createCompareProjectionFreshnessMetadata({
+    projectionFreshness: projectionFreshnessForSemantics({
+      compareHardening,
+      compareConfidence: compareConfidence.compareConfidence,
+      classification: mismatchClassification,
+      severity: compareSeverity.severity,
+      operatorTimeline: compareOperatorTimeline.operatorTimeline,
+      compareStatus,
+    }),
+    compareHardening,
+    compareConfidence: compareConfidence.compareConfidence,
+    classification: mismatchClassification,
+    severity: compareSeverity.severity,
+    operatorTimeline: compareOperatorTimeline.operatorTimeline,
+    freshnessSource: "compare_confidence_semantics_chain",
+    freshnessSignals: [
+      compareConfidence.compareConfidence,
+      compareOperatorTimeline.operatorTimeline,
+      compareOperatorMessage.operatorMessage,
+      compareOperatorGuidance.operatorGuidance,
+      compareOwnerActionability.ownerActionability,
+      compareOwnership.ownership,
+      compareOperationalPriority.priority,
+      compareEscalationReadiness.readiness,
+      compareReviewReadiness.readiness,
+      compareSeverity.severity,
+      mismatchClassification,
+      compareHardening.sourceStatus,
+      compareHardening.resultStatus,
+      compareHardening.scopeStatus,
+      compareStatus,
+    ],
+  });
   const projectionId = `real-compare-${row.warehouseCode}-${row.partNo}`;
 
   return {
@@ -1965,6 +2167,7 @@ function buildCompareProjection(
       compareOperatorMessage,
       compareOperatorTimeline,
       compareConfidence,
+      compareProjectionFreshness,
       confidence: {
         level: "medium",
         reason: "real read-only compare rows から作成した visibility です。",
@@ -2490,6 +2693,77 @@ function resolveResponseConfidence(
   });
 }
 
+function resolveResponseProjectionFreshness(
+  compareHardening: InventoryCompareHardeningMetadata,
+  compareOperatorSummary: InventoryCompareOperatorSummaryMetadata,
+  compareOperatorTimeline: InventoryCompareOperatorTimelineMetadata,
+  compareConfidence: InventoryCompareConfidenceMetadata,
+  compareProjections: readonly InventoryCompareProjection[],
+): InventoryCompareProjectionFreshnessMetadata {
+  const firstUnavailableFreshness = compareProjections.find(
+    (projection) =>
+      projection.metadata.compareProjectionFreshness?.projectionFreshness ===
+      "freshness_unavailable",
+  )?.metadata.compareProjectionFreshness;
+  if (firstUnavailableFreshness) return firstUnavailableFreshness;
+
+  const firstUnknownFreshness = compareProjections.find(
+    (projection) =>
+      projection.metadata.compareProjectionFreshness?.projectionFreshness ===
+      "freshness_unknown",
+  )?.metadata.compareProjectionFreshness;
+  if (firstUnknownFreshness) return firstUnknownFreshness;
+
+  const firstStaleFreshness = compareProjections.find(
+    (projection) =>
+      projection.metadata.compareProjectionFreshness?.projectionFreshness ===
+      "freshness_stale",
+  )?.metadata.compareProjectionFreshness;
+  if (firstStaleFreshness) return firstStaleFreshness;
+
+  const firstRecentFreshness = compareProjections.find(
+    (projection) =>
+      projection.metadata.compareProjectionFreshness?.projectionFreshness ===
+      "freshness_recent",
+  )?.metadata.compareProjectionFreshness;
+  if (firstRecentFreshness) return firstRecentFreshness;
+
+  return createCompareProjectionFreshnessMetadata({
+    projectionFreshness: projectionFreshnessForSemantics({
+      compareHardening,
+      compareConfidence: compareConfidence.compareConfidence,
+      classification: compareOperatorTimeline.classification,
+      severity: compareOperatorTimeline.severity,
+      operatorSummary: compareOperatorSummary.operatorSummary,
+      operatorTimeline: compareOperatorTimeline.operatorTimeline,
+    }),
+    compareHardening,
+    compareConfidence: compareConfidence.compareConfidence,
+    classification: compareOperatorTimeline.classification,
+    severity: compareOperatorTimeline.severity,
+    operatorSummary: compareOperatorSummary.operatorSummary,
+    operatorTimeline: compareOperatorTimeline.operatorTimeline,
+    freshnessSource: "response_level_compare_confidence_chain",
+    freshnessSignals: [
+      compareConfidence.compareConfidence,
+      compareOperatorSummary.operatorSummary,
+      compareOperatorTimeline.operatorTimeline,
+      compareOperatorTimeline.operatorMessage,
+      compareOperatorTimeline.operatorGuidance,
+      compareOperatorTimeline.ownerActionability,
+      compareOperatorTimeline.ownership,
+      compareOperatorTimeline.operationalPriority,
+      compareOperatorTimeline.escalationReadiness,
+      compareOperatorTimeline.reviewReadiness,
+      compareOperatorTimeline.severity,
+      compareOperatorTimeline.classification,
+      compareHardening.sourceStatus,
+      compareHardening.resultStatus,
+      compareHardening.scopeStatus,
+    ],
+  });
+}
+
 export async function GET(req: NextRequest) {
   const guard = await requireAdminDashboardRole(req);
   if (!guard.ok) {
@@ -2635,6 +2909,13 @@ export async function GET(req: NextRequest) {
     compareOperatorTimeline,
     readOnlyData.compareProjections,
   );
+  const compareProjectionFreshness = resolveResponseProjectionFreshness(
+    compareHardening,
+    compareOperatorSummary,
+    compareOperatorTimeline,
+    compareConfidence,
+    readOnlyData.compareProjections,
+  );
   const endpointContract = createInventoryIntegrityReadOnlyEndpointContract(endpointPath);
   const request = createInventoryIntegrityReadOnlyEdgeRequest(endpointContract);
   const fetchResult = createInventoryIntegrityFetchResult(
@@ -2656,6 +2937,7 @@ export async function GET(req: NextRequest) {
     compareOperatorSummary,
     compareOperatorTimeline,
     compareConfidence,
+    compareProjectionFreshness,
   );
   const payload = adaptFetchResponseToPayload(fetchResult);
   const mappedResponse = mapEdgeProjectionResponse({
@@ -2684,6 +2966,7 @@ export async function GET(req: NextRequest) {
     compareOperatorSummary,
     compareOperatorTimeline,
     compareConfidence,
+    compareProjectionFreshness,
     normalizedData: mappedResponse.normalizedData,
     metadata: mappedResponse.metadata,
     statusSemantics: mappedResponse.statusSemantics,

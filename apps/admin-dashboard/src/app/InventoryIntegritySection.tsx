@@ -45,6 +45,7 @@ import type {
   InventoryCompareOperatorMessageMetadata,
   InventoryCompareOperatorSummaryMetadata,
   InventoryCompareOperatorTimelineMetadata,
+  InventoryCompareProjectionFreshnessMetadata,
   InventoryCompareScope,
   InventoryCompareStatus,
   InventoryIntegrityAttentionLevel,
@@ -367,6 +368,27 @@ function extractCompareConfidence(value: unknown): InventoryCompareConfidenceMet
     : null;
 }
 
+function extractCompareProjectionFreshness(
+  value: unknown,
+): InventoryCompareProjectionFreshnessMetadata | null {
+  if (!value || typeof value !== "object") return null;
+
+  const candidate = value as { readonly compareProjectionFreshness?: unknown };
+  if (
+    !candidate.compareProjectionFreshness ||
+    typeof candidate.compareProjectionFreshness !== "object"
+  ) {
+    return null;
+  }
+
+  const freshness =
+    candidate.compareProjectionFreshness as Partial<InventoryCompareProjectionFreshnessMetadata>;
+  return typeof freshness.projectionFreshness === "string" &&
+    typeof freshness.freshnessText === "string"
+    ? (freshness as InventoryCompareProjectionFreshnessMetadata)
+    : null;
+}
+
 function readableSignals(signals: readonly string[], limit = 4): string {
   const visibleSignals = signals.slice(0, limit).join(" / ");
   return signals.length > limit
@@ -505,6 +527,8 @@ export function InventoryIntegritySection() {
     useState<InventoryCompareOperatorTimelineMetadata | null>(null);
   const [compareConfidence, setCompareConfidence] =
     useState<InventoryCompareConfidenceMetadata | null>(null);
+  const [compareProjectionFreshness, setCompareProjectionFreshness] =
+    useState<InventoryCompareProjectionFreshnessMetadata | null>(null);
 
   useEffect(() => {
     const token = session?.access_token;
@@ -517,6 +541,7 @@ export function InventoryIntegritySection() {
       setCompareOperatorSummary(null);
       setCompareOperatorTimeline(null);
       setCompareConfidence(null);
+      setCompareProjectionFreshness(null);
       return;
     }
 
@@ -543,6 +568,7 @@ export function InventoryIntegritySection() {
           setCompareOperatorSummary(extractCompareOperatorSummary(responseBody));
           setCompareOperatorTimeline(extractCompareOperatorTimeline(responseBody));
           setCompareConfidence(extractCompareConfidence(responseBody));
+          setCompareProjectionFreshness(extractCompareProjectionFreshness(responseBody));
           return;
         }
 
@@ -554,6 +580,7 @@ export function InventoryIntegritySection() {
         setCompareOperatorSummary(extractCompareOperatorSummary(responseBody));
         setCompareOperatorTimeline(extractCompareOperatorTimeline(responseBody));
         setCompareConfidence(extractCompareConfidence(responseBody));
+        setCompareProjectionFreshness(extractCompareProjectionFreshness(responseBody));
         const readOnlyData = extractInventoryIntegrityReadOnlyData(responseBody);
         if (!readOnlyData) {
           setCompareSourceLabel("static fallback");
@@ -572,6 +599,7 @@ export function InventoryIntegritySection() {
           setCompareOperatorSummary(null);
           setCompareOperatorTimeline(null);
           setCompareConfidence(null);
+          setCompareProjectionFreshness(null);
         }
       }
     }
@@ -692,6 +720,19 @@ export function InventoryIntegritySection() {
               </span>
             </>
           ) : null}
+          {compareProjectionFreshness ? (
+            <>
+              <span style={styles.summaryText}>{compareProjectionFreshness.freshnessText}</span>
+              <span style={styles.supportingText}>
+                projection freshness: {compareProjectionFreshness.projectionFreshness} /{" "}
+                {compareProjectionFreshness.freshnessReason}
+              </span>
+              <span style={styles.supportingText}>
+                source: {compareProjectionFreshness.freshnessSource} / signals:{" "}
+                {readableSignals(compareProjectionFreshness.freshnessSignals)}
+              </span>
+            </>
+          ) : null}
           {compareOperatorTimeline ? (
             <span style={styles.supportingText}>
               operator timeline: {compareOperatorTimeline.timelineText} /{" "}
@@ -729,6 +770,9 @@ export function InventoryIntegritySection() {
           : ""}
         {compareConfidence
           ? ` compare confidence ${compareConfidence.compareConfidence}.`
+          : ""}
+        {compareProjectionFreshness
+          ? ` projection freshness ${compareProjectionFreshness.projectionFreshness}.`
           : ""}
       </div>
 
@@ -853,6 +897,12 @@ export function InventoryIntegritySection() {
                   compare confidence: {projection.metadata.compareConfidence.confidenceText}
                 </p>
               ) : null}
+              {projection.metadata.compareProjectionFreshness ? (
+                <p style={styles.description}>
+                  projection freshness:{" "}
+                  {projection.metadata.compareProjectionFreshness.freshnessText}
+                </p>
+              ) : null}
               {projection.metadata.compareOperatorGuidance ? (
                 <p style={styles.description}>
                   operator guidance: {projection.metadata.compareOperatorGuidance.operatorGuidance}
@@ -938,6 +988,16 @@ export function InventoryIntegritySection() {
                   confidence reason: {projection.metadata.compareConfidence.confidenceReason} / source:{" "}
                   {projection.metadata.compareConfidence.confidenceSource} / signals:{" "}
                   {readableSignals(projection.metadata.compareConfidence.confidenceSignals)}
+                </p>
+              ) : null}
+              {projection.metadata.compareProjectionFreshness ? (
+                <p style={styles.supportingText}>
+                  freshness reason:{" "}
+                  {projection.metadata.compareProjectionFreshness.freshnessReason} / source:{" "}
+                  {projection.metadata.compareProjectionFreshness.freshnessSource} / signals:{" "}
+                  {readableSignals(
+                    projection.metadata.compareProjectionFreshness.freshnessSignals,
+                  )}
                 </p>
               ) : null}
               {projection.metadata.compareOwnerActionability ? (

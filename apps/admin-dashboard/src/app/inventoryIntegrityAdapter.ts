@@ -165,6 +165,12 @@ function normalizeProjectionMetadata(
           confidenceSignals: [...metadata.compareConfidence.confidenceSignals],
         }
       : undefined,
+    compareProjectionFreshness: metadata.compareProjectionFreshness
+      ? {
+          ...metadata.compareProjectionFreshness,
+          freshnessSignals: [...metadata.compareProjectionFreshness.freshnessSignals],
+        }
+      : undefined,
     confidence: normalizeConfidence(metadata.confidence),
     freshness: normalizeFreshness(metadata.freshness),
     completeness: normalizeCompleteness(metadata.completeness),
