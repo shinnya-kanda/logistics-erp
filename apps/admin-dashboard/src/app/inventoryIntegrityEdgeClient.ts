@@ -1242,6 +1242,7 @@ export function createInventoryIntegrityFetchResult(
   compareOwnership?: InventoryIntegrityFetchResult["metadata"]["compareOwnership"],
   compareOwnerActionability?: InventoryIntegrityFetchResult["metadata"]["compareOwnerActionability"],
   compareOperatorGuidance?: InventoryIntegrityFetchResult["metadata"]["compareOperatorGuidance"],
+  compareOperatorMessage?: InventoryIntegrityFetchResult["metadata"]["compareOperatorMessage"],
 ): InventoryIntegrityFetchResult {
   return {
     metadata: {
@@ -1295,6 +1296,7 @@ export function createInventoryIntegrityFetchResult(
       compareOwnership,
       compareOwnerActionability,
       compareOperatorGuidance,
+      compareOperatorMessage,
       responseStatus,
       resultVersion: "inventory-integrity-static-fetch-result-v1",
       readability:

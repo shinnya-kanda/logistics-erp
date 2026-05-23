@@ -41,6 +41,7 @@ import type {
   InventoryCompareHardeningMetadata,
   InventoryCompareMismatchClassification,
   InventoryCompareOperatorGuidanceMetadata,
+  InventoryCompareOperatorMessageMetadata,
   InventoryCompareScope,
   InventoryCompareStatus,
   InventoryIntegrityAttentionLevel,
@@ -294,6 +295,24 @@ function extractCompareOperatorGuidance(
     : null;
 }
 
+function extractCompareOperatorMessage(
+  value: unknown,
+): InventoryCompareOperatorMessageMetadata | null {
+  if (!value || typeof value !== "object") return null;
+
+  const candidate = value as { readonly compareOperatorMessage?: unknown };
+  if (!candidate.compareOperatorMessage || typeof candidate.compareOperatorMessage !== "object") {
+    return null;
+  }
+
+  const message =
+    candidate.compareOperatorMessage as Partial<InventoryCompareOperatorMessageMetadata>;
+  return typeof message.operatorMessage === "string" &&
+    typeof message.messageText === "string"
+    ? (message as InventoryCompareOperatorMessageMetadata)
+    : null;
+}
+
 const styles: Record<string, CSSProperties> = {
   panel: {
     marginTop: "2rem",
@@ -397,6 +416,8 @@ export function InventoryIntegritySection() {
     useState<InventoryCompareClassificationMetadata | null>(null);
   const [compareOperatorGuidance, setCompareOperatorGuidance] =
     useState<InventoryCompareOperatorGuidanceMetadata | null>(null);
+  const [compareOperatorMessage, setCompareOperatorMessage] =
+    useState<InventoryCompareOperatorMessageMetadata | null>(null);
 
   useEffect(() => {
     const token = session?.access_token;
@@ -405,6 +426,7 @@ export function InventoryIntegritySection() {
       setCompareHardening(null);
       setCompareClassification(null);
       setCompareOperatorGuidance(null);
+      setCompareOperatorMessage(null);
       return;
     }
 
@@ -427,6 +449,7 @@ export function InventoryIntegritySection() {
           setCompareHardening(extractCompareHardening(responseBody));
           setCompareClassification(extractCompareClassification(responseBody));
           setCompareOperatorGuidance(extractCompareOperatorGuidance(responseBody));
+          setCompareOperatorMessage(extractCompareOperatorMessage(responseBody));
           return;
         }
 
@@ -434,6 +457,7 @@ export function InventoryIntegritySection() {
         setCompareHardening(extractCompareHardening(responseBody));
         setCompareClassification(extractCompareClassification(responseBody));
         setCompareOperatorGuidance(extractCompareOperatorGuidance(responseBody));
+        setCompareOperatorMessage(extractCompareOperatorMessage(responseBody));
         const readOnlyData = extractInventoryIntegrityReadOnlyData(responseBody);
         if (!readOnlyData) {
           setCompareSourceLabel("static fallback");
@@ -448,6 +472,7 @@ export function InventoryIntegritySection() {
           setCompareHardening(null);
           setCompareClassification(null);
           setCompareOperatorGuidance(null);
+          setCompareOperatorMessage(null);
         }
       }
     }
@@ -558,6 +583,9 @@ export function InventoryIntegritySection() {
           : ""}
         {compareOperatorGuidance
           ? ` operator guidance ${compareOperatorGuidance.operatorGuidance}.`
+          : ""}
+        {compareOperatorMessage
+          ? ` operator message ${compareOperatorMessage.operatorMessage}.`
           : ""}
       </div>
 
@@ -739,6 +767,12 @@ export function InventoryIntegritySection() {
                   operator guidance:{" "}
                   {projection.metadata.compareOperatorGuidance.operatorGuidance} /{" "}
                   {projection.metadata.compareOperatorGuidance.guidanceReason}
+                </p>
+              ) : null}
+              {projection.metadata.compareOperatorMessage ? (
+                <p style={styles.description}>
+                  operator message: {projection.metadata.compareOperatorMessage.messageText} /{" "}
+                  {projection.metadata.compareOperatorMessage.messageReason}
                 </p>
               ) : null}
               <p style={styles.description}>truth の見方: {projection.truthStatement}</p>
