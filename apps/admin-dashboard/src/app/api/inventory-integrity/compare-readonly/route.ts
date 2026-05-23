@@ -21,6 +21,8 @@ import type {
   InventoryCompareOwnershipMetadata,
   InventoryCompareOwnerActionability,
   InventoryCompareOwnerActionabilityMetadata,
+  InventoryCompareOperatorGuidance,
+  InventoryCompareOperatorGuidanceMetadata,
   InventoryCompareProjection,
   InventoryCompareReviewReadiness,
   InventoryCompareReviewReadinessMetadata,
@@ -602,6 +604,129 @@ function createCompareOwnerActionabilityMetadata({
   };
 }
 
+function guidanceForActionability({
+  compareHardening,
+  ownerActionability,
+  ownership,
+  operationalPriority,
+  escalationReadiness,
+  severity,
+  classification,
+}: {
+  readonly compareHardening: InventoryCompareHardeningMetadata;
+  readonly ownerActionability: InventoryCompareOwnerActionability;
+  readonly ownership: InventoryCompareOwnership;
+  readonly operationalPriority: InventoryCompareOperationalPriority;
+  readonly escalationReadiness: InventoryCompareEscalationReadiness;
+  readonly severity: InventoryCompareSeverity;
+  readonly classification: InventoryCompareMismatchClassification;
+}): InventoryCompareOperatorGuidance {
+  if (
+    ownerActionability === "blocked_unverified" ||
+    ownership === "owner_unknown" ||
+    classification === "compare_unverified" ||
+    severity === "unverified" ||
+    compareHardening.sourceStatus === "compare_source_unavailable"
+  ) {
+    return "guidance_wait_for_source";
+  }
+  if (
+    ownerActionability === "unassigned_action" ||
+    ownership === "owner_unassigned" ||
+    compareHardening.sourceStatus === "compare_source_degraded" ||
+    compareHardening.scopeStatus !== "valid_scope" ||
+    compareHardening.resultStatus === "compare_result_partial"
+  ) {
+    return "guidance_assign_owner_later";
+  }
+  if (
+    ownerActionability === "action_required" ||
+    ownership === "owner_required" ||
+    operationalPriority === "priority_p0" ||
+    escalationReadiness === "escalation_required" ||
+    severity === "critical"
+  ) {
+    return "guidance_verify_truth_source";
+  }
+  if (
+    ownerActionability === "action_recommended" ||
+    ownership === "owner_review_required" ||
+    operationalPriority === "priority_p1" ||
+    operationalPriority === "priority_p2" ||
+    severity === "high" ||
+    classification === "aggregation_mismatch" ||
+    classification === "quantity_mismatch"
+  ) {
+    return "guidance_review_projection";
+  }
+  return "guidance_monitor";
+}
+
+function guidanceReason(guidance: InventoryCompareOperatorGuidance): string {
+  if (guidance === "guidance_verify_truth_source") {
+    return "critical / priority_p0 / escalation_required / owner_required として見えるため、truth source 側の根拠を確認して読む候補です";
+  }
+  if (guidance === "guidance_review_projection") {
+    return "high / priority_p1-p2 / quantity or aggregation mismatch として見えるため、projection 側の表示差分を確認して読む候補です";
+  }
+  if (guidance === "guidance_monitor") {
+    return "monitor_only / owner_resolved_candidate / priority_p3 / warning として見えるため、監視中心で読む候補です";
+  }
+  if (guidance === "guidance_assign_owner_later") {
+    return "owner_unassigned / degraded / partial / invalid scope として見えるため、担当設定の必要性を後で検討して読む候補です";
+  }
+  return "blocked_unverified / owner_unknown / compare_unverified / unavailable として見えるため、source の検証状態を待って読む候補です";
+}
+
+function createCompareOperatorGuidanceMetadata({
+  operatorGuidance,
+  ownerActionability,
+  ownership,
+  operationalPriority,
+  escalationReadiness,
+  reviewReadiness,
+  severity,
+  classification,
+  guidanceSource,
+  guidanceSignals,
+}: {
+  readonly operatorGuidance: InventoryCompareOperatorGuidance;
+  readonly ownerActionability: InventoryCompareOwnerActionability;
+  readonly ownership: InventoryCompareOwnership;
+  readonly operationalPriority: InventoryCompareOperationalPriority;
+  readonly escalationReadiness: InventoryCompareEscalationReadiness;
+  readonly reviewReadiness: InventoryCompareReviewReadiness;
+  readonly severity: InventoryCompareSeverity;
+  readonly classification: InventoryCompareMismatchClassification;
+  readonly guidanceSource: string;
+  readonly guidanceSignals: readonly string[];
+}): InventoryCompareOperatorGuidanceMetadata {
+  return {
+    guidanceId: `inventory-integrity-compare-readonly-${classification}-${operatorGuidance}`,
+    operatorGuidance,
+    guidanceReason: guidanceReason(operatorGuidance),
+    guidanceSource,
+    guidanceSignals,
+    label: "read-only operator guidance semantics",
+    interpretation:
+      "operator guidance は画面を見る担当者が次にどの観点を確認して読むとよいかを示す governance / operational observability metadata です。",
+    noExecutionMeaning:
+      "operator guidance は在庫操作、外部連携、担当設定の変更、案内に基づく実行、在庫変更を開始しません。",
+    ownerActionability,
+    ownership,
+    operationalPriority,
+    escalationReadiness,
+    reviewReadiness,
+    severity,
+    classification,
+    truthSource: "inventory_transactions",
+    cacheCompareTarget: "inventory_current",
+    semanticBoundary: "reasoning_visualization_only",
+    executionBoundary:
+      "InventoryCompareOperatorGuidanceMetadata は read-only guidance visibility です。操作導線、担当設定の変更、在庫変更は実行しません。",
+  };
+}
+
 function createUnavailableReadOnlyResponse({
   status,
   error,
@@ -677,6 +802,24 @@ function createUnavailableReadOnlyResponse({
       compareHardening.sourceStatus,
     ],
   });
+  const compareOperatorGuidance = createCompareOperatorGuidanceMetadata({
+    operatorGuidance: "guidance_wait_for_source",
+    ownerActionability: compareOwnerActionability.ownerActionability,
+    ownership: compareOwnerActionability.ownership,
+    operationalPriority: compareOwnerActionability.operationalPriority,
+    escalationReadiness: compareOwnerActionability.escalationReadiness,
+    reviewReadiness: compareOwnerActionability.reviewReadiness,
+    severity: compareOwnerActionability.severity,
+    classification: compareOwnerActionability.classification,
+    guidanceSource: "compare_source_unavailable",
+    guidanceSignals: [
+      compareOwnerActionability.ownerActionability,
+      compareOwnership.ownership,
+      compareClassification.classification,
+      compareOperationalPriority.priority,
+      compareHardening.sourceStatus,
+    ],
+  });
 
   return NextResponse.json(
     {
@@ -694,6 +837,7 @@ function createUnavailableReadOnlyResponse({
       compareOperationalPriority,
       compareOwnership,
       compareOwnerActionability,
+      compareOperatorGuidance,
       semanticBoundary: "reasoning_visualization_only",
       executionBoundary:
         "compare-readonly endpoint failure は read-only unavailable visibility です。修正、再生成、在庫変更は実行しません。",
@@ -965,6 +1109,37 @@ function buildCompareProjection(
       compareHardening.resultStatus,
     ],
   });
+  const compareOperatorGuidance = createCompareOperatorGuidanceMetadata({
+    operatorGuidance: guidanceForActionability({
+      compareHardening,
+      ownerActionability: compareOwnerActionability.ownerActionability,
+      ownership: compareOwnerActionability.ownership,
+      operationalPriority: compareOwnerActionability.operationalPriority,
+      escalationReadiness: compareOwnerActionability.escalationReadiness,
+      severity: compareOwnerActionability.severity,
+      classification: compareOwnerActionability.classification,
+    }),
+    ownerActionability: compareOwnerActionability.ownerActionability,
+    ownership: compareOwnerActionability.ownership,
+    operationalPriority: compareOwnerActionability.operationalPriority,
+    escalationReadiness: compareOwnerActionability.escalationReadiness,
+    reviewReadiness: compareOwnerActionability.reviewReadiness,
+    severity: compareOwnerActionability.severity,
+    classification: compareOwnerActionability.classification,
+    guidanceSource: "compare_owner_actionability_semantics_chain",
+    guidanceSignals: [
+      compareOwnerActionability.ownerActionability,
+      compareOwnership.ownership,
+      compareOperationalPriority.priority,
+      compareEscalationReadiness.readiness,
+      compareReviewReadiness.readiness,
+      compareSeverity.severity,
+      mismatchClassification,
+      compareHardening.sourceStatus,
+      compareHardening.resultStatus,
+      compareHardening.scopeStatus,
+    ],
+  });
   const projectionId = `real-compare-${row.warehouseCode}-${row.partNo}`;
 
   return {
@@ -1028,6 +1203,7 @@ function buildCompareProjection(
       compareOperationalPriority,
       compareOwnership,
       compareOwnerActionability,
+      compareOperatorGuidance,
       confidence: {
         level: "medium",
         reason: "real read-only compare rows から作成した visibility です。",
@@ -1346,6 +1522,50 @@ function resolveResponseOwnerActionability(
   );
 }
 
+function resolveResponseOperatorGuidance(
+  compareHardening: InventoryCompareHardeningMetadata,
+  compareOwnerActionability: InventoryCompareOwnerActionabilityMetadata,
+  compareProjections: readonly InventoryCompareProjection[],
+): InventoryCompareOperatorGuidanceMetadata {
+  const firstVisibleGuidance = compareProjections.find(
+    (projection) => projection.metadata.compareOperatorGuidance,
+  )?.metadata.compareOperatorGuidance;
+
+  return (
+    firstVisibleGuidance ??
+    createCompareOperatorGuidanceMetadata({
+      operatorGuidance: guidanceForActionability({
+        compareHardening,
+        ownerActionability: compareOwnerActionability.ownerActionability,
+        ownership: compareOwnerActionability.ownership,
+        operationalPriority: compareOwnerActionability.operationalPriority,
+        escalationReadiness: compareOwnerActionability.escalationReadiness,
+        severity: compareOwnerActionability.severity,
+        classification: compareOwnerActionability.classification,
+      }),
+      ownerActionability: compareOwnerActionability.ownerActionability,
+      ownership: compareOwnerActionability.ownership,
+      operationalPriority: compareOwnerActionability.operationalPriority,
+      escalationReadiness: compareOwnerActionability.escalationReadiness,
+      reviewReadiness: compareOwnerActionability.reviewReadiness,
+      severity: compareOwnerActionability.severity,
+      classification: compareOwnerActionability.classification,
+      guidanceSource: "response_level_compare_actionability_chain",
+      guidanceSignals: [
+        compareOwnerActionability.ownerActionability,
+        compareOwnerActionability.ownership,
+        compareOwnerActionability.operationalPriority,
+        compareOwnerActionability.escalationReadiness,
+        compareOwnerActionability.severity,
+        compareOwnerActionability.classification,
+        compareHardening.sourceStatus,
+        compareHardening.resultStatus,
+        compareHardening.scopeStatus,
+      ],
+    })
+  );
+}
+
 export async function GET(req: NextRequest) {
   const guard = await requireAdminDashboardRole(req);
   if (!guard.ok) {
@@ -1467,6 +1687,11 @@ export async function GET(req: NextRequest) {
     compareOwnership,
     readOnlyData.compareProjections,
   );
+  const compareOperatorGuidance = resolveResponseOperatorGuidance(
+    compareHardening,
+    compareOwnerActionability,
+    readOnlyData.compareProjections,
+  );
   const endpointContract = createInventoryIntegrityReadOnlyEndpointContract(endpointPath);
   const request = createInventoryIntegrityReadOnlyEdgeRequest(endpointContract);
   const fetchResult = createInventoryIntegrityFetchResult(
@@ -1483,6 +1708,7 @@ export async function GET(req: NextRequest) {
     compareOperationalPriority,
     compareOwnership,
     compareOwnerActionability,
+    compareOperatorGuidance,
   );
   const payload = adaptFetchResponseToPayload(fetchResult);
   const mappedResponse = mapEdgeProjectionResponse({
@@ -1506,6 +1732,7 @@ export async function GET(req: NextRequest) {
     compareOperationalPriority,
     compareOwnership,
     compareOwnerActionability,
+    compareOperatorGuidance,
     normalizedData: mappedResponse.normalizedData,
     metadata: mappedResponse.metadata,
     statusSemantics: mappedResponse.statusSemantics,
