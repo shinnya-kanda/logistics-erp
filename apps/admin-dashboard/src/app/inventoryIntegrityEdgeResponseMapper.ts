@@ -66,6 +66,9 @@ export function mapEdgeProjectionMetadata(
     compareEscalationReadiness: metadata.compareEscalationReadiness
       ? { ...metadata.compareEscalationReadiness }
       : undefined,
+    compareOperationalPriority: metadata.compareOperationalPriority
+      ? { ...metadata.compareOperationalPriority }
+      : undefined,
     responseContractVersion: metadata.payloadVersion,
     readability: metadata.readability,
     adapterInputBoundary: metadata.adapterInputBoundary,

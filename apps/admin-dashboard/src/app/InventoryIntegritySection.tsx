@@ -687,6 +687,12 @@ export function InventoryIntegritySection() {
                   {projection.metadata.compareEscalationReadiness.reason}
                 </p>
               ) : null}
+              {projection.metadata.compareOperationalPriority ? (
+                <p style={styles.description}>
+                  operational priority: {projection.metadata.compareOperationalPriority.priority} /{" "}
+                  {projection.metadata.compareOperationalPriority.reason}
+                </p>
+              ) : null}
               <p style={styles.description}>truth の見方: {projection.truthStatement}</p>
               <p style={styles.description}>
                 観測時点(snapshot): {projection.metadata.snapshot.snapshotId} /{" "}
