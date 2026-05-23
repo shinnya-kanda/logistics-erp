@@ -1247,6 +1247,7 @@ export function createInventoryIntegrityFetchResult(
   compareOperatorTimeline?: InventoryIntegrityFetchResult["metadata"]["compareOperatorTimeline"],
   compareConfidence?: InventoryIntegrityFetchResult["metadata"]["compareConfidence"],
   compareProjectionFreshness?: InventoryIntegrityFetchResult["metadata"]["compareProjectionFreshness"],
+  compareTruthAggregationQuality?: InventoryIntegrityFetchResult["metadata"]["compareTruthAggregationQuality"],
 ): InventoryIntegrityFetchResult {
   return {
     metadata: {
@@ -1305,6 +1306,7 @@ export function createInventoryIntegrityFetchResult(
       compareOperatorTimeline,
       compareConfidence,
       compareProjectionFreshness,
+      compareTruthAggregationQuality,
       responseStatus,
       resultVersion: "inventory-integrity-static-fetch-result-v1",
       readability:

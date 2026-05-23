@@ -171,6 +171,14 @@ function normalizeProjectionMetadata(
           freshnessSignals: [...metadata.compareProjectionFreshness.freshnessSignals],
         }
       : undefined,
+    compareTruthAggregationQuality: metadata.compareTruthAggregationQuality
+      ? {
+          ...metadata.compareTruthAggregationQuality,
+          truthQualitySignals: [
+            ...metadata.compareTruthAggregationQuality.truthQualitySignals,
+          ],
+        }
+      : undefined,
     confidence: normalizeConfidence(metadata.confidence),
     freshness: normalizeFreshness(metadata.freshness),
     completeness: normalizeCompleteness(metadata.completeness),
