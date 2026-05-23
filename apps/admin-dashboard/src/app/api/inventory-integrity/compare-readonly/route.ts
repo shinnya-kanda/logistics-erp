@@ -11,9 +11,13 @@ import {
 import { realReadOnlyProjectionSourceMetadata } from "../../../inventoryIntegritySource";
 import type {
   InventoryCompareClassificationMetadata,
+  InventoryCompareEscalationReadiness,
+  InventoryCompareEscalationReadinessMetadata,
   InventoryCompareHardeningMetadata,
   InventoryCompareMismatchClassification,
   InventoryCompareProjection,
+  InventoryCompareReviewReadiness,
+  InventoryCompareReviewReadinessMetadata,
   InventoryCompareSeverity,
   InventoryCompareSeverityMetadata,
   InventoryCompareSourceStatus,
@@ -232,6 +236,92 @@ function createCompareSeverityMetadata({
   };
 }
 
+function readinessForSeverity(
+  severity: InventoryCompareSeverity,
+  classification: InventoryCompareMismatchClassification,
+): InventoryCompareReviewReadiness {
+  if (classification === "compare_unverified") return "review_unverified";
+  if (classification === "unavailable_projection") return "review_blocked";
+  if (severity === "critical") return "review_required";
+  if (severity === "high") return "review_recommended";
+  if (severity === "warning") return "review_optional";
+  if (severity === "unverified") return "review_unverified";
+  return "review_optional";
+}
+
+function createCompareReviewReadinessMetadata({
+  readiness,
+  severity,
+  classification,
+  reason,
+}: {
+  readonly readiness: InventoryCompareReviewReadiness;
+  readonly severity: InventoryCompareSeverity;
+  readonly classification: InventoryCompareMismatchClassification;
+  readonly reason: string;
+}): InventoryCompareReviewReadinessMetadata {
+  return {
+    readinessId: `inventory-integrity-compare-readonly-${classification}-${readiness}`,
+    readiness,
+    label: "read-only governance review readiness semantics",
+    reason,
+    interpretation:
+      "compare review readiness は人間レビューの必要度を読む governance interpretation であり、レビュー実行ではありません。",
+    noExecutionMeaning:
+      "review readiness はレビュー実行、修正手順、再生成調整、担当割当を開始しません。",
+    severity,
+    classification,
+    truthSource: "inventory_transactions",
+    cacheCompareTarget: "inventory_current",
+    semanticBoundary: "reasoning_visualization_only",
+    executionBoundary:
+      "InventoryCompareReviewReadinessMetadata は read-only governance semantics です。レビュー実行、修正、再生成、在庫変更は実行しません。",
+  };
+}
+
+function escalationForReviewReadiness(
+  reviewReadiness: InventoryCompareReviewReadiness,
+): InventoryCompareEscalationReadiness {
+  if (reviewReadiness === "review_required") return "escalation_required";
+  if (reviewReadiness === "review_recommended") return "escalation_recommended";
+  if (reviewReadiness === "review_optional") return "escalation_optional";
+  if (reviewReadiness === "review_blocked") return "escalation_blocked";
+  return "escalation_unverified";
+}
+
+function createCompareEscalationReadinessMetadata({
+  readiness,
+  reviewReadiness,
+  severity,
+  classification,
+  reason,
+}: {
+  readonly readiness: InventoryCompareEscalationReadiness;
+  readonly reviewReadiness: InventoryCompareReviewReadiness;
+  readonly severity: InventoryCompareSeverity;
+  readonly classification: InventoryCompareMismatchClassification;
+  readonly reason: string;
+}): InventoryCompareEscalationReadinessMetadata {
+  return {
+    readinessId: `inventory-integrity-compare-readonly-${classification}-${readiness}`,
+    readiness,
+    label: "read-only governance escalation readiness semantics",
+    reason,
+    interpretation:
+      "compare escalation readiness は組織的 escalation の必要度を読む governance interpretation であり、escalation 実行ではありません。",
+    noExecutionMeaning:
+      "escalation readiness は escalation 実行、修正手順、再生成調整、通知、担当割当を開始しません。",
+    reviewReadiness,
+    severity,
+    classification,
+    truthSource: "inventory_transactions",
+    cacheCompareTarget: "inventory_current",
+    semanticBoundary: "reasoning_visualization_only",
+    executionBoundary:
+      "InventoryCompareEscalationReadinessMetadata は read-only governance semantics です。escalation 実行、修正、再生成、在庫変更は実行しません。",
+  };
+}
+
 function createUnavailableReadOnlyResponse({
   status,
   error,
@@ -256,6 +346,19 @@ function createUnavailableReadOnlyResponse({
     severity: "unverified",
     reason: "compare source unavailable response is read as unverified severity",
   });
+  const compareReviewReadiness = createCompareReviewReadinessMetadata({
+    readiness: "review_unverified",
+    severity: compareSeverity.severity,
+    classification: compareClassification.classification,
+    reason: "compare source unavailable response cannot be reviewed as a verified result",
+  });
+  const compareEscalationReadiness = createCompareEscalationReadinessMetadata({
+    readiness: "escalation_unverified",
+    reviewReadiness: compareReviewReadiness.readiness,
+    severity: compareSeverity.severity,
+    classification: compareClassification.classification,
+    reason: "compare source unavailable response cannot be escalated as a verified result",
+  });
 
   return NextResponse.json(
     {
@@ -268,6 +371,8 @@ function createUnavailableReadOnlyResponse({
       compareHardening,
       compareClassification,
       compareSeverity,
+      compareReviewReadiness,
+      compareEscalationReadiness,
       semanticBoundary: "reasoning_visualization_only",
       executionBoundary:
         "compare-readonly endpoint failure は read-only unavailable visibility です。修正、再生成、在庫変更は実行しません。",
@@ -462,6 +567,19 @@ function buildCompareProjection(
     severity: severityForClassification(mismatchClassification),
     reason: `classification ${mismatchClassification} を read-only severity として解釈します`,
   });
+  const compareReviewReadiness = createCompareReviewReadinessMetadata({
+    readiness: readinessForSeverity(compareSeverity.severity, mismatchClassification),
+    severity: compareSeverity.severity,
+    classification: mismatchClassification,
+    reason: `severity ${compareSeverity.severity} を read-only governance review readiness として解釈します`,
+  });
+  const compareEscalationReadiness = createCompareEscalationReadinessMetadata({
+    readiness: escalationForReviewReadiness(compareReviewReadiness.readiness),
+    reviewReadiness: compareReviewReadiness.readiness,
+    severity: compareSeverity.severity,
+    classification: mismatchClassification,
+    reason: `review readiness ${compareReviewReadiness.readiness} を read-only governance escalation readiness として解釈します`,
+  });
   const projectionId = `real-compare-${row.warehouseCode}-${row.partNo}`;
 
   return {
@@ -520,6 +638,8 @@ function buildCompareProjection(
       compareHardening,
       compareClassification,
       compareSeverity,
+      compareReviewReadiness,
+      compareEscalationReadiness,
       confidence: {
         level: "medium",
         reason: "real read-only compare rows から作成した visibility です。",
@@ -695,6 +815,48 @@ function resolveResponseSeverity(
   );
 }
 
+function resolveResponseReviewReadiness(
+  compareSeverity: InventoryCompareSeverityMetadata,
+  compareProjections: readonly InventoryCompareProjection[],
+): InventoryCompareReviewReadinessMetadata {
+  const firstVisibleReadiness = compareProjections.find(
+    (projection) => projection.metadata.compareReviewReadiness,
+  )?.metadata.compareReviewReadiness;
+
+  return (
+    firstVisibleReadiness ??
+    createCompareReviewReadinessMetadata({
+      readiness: readinessForSeverity(
+        compareSeverity.severity,
+        compareSeverity.classification,
+      ),
+      severity: compareSeverity.severity,
+      classification: compareSeverity.classification,
+      reason: "response level read-only governance review readiness visibility",
+    })
+  );
+}
+
+function resolveResponseEscalationReadiness(
+  compareReviewReadiness: InventoryCompareReviewReadinessMetadata,
+  compareProjections: readonly InventoryCompareProjection[],
+): InventoryCompareEscalationReadinessMetadata {
+  const firstVisibleReadiness = compareProjections.find(
+    (projection) => projection.metadata.compareEscalationReadiness,
+  )?.metadata.compareEscalationReadiness;
+
+  return (
+    firstVisibleReadiness ??
+    createCompareEscalationReadinessMetadata({
+      readiness: escalationForReviewReadiness(compareReviewReadiness.readiness),
+      reviewReadiness: compareReviewReadiness.readiness,
+      severity: compareReviewReadiness.severity,
+      classification: compareReviewReadiness.classification,
+      reason: "response level read-only governance escalation readiness visibility",
+    })
+  );
+}
+
 export async function GET(req: NextRequest) {
   const guard = await requireAdminDashboardRole(req);
   if (!guard.ok) {
@@ -794,6 +956,14 @@ export async function GET(req: NextRequest) {
     compareClassification,
     readOnlyData.compareProjections,
   );
+  const compareReviewReadiness = resolveResponseReviewReadiness(
+    compareSeverity,
+    readOnlyData.compareProjections,
+  );
+  const compareEscalationReadiness = resolveResponseEscalationReadiness(
+    compareReviewReadiness,
+    readOnlyData.compareProjections,
+  );
   const endpointContract = createInventoryIntegrityReadOnlyEndpointContract(endpointPath);
   const request = createInventoryIntegrityReadOnlyEdgeRequest(endpointContract);
   const fetchResult = createInventoryIntegrityFetchResult(
@@ -805,6 +975,8 @@ export async function GET(req: NextRequest) {
     compareHardening,
     compareClassification,
     compareSeverity,
+    compareReviewReadiness,
+    compareEscalationReadiness,
   );
   const payload = adaptFetchResponseToPayload(fetchResult);
   const mappedResponse = mapEdgeProjectionResponse({
@@ -823,6 +995,8 @@ export async function GET(req: NextRequest) {
     compareHardening,
     compareClassification,
     compareSeverity,
+    compareReviewReadiness,
+    compareEscalationReadiness,
     normalizedData: mappedResponse.normalizedData,
     metadata: mappedResponse.metadata,
     statusSemantics: mappedResponse.statusSemantics,

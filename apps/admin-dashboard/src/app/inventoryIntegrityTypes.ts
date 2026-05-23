@@ -1310,6 +1310,51 @@ export type InventoryCompareSeverityMetadata = {
   readonly executionBoundary: InventoryIntegrityExecutionBoundary;
 };
 
+export type InventoryCompareReviewReadiness =
+  | "review_required"
+  | "review_recommended"
+  | "review_optional"
+  | "review_blocked"
+  | "review_unverified";
+
+export type InventoryCompareReviewReadinessMetadata = {
+  readonly readinessId: string;
+  readonly readiness: InventoryCompareReviewReadiness;
+  readonly label: string;
+  readonly reason: string;
+  readonly interpretation: string;
+  readonly noExecutionMeaning: string;
+  readonly severity: InventoryCompareSeverity;
+  readonly classification: InventoryCompareMismatchClassification;
+  readonly truthSource: InventoryIntegrityTruthSource;
+  readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
+export type InventoryCompareEscalationReadiness =
+  | "escalation_required"
+  | "escalation_recommended"
+  | "escalation_optional"
+  | "escalation_blocked"
+  | "escalation_unverified";
+
+export type InventoryCompareEscalationReadinessMetadata = {
+  readonly readinessId: string;
+  readonly readiness: InventoryCompareEscalationReadiness;
+  readonly label: string;
+  readonly reason: string;
+  readonly interpretation: string;
+  readonly noExecutionMeaning: string;
+  readonly reviewReadiness: InventoryCompareReviewReadiness;
+  readonly severity: InventoryCompareSeverity;
+  readonly classification: InventoryCompareMismatchClassification;
+  readonly truthSource: InventoryIntegrityTruthSource;
+  readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
 export type InventoryCompareHardeningMetadata = {
   readonly hardeningId: string;
   readonly sourceStatus: InventoryCompareSourceStatus;
@@ -1415,6 +1460,8 @@ export type InventoryIntegrityProjectionMetadata = {
   readonly compareHardening?: InventoryCompareHardeningMetadata;
   readonly compareClassification?: InventoryCompareClassificationMetadata;
   readonly compareSeverity?: InventoryCompareSeverityMetadata;
+  readonly compareReviewReadiness?: InventoryCompareReviewReadinessMetadata;
+  readonly compareEscalationReadiness?: InventoryCompareEscalationReadinessMetadata;
   readonly confidence: InventoryIntegrityConfidenceMetadata;
   readonly freshness: InventoryIntegrityFreshnessMetadata;
   readonly completeness: InventoryIntegrityCompletenessMetadata;
@@ -1673,6 +1720,8 @@ export type ProjectionResponseMetadata = {
   readonly compareHardening?: InventoryCompareHardeningMetadata;
   readonly compareClassification?: InventoryCompareClassificationMetadata;
   readonly compareSeverity?: InventoryCompareSeverityMetadata;
+  readonly compareReviewReadiness?: InventoryCompareReviewReadinessMetadata;
+  readonly compareEscalationReadiness?: InventoryCompareEscalationReadinessMetadata;
   readonly responseContractVersion: string;
   readonly readability: string;
   readonly adapterInputBoundary: string;
@@ -1721,6 +1770,8 @@ export type RawProjectionMetadataPayload = {
   readonly compareHardening?: InventoryCompareHardeningMetadata;
   readonly compareClassification?: InventoryCompareClassificationMetadata;
   readonly compareSeverity?: InventoryCompareSeverityMetadata;
+  readonly compareReviewReadiness?: InventoryCompareReviewReadinessMetadata;
+  readonly compareEscalationReadiness?: InventoryCompareEscalationReadinessMetadata;
   readonly payloadVersion: string;
   readonly readability: string;
   readonly adapterInputBoundary: string;
@@ -1793,6 +1844,8 @@ export type InventoryIntegrityFetchResultMetadata = {
   readonly compareHardening?: InventoryCompareHardeningMetadata;
   readonly compareClassification?: InventoryCompareClassificationMetadata;
   readonly compareSeverity?: InventoryCompareSeverityMetadata;
+  readonly compareReviewReadiness?: InventoryCompareReviewReadinessMetadata;
+  readonly compareEscalationReadiness?: InventoryCompareEscalationReadinessMetadata;
   readonly responseStatus: ProjectionResponseStatusSemantics;
   readonly resultVersion: string;
   readonly readability: string;
