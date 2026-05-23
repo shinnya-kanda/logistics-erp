@@ -156,6 +156,29 @@ export type ProjectionRetrySemantics = {
   readonly executionBoundary: InventoryIntegrityExecutionBoundary;
 };
 
+export type ProjectionDurabilityState =
+  | "durability_persistent"
+  | "durability_degraded"
+  | "durability_volatile"
+  | "durability_unverified";
+
+export type ProjectionDurabilitySemantics = {
+  readonly semanticsId: string;
+  readonly state: ProjectionDurabilityState;
+  readonly label: string;
+  readonly readability: string;
+  readonly operationalDurabilityInterpretation: string;
+  readonly degradedDurabilityVisibilityInterpretation: string;
+  readonly governanceDurabilityInterpretation: string;
+  readonly projectionPersistenceInterpretation: string;
+  readonly observabilityDurabilityInterpretation: string;
+  readonly noExecutionMeaning: string;
+  readonly truthSource: InventoryIntegrityTruthSource;
+  readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
 export type ProjectionRecoverabilityState =
   | "recoverability_ready"
   | "recoverability_degraded"
@@ -166,6 +189,7 @@ export type ProjectionRecoverabilitySemantics = {
   readonly semanticsId: string;
   readonly state: ProjectionRecoverabilityState;
   readonly label: string;
+  readonly durabilitySemantics: ProjectionDurabilitySemantics;
   readonly readability: string;
   readonly operationalRecoverabilityInterpretation: string;
   readonly degradedRecoverabilityVisibilityInterpretation: string;
@@ -190,6 +214,7 @@ export type ProjectionStabilitySemantics = {
   readonly state: ProjectionStabilityState;
   readonly label: string;
   readonly recoverabilitySemantics: ProjectionRecoverabilitySemantics;
+  readonly durabilitySemantics: ProjectionDurabilitySemantics;
   readonly readability: string;
   readonly operationalStabilityInterpretation: string;
   readonly degradedStabilityVisibilityInterpretation: string;
@@ -215,6 +240,7 @@ export type ProjectionResilienceSemantics = {
   readonly label: string;
   readonly stabilitySemantics: ProjectionStabilitySemantics;
   readonly recoverabilitySemantics: ProjectionRecoverabilitySemantics;
+  readonly durabilitySemantics: ProjectionDurabilitySemantics;
   readonly readability: string;
   readonly operationalResilienceInterpretation: string;
   readonly degradedResilienceVisibilityInterpretation: string;
@@ -805,6 +831,7 @@ export type ProjectionResponseStatusSemantics = {
   readonly resilienceSemantics: ProjectionResilienceSemantics;
   readonly stabilitySemantics: ProjectionStabilitySemantics;
   readonly recoverabilitySemantics: ProjectionRecoverabilitySemantics;
+  readonly durabilitySemantics: ProjectionDurabilitySemantics;
   readonly consistencySemantics: ProjectionConsistencySemantics;
   readonly degradationSemantics: ProjectionDegradationSemantics;
   readonly authoritySemantics: ProjectionAuthoritySemantics;
@@ -1413,6 +1440,7 @@ export type ProjectionResponseMetadata = {
   readonly resilienceSemantics: ProjectionResilienceSemantics;
   readonly stabilitySemantics: ProjectionStabilitySemantics;
   readonly recoverabilitySemantics: ProjectionRecoverabilitySemantics;
+  readonly durabilitySemantics: ProjectionDurabilitySemantics;
   readonly responseContractVersion: string;
   readonly readability: string;
   readonly adapterInputBoundary: string;
@@ -1452,6 +1480,7 @@ export type RawProjectionMetadataPayload = {
   readonly resilienceSemantics: ProjectionResilienceSemantics;
   readonly stabilitySemantics: ProjectionStabilitySemantics;
   readonly recoverabilitySemantics: ProjectionRecoverabilitySemantics;
+  readonly durabilitySemantics: ProjectionDurabilitySemantics;
   readonly payloadVersion: string;
   readonly readability: string;
   readonly adapterInputBoundary: string;
@@ -1515,6 +1544,7 @@ export type InventoryIntegrityFetchResultMetadata = {
   readonly resilienceSemantics: ProjectionResilienceSemantics;
   readonly stabilitySemantics: ProjectionStabilitySemantics;
   readonly recoverabilitySemantics: ProjectionRecoverabilitySemantics;
+  readonly durabilitySemantics: ProjectionDurabilitySemantics;
   readonly responseStatus: ProjectionResponseStatusSemantics;
   readonly resultVersion: string;
   readonly readability: string;
