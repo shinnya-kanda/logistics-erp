@@ -135,8 +135,9 @@ export function getInventoryCompareSeveritySummary(
 ): readonly InventoryCompareSeveritySummary[] {
   const severityOrder: readonly InventoryCompareSeverity[] = [
     "critical",
+    "high",
     "warning",
-    "watch",
+    "unverified",
     "info",
   ];
   const projections = data.compareProjections.map(selectProjectionSummary);

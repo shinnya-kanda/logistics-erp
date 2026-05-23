@@ -485,7 +485,7 @@ const inventoryIntegrityMockData: InventoryIntegrityReadOnlyData = {
         transactionAggregationQuantity: "28",
         differenceQuantity: "+3",
         reason: "transaction_aggregation_gap",
-        severity: "watch",
+        severity: "warning",
       },
       lineage: {
         trace: {
