@@ -680,6 +680,13 @@ export function InventoryIntegritySection() {
                   {projection.metadata.compareReviewReadiness.reason}
                 </p>
               ) : null}
+              {projection.metadata.compareEscalationReadiness ? (
+                <p style={styles.description}>
+                  escalation readiness:{" "}
+                  {projection.metadata.compareEscalationReadiness.readiness} /{" "}
+                  {projection.metadata.compareEscalationReadiness.reason}
+                </p>
+              ) : null}
               <p style={styles.description}>truth の見方: {projection.truthStatement}</p>
               <p style={styles.description}>
                 観測時点(snapshot): {projection.metadata.snapshot.snapshotId} /{" "}
