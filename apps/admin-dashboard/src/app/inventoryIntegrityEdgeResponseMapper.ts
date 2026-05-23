@@ -113,6 +113,12 @@ export function mapEdgeProjectionMetadata(
           confidenceSignals: [...metadata.compareConfidence.confidenceSignals],
         }
       : undefined,
+    compareProjectionFreshness: metadata.compareProjectionFreshness
+      ? {
+          ...metadata.compareProjectionFreshness,
+          freshnessSignals: [...metadata.compareProjectionFreshness.freshnessSignals],
+        }
+      : undefined,
     responseContractVersion: metadata.payloadVersion,
     readability: metadata.readability,
     adapterInputBoundary: metadata.adapterInputBoundary,
