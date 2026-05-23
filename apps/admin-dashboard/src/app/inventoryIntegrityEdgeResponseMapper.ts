@@ -101,6 +101,12 @@ export function mapEdgeProjectionMetadata(
           summarySignals: [...metadata.compareOperatorSummary.summarySignals],
         }
       : undefined,
+    compareOperatorTimeline: metadata.compareOperatorTimeline
+      ? {
+          ...metadata.compareOperatorTimeline,
+          timelineSignals: [...metadata.compareOperatorTimeline.timelineSignals],
+        }
+      : undefined,
     responseContractVersion: metadata.payloadVersion,
     readability: metadata.readability,
     adapterInputBoundary: metadata.adapterInputBoundary,

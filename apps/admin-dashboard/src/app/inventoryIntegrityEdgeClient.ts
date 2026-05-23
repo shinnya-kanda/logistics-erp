@@ -1244,6 +1244,7 @@ export function createInventoryIntegrityFetchResult(
   compareOperatorGuidance?: InventoryIntegrityFetchResult["metadata"]["compareOperatorGuidance"],
   compareOperatorMessage?: InventoryIntegrityFetchResult["metadata"]["compareOperatorMessage"],
   compareOperatorSummary?: InventoryIntegrityFetchResult["metadata"]["compareOperatorSummary"],
+  compareOperatorTimeline?: InventoryIntegrityFetchResult["metadata"]["compareOperatorTimeline"],
 ): InventoryIntegrityFetchResult {
   return {
     metadata: {
@@ -1299,6 +1300,7 @@ export function createInventoryIntegrityFetchResult(
       compareOperatorGuidance,
       compareOperatorMessage,
       compareOperatorSummary,
+      compareOperatorTimeline,
       responseStatus,
       resultVersion: "inventory-integrity-static-fetch-result-v1",
       readability:
