@@ -15,6 +15,8 @@ import type {
   InventoryCompareEscalationReadinessMetadata,
   InventoryCompareHardeningMetadata,
   InventoryCompareMismatchClassification,
+  InventoryCompareOperationalPriority,
+  InventoryCompareOperationalPriorityMetadata,
   InventoryCompareProjection,
   InventoryCompareReviewReadiness,
   InventoryCompareReviewReadinessMetadata,
@@ -322,6 +324,68 @@ function createCompareEscalationReadinessMetadata({
   };
 }
 
+function priorityForOperationalInterpretation({
+  escalationReadiness,
+  reviewReadiness,
+  severity,
+  classification,
+}: {
+  readonly escalationReadiness: InventoryCompareEscalationReadiness;
+  readonly reviewReadiness: InventoryCompareReviewReadiness;
+  readonly severity: InventoryCompareSeverity;
+  readonly classification: InventoryCompareMismatchClassification;
+}): InventoryCompareOperationalPriority {
+  if (classification === "compare_unverified" || severity === "unverified") {
+    return "priority_unverified";
+  }
+  if (escalationReadiness === "escalation_required") return "priority_p0";
+  if (
+    escalationReadiness === "escalation_recommended" ||
+    reviewReadiness === "review_required"
+  ) {
+    return "priority_p1";
+  }
+  if (severity === "high") return "priority_p2";
+  if (severity === "warning") return "priority_p3";
+  return "priority_p3";
+}
+
+function createCompareOperationalPriorityMetadata({
+  priority,
+  escalationReadiness,
+  reviewReadiness,
+  severity,
+  classification,
+  reason,
+}: {
+  readonly priority: InventoryCompareOperationalPriority;
+  readonly escalationReadiness: InventoryCompareEscalationReadiness;
+  readonly reviewReadiness: InventoryCompareReviewReadiness;
+  readonly severity: InventoryCompareSeverity;
+  readonly classification: InventoryCompareMismatchClassification;
+  readonly reason: string;
+}): InventoryCompareOperationalPriorityMetadata {
+  return {
+    priorityId: `inventory-integrity-compare-readonly-${classification}-${priority}`,
+    priority,
+    label: "read-only operational priority semantics",
+    reason,
+    interpretation:
+      "compare operational priority は現場として何から確認するかを読む operational interpretation であり、実行順序ではありません。",
+    noExecutionMeaning:
+      "operational priority は priority execution、修正手順、再生成調整、通知、担当割当、在庫変更を開始しません。",
+    escalationReadiness,
+    reviewReadiness,
+    severity,
+    classification,
+    truthSource: "inventory_transactions",
+    cacheCompareTarget: "inventory_current",
+    semanticBoundary: "reasoning_visualization_only",
+    executionBoundary:
+      "InventoryCompareOperationalPriorityMetadata は read-only operational semantics です。実行順序、修正、再生成、在庫変更は実行しません。",
+  };
+}
+
 function createUnavailableReadOnlyResponse({
   status,
   error,
@@ -359,6 +423,14 @@ function createUnavailableReadOnlyResponse({
     classification: compareClassification.classification,
     reason: "compare source unavailable response cannot be escalated as a verified result",
   });
+  const compareOperationalPriority = createCompareOperationalPriorityMetadata({
+    priority: "priority_unverified",
+    escalationReadiness: compareEscalationReadiness.readiness,
+    reviewReadiness: compareReviewReadiness.readiness,
+    severity: compareSeverity.severity,
+    classification: compareClassification.classification,
+    reason: "compare source unavailable response cannot be ordered as a verified operational priority",
+  });
 
   return NextResponse.json(
     {
@@ -373,6 +445,7 @@ function createUnavailableReadOnlyResponse({
       compareSeverity,
       compareReviewReadiness,
       compareEscalationReadiness,
+      compareOperationalPriority,
       semanticBoundary: "reasoning_visualization_only",
       executionBoundary:
         "compare-readonly endpoint failure は read-only unavailable visibility です。修正、再生成、在庫変更は実行しません。",
@@ -580,6 +653,19 @@ function buildCompareProjection(
     classification: mismatchClassification,
     reason: `review readiness ${compareReviewReadiness.readiness} を read-only governance escalation readiness として解釈します`,
   });
+  const compareOperationalPriority = createCompareOperationalPriorityMetadata({
+    priority: priorityForOperationalInterpretation({
+      escalationReadiness: compareEscalationReadiness.readiness,
+      reviewReadiness: compareReviewReadiness.readiness,
+      severity: compareSeverity.severity,
+      classification: mismatchClassification,
+    }),
+    escalationReadiness: compareEscalationReadiness.readiness,
+    reviewReadiness: compareReviewReadiness.readiness,
+    severity: compareSeverity.severity,
+    classification: mismatchClassification,
+    reason: `escalation readiness ${compareEscalationReadiness.readiness} を read-only operational priority として解釈します`,
+  });
   const projectionId = `real-compare-${row.warehouseCode}-${row.partNo}`;
 
   return {
@@ -640,6 +726,7 @@ function buildCompareProjection(
       compareSeverity,
       compareReviewReadiness,
       compareEscalationReadiness,
+      compareOperationalPriority,
       confidence: {
         level: "medium",
         reason: "real read-only compare rows から作成した visibility です。",
@@ -857,6 +944,32 @@ function resolveResponseEscalationReadiness(
   );
 }
 
+function resolveResponseOperationalPriority(
+  compareEscalationReadiness: InventoryCompareEscalationReadinessMetadata,
+  compareProjections: readonly InventoryCompareProjection[],
+): InventoryCompareOperationalPriorityMetadata {
+  const firstVisiblePriority = compareProjections.find(
+    (projection) => projection.metadata.compareOperationalPriority,
+  )?.metadata.compareOperationalPriority;
+
+  return (
+    firstVisiblePriority ??
+    createCompareOperationalPriorityMetadata({
+      priority: priorityForOperationalInterpretation({
+        escalationReadiness: compareEscalationReadiness.readiness,
+        reviewReadiness: compareEscalationReadiness.reviewReadiness,
+        severity: compareEscalationReadiness.severity,
+        classification: compareEscalationReadiness.classification,
+      }),
+      escalationReadiness: compareEscalationReadiness.readiness,
+      reviewReadiness: compareEscalationReadiness.reviewReadiness,
+      severity: compareEscalationReadiness.severity,
+      classification: compareEscalationReadiness.classification,
+      reason: "response level read-only operational priority visibility",
+    })
+  );
+}
+
 export async function GET(req: NextRequest) {
   const guard = await requireAdminDashboardRole(req);
   if (!guard.ok) {
@@ -964,6 +1077,10 @@ export async function GET(req: NextRequest) {
     compareReviewReadiness,
     readOnlyData.compareProjections,
   );
+  const compareOperationalPriority = resolveResponseOperationalPriority(
+    compareEscalationReadiness,
+    readOnlyData.compareProjections,
+  );
   const endpointContract = createInventoryIntegrityReadOnlyEndpointContract(endpointPath);
   const request = createInventoryIntegrityReadOnlyEdgeRequest(endpointContract);
   const fetchResult = createInventoryIntegrityFetchResult(
@@ -977,6 +1094,7 @@ export async function GET(req: NextRequest) {
     compareSeverity,
     compareReviewReadiness,
     compareEscalationReadiness,
+    compareOperationalPriority,
   );
   const payload = adaptFetchResponseToPayload(fetchResult);
   const mappedResponse = mapEdgeProjectionResponse({
@@ -997,6 +1115,7 @@ export async function GET(req: NextRequest) {
     compareSeverity,
     compareReviewReadiness,
     compareEscalationReadiness,
+    compareOperationalPriority,
     normalizedData: mappedResponse.normalizedData,
     metadata: mappedResponse.metadata,
     statusSemantics: mappedResponse.statusSemantics,
