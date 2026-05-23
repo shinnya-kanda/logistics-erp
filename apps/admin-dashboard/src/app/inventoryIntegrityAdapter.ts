@@ -117,6 +117,10 @@ function normalizeProjectionMetadata(
     compareClassification: metadata.compareClassification
       ? { ...metadata.compareClassification }
       : undefined,
+    compareSeverity: metadata.compareSeverity ? { ...metadata.compareSeverity } : undefined,
+    compareReviewReadiness: metadata.compareReviewReadiness
+      ? { ...metadata.compareReviewReadiness }
+      : undefined,
     confidence: normalizeConfidence(metadata.confidence),
     freshness: normalizeFreshness(metadata.freshness),
     completeness: normalizeCompleteness(metadata.completeness),

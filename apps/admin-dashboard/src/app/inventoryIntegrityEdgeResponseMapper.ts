@@ -57,6 +57,12 @@ export function mapEdgeProjectionMetadata(
     compareClassification: metadata.compareClassification
       ? { ...metadata.compareClassification }
       : undefined,
+    compareSeverity: metadata.compareSeverity
+      ? { ...metadata.compareSeverity }
+      : undefined,
+    compareReviewReadiness: metadata.compareReviewReadiness
+      ? { ...metadata.compareReviewReadiness }
+      : undefined,
     responseContractVersion: metadata.payloadVersion,
     readability: metadata.readability,
     adapterInputBoundary: metadata.adapterInputBoundary,
