@@ -156,6 +156,29 @@ export type ProjectionRetrySemantics = {
   readonly executionBoundary: InventoryIntegrityExecutionBoundary;
 };
 
+export type ProjectionOperationalSustainabilityState =
+  | "sustainability_operational"
+  | "sustainability_degraded"
+  | "sustainability_unsustainable"
+  | "sustainability_unverified";
+
+export type ProjectionOperationalSustainabilitySemantics = {
+  readonly semanticsId: string;
+  readonly state: ProjectionOperationalSustainabilityState;
+  readonly label: string;
+  readonly readability: string;
+  readonly operationalSustainabilityInterpretation: string;
+  readonly degradedSustainabilityVisibilityInterpretation: string;
+  readonly governanceSustainabilityInterpretation: string;
+  readonly sustainabilityRiskInterpretation: string;
+  readonly observabilitySustainabilityInterpretation: string;
+  readonly noExecutionMeaning: string;
+  readonly truthSource: InventoryIntegrityTruthSource;
+  readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
 export type ProjectionTrustworthinessState =
   | "trustworthy"
   | "trust_degraded"
@@ -166,6 +189,7 @@ export type ProjectionTrustworthinessSemantics = {
   readonly semanticsId: string;
   readonly state: ProjectionTrustworthinessState;
   readonly label: string;
+  readonly operationalSustainabilitySemantics: ProjectionOperationalSustainabilitySemantics;
   readonly readability: string;
   readonly operationalTrustworthinessInterpretation: string;
   readonly degradedTrustVisibilityInterpretation: string;
@@ -190,6 +214,7 @@ export type ProjectionSurvivabilitySemantics = {
   readonly state: ProjectionSurvivabilityState;
   readonly label: string;
   readonly trustworthinessSemantics: ProjectionTrustworthinessSemantics;
+  readonly operationalSustainabilitySemantics: ProjectionOperationalSustainabilitySemantics;
   readonly readability: string;
   readonly operationalSurvivabilityInterpretation: string;
   readonly degradedSurvivabilityVisibilityInterpretation: string;
@@ -215,6 +240,7 @@ export type ProjectionIntegrityAssuranceSemantics = {
   readonly label: string;
   readonly survivabilitySemantics: ProjectionSurvivabilitySemantics;
   readonly trustworthinessSemantics: ProjectionTrustworthinessSemantics;
+  readonly operationalSustainabilitySemantics: ProjectionOperationalSustainabilitySemantics;
   readonly readability: string;
   readonly operationalIntegrityAssuranceInterpretation: string;
   readonly degradedIntegrityVisibilityInterpretation: string;
@@ -940,6 +966,7 @@ export type ProjectionResponseStatusSemantics = {
   readonly integrityAssuranceSemantics: ProjectionIntegrityAssuranceSemantics;
   readonly survivabilitySemantics: ProjectionSurvivabilitySemantics;
   readonly trustworthinessSemantics: ProjectionTrustworthinessSemantics;
+  readonly operationalSustainabilitySemantics: ProjectionOperationalSustainabilitySemantics;
   readonly consistencySemantics: ProjectionConsistencySemantics;
   readonly degradationSemantics: ProjectionDegradationSemantics;
   readonly authoritySemantics: ProjectionAuthoritySemantics;
@@ -1553,6 +1580,7 @@ export type ProjectionResponseMetadata = {
   readonly integrityAssuranceSemantics: ProjectionIntegrityAssuranceSemantics;
   readonly survivabilitySemantics: ProjectionSurvivabilitySemantics;
   readonly trustworthinessSemantics: ProjectionTrustworthinessSemantics;
+  readonly operationalSustainabilitySemantics: ProjectionOperationalSustainabilitySemantics;
   readonly responseContractVersion: string;
   readonly readability: string;
   readonly adapterInputBoundary: string;
@@ -1597,6 +1625,7 @@ export type RawProjectionMetadataPayload = {
   readonly integrityAssuranceSemantics: ProjectionIntegrityAssuranceSemantics;
   readonly survivabilitySemantics: ProjectionSurvivabilitySemantics;
   readonly trustworthinessSemantics: ProjectionTrustworthinessSemantics;
+  readonly operationalSustainabilitySemantics: ProjectionOperationalSustainabilitySemantics;
   readonly payloadVersion: string;
   readonly readability: string;
   readonly adapterInputBoundary: string;
@@ -1665,6 +1694,7 @@ export type InventoryIntegrityFetchResultMetadata = {
   readonly integrityAssuranceSemantics: ProjectionIntegrityAssuranceSemantics;
   readonly survivabilitySemantics: ProjectionSurvivabilitySemantics;
   readonly trustworthinessSemantics: ProjectionTrustworthinessSemantics;
+  readonly operationalSustainabilitySemantics: ProjectionOperationalSustainabilitySemantics;
   readonly responseStatus: ProjectionResponseStatusSemantics;
   readonly resultVersion: string;
   readonly readability: string;
