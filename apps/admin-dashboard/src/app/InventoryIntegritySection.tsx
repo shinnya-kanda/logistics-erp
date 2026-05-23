@@ -332,6 +332,13 @@ function extractCompareOperatorSummary(
     : null;
 }
 
+function readableSignals(signals: readonly string[], limit = 4): string {
+  const visibleSignals = signals.slice(0, limit).join(" / ");
+  return signals.length > limit
+    ? `${visibleSignals} / 他 ${signals.length - limit} 件`
+    : visibleSignals;
+}
+
 const styles: Record<string, CSSProperties> = {
   panel: {
     marginTop: "2rem",
@@ -383,6 +390,26 @@ const styles: Record<string, CSSProperties> = {
     background: "#f5f7fb",
     color: "#333",
     fontWeight: 400,
+  },
+  summaryPanel: {
+    display: "grid",
+    gap: "0.45rem",
+  },
+  summaryTitle: {
+    display: "block",
+    fontSize: "1rem",
+    fontWeight: 900,
+  },
+  summaryText: {
+    display: "block",
+    fontSize: "1.2rem",
+    fontWeight: 900,
+  },
+  supportingText: {
+    margin: "0.25rem 0 0",
+    color: "#555",
+    fontSize: "0.9rem",
+    lineHeight: 1.55,
   },
   section: {
     marginTop: "1.25rem",
@@ -590,11 +617,26 @@ export function InventoryIntegritySection() {
       </div>
 
       <div style={{ ...styles.notice, ...styles.neutralNotice }}>
-        整合性サマリー: 状態 {levelSummary.map((item) => `${levelLabel(item.level)} ${item.count}`).join(", ")}
-        {" / "}分類 {statusSummary.map((item) => `${statusLabel(item.status)} ${item.count}`).join(", ")}.
-        {compareOperatorSummary
-          ? ` operator summary ${compareOperatorSummary.operatorSummary}: ${compareOperatorSummary.summaryText}. ${compareOperatorSummary.summaryReason}`
-          : ""}
+        <div style={styles.summaryPanel}>
+          <span style={styles.summaryTitle}>整合性サマリー</span>
+          {compareOperatorSummary ? (
+            <>
+              <span style={styles.summaryText}>{compareOperatorSummary.summaryText}</span>
+              <span style={styles.supportingText}>
+                operator summary: {compareOperatorSummary.operatorSummary} /{" "}
+                {compareOperatorSummary.summaryReason}
+              </span>
+              <span style={styles.supportingText}>
+                source: {compareOperatorSummary.summarySource} / signals:{" "}
+                {readableSignals(compareOperatorSummary.summarySignals)}
+              </span>
+            </>
+          ) : null}
+          <span style={styles.supportingText}>
+            状態 {levelSummary.map((item) => `${levelLabel(item.level)} ${item.count}`).join(", ")}
+            {" / "}分類 {statusSummary.map((item) => `${statusLabel(item.status)} ${item.count}`).join(", ")}
+          </span>
+        </div>
       </div>
 
       <div style={{ ...styles.notice, ...styles.neutralNotice }}>
@@ -614,9 +656,6 @@ export function InventoryIntegritySection() {
           : ""}
         {compareOperatorMessage
           ? ` operator message ${compareOperatorMessage.operatorMessage}.`
-          : ""}
-        {compareOperatorSummary
-          ? ` operator summary ${compareOperatorSummary.operatorSummary}.`
           : ""}
       </div>
 
@@ -731,79 +770,119 @@ export function InventoryIntegritySection() {
             >
               <strong>{projection.label}</strong>
               <p style={styles.description}>{projection.description}</p>
-              <p style={styles.description}>
-                表示用 cache 数量: {projection.difference.currentReadModelQuantity} / transaction
-                集計数量: {projection.difference.transactionAggregationQuantity} / 差異:{" "}
-                {projection.difference.differenceQuantity}
-              </p>
-              <p style={styles.description}>
-                compare status: {compareStatusLabel(projection.difference.compareStatus)}
-              </p>
-              <p style={styles.description}>
-                mismatch classification:{" "}
-                {mismatchClassificationLabel(projection.difference.mismatchClassification)}
-              </p>
-              {projection.metadata.compareHardening ? (
+              {projection.metadata.compareOperatorMessage ? (
                 <p style={styles.description}>
-                  hardening: {projection.metadata.compareHardening.sourceStatus} /{" "}
-                  {projection.metadata.compareHardening.resultStatus} /{" "}
-                  {projection.metadata.compareHardening.scopeStatus}
+                  operator message: {projection.metadata.compareOperatorMessage.messageText}
                 </p>
               ) : null}
-              {projection.metadata.compareClassification ? (
+              {projection.metadata.compareOperatorGuidance ? (
                 <p style={styles.description}>
-                  classification reason: {projection.metadata.compareClassification.reason}
-                </p>
-              ) : null}
-              {projection.metadata.compareSeverity ? (
-                <p style={styles.description}>
-                  compare severity: {severityLabel(projection.metadata.compareSeverity.severity)} /{" "}
-                  {projection.metadata.compareSeverity.reason}
-                </p>
-              ) : null}
-              {projection.metadata.compareReviewReadiness ? (
-                <p style={styles.description}>
-                  review readiness: {projection.metadata.compareReviewReadiness.readiness} /{" "}
-                  {projection.metadata.compareReviewReadiness.reason}
-                </p>
-              ) : null}
-              {projection.metadata.compareEscalationReadiness ? (
-                <p style={styles.description}>
-                  escalation readiness:{" "}
-                  {projection.metadata.compareEscalationReadiness.readiness} /{" "}
-                  {projection.metadata.compareEscalationReadiness.reason}
-                </p>
-              ) : null}
-              {projection.metadata.compareOperationalPriority ? (
-                <p style={styles.description}>
-                  operational priority: {projection.metadata.compareOperationalPriority.priority} /{" "}
-                  {projection.metadata.compareOperationalPriority.reason}
-                </p>
-              ) : null}
-              {projection.metadata.compareOwnership ? (
-                <p style={styles.description}>
-                  ownership: {projection.metadata.compareOwnership.ownership} /{" "}
-                  {projection.metadata.compareOwnership.ownershipReason}
+                  operator guidance: {projection.metadata.compareOperatorGuidance.operatorGuidance}
                 </p>
               ) : null}
               {projection.metadata.compareOwnerActionability ? (
                 <p style={styles.description}>
                   owner actionability:{" "}
-                  {projection.metadata.compareOwnerActionability.ownerActionability} /{" "}
-                  {projection.metadata.compareOwnerActionability.actionabilityReason}
+                  {projection.metadata.compareOwnerActionability.ownerActionability}
+                </p>
+              ) : null}
+              {projection.metadata.compareOwnership ? (
+                <p style={styles.description}>
+                  ownership: {projection.metadata.compareOwnership.ownership}
+                </p>
+              ) : null}
+              {projection.metadata.compareOperationalPriority ? (
+                <p style={styles.description}>
+                  operational priority: {projection.metadata.compareOperationalPriority.priority}
+                </p>
+              ) : null}
+              {projection.metadata.compareEscalationReadiness ? (
+                <p style={styles.description}>
+                  escalation readiness: {projection.metadata.compareEscalationReadiness.readiness}
+                </p>
+              ) : null}
+              {projection.metadata.compareReviewReadiness ? (
+                <p style={styles.description}>
+                  review readiness: {projection.metadata.compareReviewReadiness.readiness}
+                </p>
+              ) : null}
+              {projection.metadata.compareSeverity ? (
+                <p style={styles.description}>
+                  severity: {severityLabel(projection.metadata.compareSeverity.severity)}
+                </p>
+              ) : null}
+              <p style={styles.description}>
+                classification:{" "}
+                {mismatchClassificationLabel(
+                  projection.metadata.compareClassification?.classification ??
+                    projection.difference.mismatchClassification,
+                )}
+              </p>
+              <p style={styles.description}>
+                difference quantity: {projection.difference.differenceQuantity} / 表示用 cache{" "}
+                {projection.difference.currentReadModelQuantity} / transaction 集計{" "}
+                {projection.difference.transactionAggregationQuantity}
+              </p>
+              <p style={styles.supportingText}>
+                補足: compare status {compareStatusLabel(projection.difference.compareStatus)}
+                {projection.metadata.compareHardening
+                  ? ` / hardening ${projection.metadata.compareHardening.sourceStatus}, ${projection.metadata.compareHardening.resultStatus}, ${projection.metadata.compareHardening.scopeStatus}`
+                  : ""}
+              </p>
+              {projection.metadata.compareOperatorMessage ? (
+                <p style={styles.supportingText}>
+                  message reason: {projection.metadata.compareOperatorMessage.messageReason} / source:{" "}
+                  {projection.metadata.compareOperatorMessage.messageSource} / signals:{" "}
+                  {readableSignals(projection.metadata.compareOperatorMessage.messageSignals)}
                 </p>
               ) : null}
               {projection.metadata.compareOperatorGuidance ? (
-                <p style={styles.description}>
-                  operator guidance:{" "}
-                  {projection.metadata.compareOperatorGuidance.operatorGuidance} /{" "}
-                  {projection.metadata.compareOperatorGuidance.guidanceReason}
+                <p style={styles.supportingText}>
+                  guidance reason: {projection.metadata.compareOperatorGuidance.guidanceReason} / source:{" "}
+                  {projection.metadata.compareOperatorGuidance.guidanceSource} / signals:{" "}
+                  {readableSignals(projection.metadata.compareOperatorGuidance.guidanceSignals)}
                 </p>
               ) : null}
-              {projection.metadata.compareOperatorMessage ? (
-                <p style={styles.description}>
-                  operator message: {projection.metadata.compareOperatorMessage.messageText} /{" "}
-                  {projection.metadata.compareOperatorMessage.messageReason}
+              {projection.metadata.compareOwnerActionability ? (
+                <p style={styles.supportingText}>
+                  actionability reason:{" "}
+                  {projection.metadata.compareOwnerActionability.actionabilityReason} / source:{" "}
+                  {projection.metadata.compareOwnerActionability.actionabilitySource} / signals:{" "}
+                  {readableSignals(
+                    projection.metadata.compareOwnerActionability.actionabilitySignals,
+                  )}
+                </p>
+              ) : null}
+              {projection.metadata.compareOwnership ? (
+                <p style={styles.supportingText}>
+                  ownership reason: {projection.metadata.compareOwnership.ownershipReason} / source:{" "}
+                  {projection.metadata.compareOwnership.ownershipSource} / signals:{" "}
+                  {readableSignals(projection.metadata.compareOwnership.ownershipSignals)}
+                </p>
+              ) : null}
+              {projection.metadata.compareOperationalPriority ? (
+                <p style={styles.supportingText}>
+                  priority reason: {projection.metadata.compareOperationalPriority.reason}
+                </p>
+              ) : null}
+              {projection.metadata.compareEscalationReadiness ? (
+                <p style={styles.supportingText}>
+                  escalation reason: {projection.metadata.compareEscalationReadiness.reason}
+                </p>
+              ) : null}
+              {projection.metadata.compareReviewReadiness ? (
+                <p style={styles.supportingText}>
+                  review reason: {projection.metadata.compareReviewReadiness.reason}
+                </p>
+              ) : null}
+              {projection.metadata.compareSeverity ? (
+                <p style={styles.supportingText}>
+                  severity reason: {projection.metadata.compareSeverity.reason}
+                </p>
+              ) : null}
+              {projection.metadata.compareClassification ? (
+                <p style={styles.supportingText}>
+                  classification reason: {projection.metadata.compareClassification.reason}
                 </p>
               ) : null}
               <p style={styles.description}>truth の見方: {projection.truthStatement}</p>
