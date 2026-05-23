@@ -10,7 +10,9 @@ import {
 } from "../../../inventoryIntegrityEdgeClient";
 import { realReadOnlyProjectionSourceMetadata } from "../../../inventoryIntegritySource";
 import type {
+  InventoryCompareClassificationMetadata,
   InventoryCompareHardeningMetadata,
+  InventoryCompareMismatchClassification,
   InventoryCompareProjection,
   InventoryCompareSeverity,
   InventoryCompareSourceStatus,
@@ -153,6 +155,30 @@ function createCompareHardeningMetadata({
   };
 }
 
+function createCompareClassificationMetadata({
+  classification,
+  reason,
+}: {
+  readonly classification: InventoryCompareMismatchClassification;
+  readonly reason: string;
+}): InventoryCompareClassificationMetadata {
+  return {
+    classificationId: `inventory-integrity-compare-readonly-${classification}`,
+    classification,
+    label: "read-only mismatch classification",
+    reason,
+    interpretation:
+      "mismatch classification は差分の種類を読むための表示 metadata であり、照合確定や業務判断の自動化ではありません。",
+    noExecutionMeaning:
+      "classification は correction execution、reconciliation workflow、在庫変更、同期処理を開始しません。",
+    truthSource: "inventory_transactions",
+    cacheCompareTarget: "inventory_current",
+    semanticBoundary: "reasoning_visualization_only",
+    executionBoundary:
+      "InventoryCompareClassificationMetadata は read-only classification です。修正、再生成、在庫変更は実行しません。",
+  };
+}
+
 function createUnavailableReadOnlyResponse({
   status,
   error,
@@ -168,6 +194,10 @@ function createUnavailableReadOnlyResponse({
     scopeStatus,
     reason: error,
   });
+  const compareClassification = createCompareClassificationMetadata({
+    classification: "compare_unverified",
+    reason: "compare source is unavailable, so mismatch classification is unverified",
+  });
 
   return NextResponse.json(
     {
@@ -178,6 +208,7 @@ function createUnavailableReadOnlyResponse({
       truthSource: "inventory_transactions",
       cacheCompareTarget: "inventory_current",
       compareHardening,
+      compareClassification,
       semanticBoundary: "reasoning_visualization_only",
       executionBoundary:
         "compare-readonly endpoint failure は read-only unavailable visibility です。修正、再生成、在庫変更は実行しません。",
@@ -300,6 +331,59 @@ function severityForStatus(status: InventoryCompareStatus): InventoryCompareSeve
   return "critical";
 }
 
+function resolveMismatchClassification(
+  row: CompareQuantity,
+  compareStatus: InventoryCompareStatus,
+  compareHardening: InventoryCompareHardeningMetadata,
+  generatedAt: string,
+): InventoryCompareMismatchClassification {
+  if (compareHardening.sourceStatus === "compare_source_unavailable") {
+    return "compare_unverified";
+  }
+  if (compareHardening.scopeStatus !== "valid_scope") return "scope_mismatch";
+  if (row.currentQuantity < 0) return "negative_projection";
+  if (row.transactionQuantity < 0) return "negative_truth";
+  if (row.latestObservedAt < generatedAt.slice(0, 10)) return "stale_projection";
+  if (compareStatus === "missing_projection") return "unavailable_projection";
+  if (compareStatus === "orphan_projection") return "degraded_projection";
+  if (compareStatus === "mismatched") return "quantity_mismatch";
+  if (compareHardening.resultStatus === "compare_result_partial") return "compare_partial";
+  return "compare_partial";
+}
+
+function classificationReason(
+  classification: InventoryCompareMismatchClassification,
+): string {
+  if (classification === "quantity_mismatch") {
+    return "truth quantity and projection quantity are different";
+  }
+  if (classification === "negative_projection") {
+    return "inventory_current compare target quantity is negative";
+  }
+  if (classification === "negative_truth") {
+    return "inventory_transactions aggregate truth quantity is negative";
+  }
+  if (classification === "stale_projection") {
+    return "compare target observation is older than the GET visibility date";
+  }
+  if (classification === "aggregation_mismatch") {
+    return "transaction aggregation visibility differs from compare target visibility";
+  }
+  if (classification === "scope_mismatch") {
+    return "warehouse compare scope is degraded or unavailable";
+  }
+  if (classification === "compare_unverified") {
+    return "compare source is unavailable or unverified";
+  }
+  if (classification === "degraded_projection") {
+    return "projection side is visible but degraded against truth visibility";
+  }
+  if (classification === "unavailable_projection") {
+    return "projection side is unavailable for truth visibility";
+  }
+  return "compare source is only partially visible";
+}
+
 function buildCompareProjection(
   row: CompareQuantity,
   generatedAt: string,
@@ -310,6 +394,16 @@ function buildCompareProjection(
     row.transactionQuantity,
     row.currentQuantity,
   );
+  const mismatchClassification = resolveMismatchClassification(
+    row,
+    compareStatus,
+    compareHardening,
+    generatedAt,
+  );
+  const compareClassification = createCompareClassificationMetadata({
+    classification: mismatchClassification,
+    reason: classificationReason(mismatchClassification),
+  });
   const projectionId = `real-compare-${row.warehouseCode}-${row.partNo}`;
 
   return {
@@ -366,6 +460,7 @@ function buildCompareProjection(
           "compare evidence は read-only visibility です。更新、再生成、在庫変更は実行しません。",
       },
       compareHardening,
+      compareClassification,
       confidence: {
         level: "medium",
         reason: "real read-only compare rows から作成した visibility です。",
@@ -424,6 +519,7 @@ function buildCompareProjection(
       transactionAggregationQuantity: formatQuantity(row.transactionQuantity),
       differenceQuantity: formatQuantity(differenceQuantity),
       compareStatus,
+      mismatchClassification,
       reason: compareStatus === "matched" ? "not_compared" : "read_model_cache_gap",
       severity: severityForStatus(compareStatus),
     },
@@ -494,6 +590,32 @@ function buildReadOnlyData(
     ],
     compareProjections,
   };
+}
+
+function resolveResponseClassification(
+  compareHardening: InventoryCompareHardeningMetadata,
+  compareProjections: readonly InventoryCompareProjection[],
+): InventoryCompareClassificationMetadata {
+  if (compareHardening.sourceStatus === "compare_source_unavailable") {
+    return createCompareClassificationMetadata({
+      classification: "compare_unverified",
+      reason: "compare source unavailable response",
+    });
+  }
+  const firstVisibleClassification = compareProjections.find(
+    (projection) => projection.difference.mismatchClassification,
+  )?.difference.mismatchClassification;
+
+  return createCompareClassificationMetadata({
+    classification:
+      firstVisibleClassification ??
+      (compareHardening.resultStatus === "compare_result_empty"
+        ? "compare_unverified"
+        : "compare_partial"),
+    reason:
+      firstVisibleClassification ??
+      "response level read-only compare classification visibility",
+  });
 }
 
 export async function GET(req: NextRequest) {
@@ -587,6 +709,10 @@ export async function GET(req: NextRequest) {
     generatedAt,
     compareHardening,
   );
+  const compareClassification = resolveResponseClassification(
+    compareHardening,
+    readOnlyData.compareProjections,
+  );
   const endpointContract = createInventoryIntegrityReadOnlyEndpointContract(endpointPath);
   const request = createInventoryIntegrityReadOnlyEdgeRequest(endpointContract);
   const fetchResult = createInventoryIntegrityFetchResult(
@@ -596,6 +722,7 @@ export async function GET(req: NextRequest) {
     "future_edge_fetch_result",
     undefined,
     compareHardening,
+    compareClassification,
   );
   const payload = adaptFetchResponseToPayload(fetchResult);
   const mappedResponse = mapEdgeProjectionResponse({
@@ -612,6 +739,7 @@ export async function GET(req: NextRequest) {
     cacheCompareTarget: "inventory_current",
     warehouseCode: guard.warehouseCode,
     compareHardening,
+    compareClassification,
     normalizedData: mappedResponse.normalizedData,
     metadata: mappedResponse.metadata,
     statusSemantics: mappedResponse.statusSemantics,

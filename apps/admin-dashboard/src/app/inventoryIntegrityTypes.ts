@@ -1266,6 +1266,31 @@ export type InventoryCompareScopeValidationStatus =
   | "unavailable_scope"
   | "degraded_scope";
 
+export type InventoryCompareMismatchClassification =
+  | "quantity_mismatch"
+  | "negative_projection"
+  | "negative_truth"
+  | "stale_projection"
+  | "aggregation_mismatch"
+  | "scope_mismatch"
+  | "compare_unverified"
+  | "compare_partial"
+  | "degraded_projection"
+  | "unavailable_projection";
+
+export type InventoryCompareClassificationMetadata = {
+  readonly classificationId: string;
+  readonly classification: InventoryCompareMismatchClassification;
+  readonly label: string;
+  readonly reason: string;
+  readonly interpretation: string;
+  readonly noExecutionMeaning: string;
+  readonly truthSource: InventoryIntegrityTruthSource;
+  readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
 export type InventoryCompareHardeningMetadata = {
   readonly hardeningId: string;
   readonly sourceStatus: InventoryCompareSourceStatus;
@@ -1369,6 +1394,7 @@ export type InventoryIntegrityProjectionMetadata = {
   readonly snapshot: InventoryIntegritySnapshotMetadata;
   readonly evidence: InventoryIntegrityEvidenceMetadata;
   readonly compareHardening?: InventoryCompareHardeningMetadata;
+  readonly compareClassification?: InventoryCompareClassificationMetadata;
   readonly confidence: InventoryIntegrityConfidenceMetadata;
   readonly freshness: InventoryIntegrityFreshnessMetadata;
   readonly completeness: InventoryIntegrityCompletenessMetadata;
@@ -1385,6 +1411,7 @@ export type InventoryCompareDifference = {
   readonly transactionAggregationQuantity: string;
   readonly differenceQuantity: string;
   readonly compareStatus?: InventoryCompareStatus;
+  readonly mismatchClassification?: InventoryCompareMismatchClassification;
   readonly reason: InventoryCompareReason;
   readonly severity: InventoryCompareSeverity;
 };
@@ -1624,6 +1651,7 @@ export type ProjectionResponseMetadata = {
   readonly trustworthinessSemantics: ProjectionTrustworthinessSemantics;
   readonly operationalSustainabilitySemantics: ProjectionOperationalSustainabilitySemantics;
   readonly compareHardening?: InventoryCompareHardeningMetadata;
+  readonly compareClassification?: InventoryCompareClassificationMetadata;
   readonly responseContractVersion: string;
   readonly readability: string;
   readonly adapterInputBoundary: string;
@@ -1670,6 +1698,7 @@ export type RawProjectionMetadataPayload = {
   readonly trustworthinessSemantics: ProjectionTrustworthinessSemantics;
   readonly operationalSustainabilitySemantics: ProjectionOperationalSustainabilitySemantics;
   readonly compareHardening?: InventoryCompareHardeningMetadata;
+  readonly compareClassification?: InventoryCompareClassificationMetadata;
   readonly payloadVersion: string;
   readonly readability: string;
   readonly adapterInputBoundary: string;
@@ -1740,6 +1769,7 @@ export type InventoryIntegrityFetchResultMetadata = {
   readonly trustworthinessSemantics: ProjectionTrustworthinessSemantics;
   readonly operationalSustainabilitySemantics: ProjectionOperationalSustainabilitySemantics;
   readonly compareHardening?: InventoryCompareHardeningMetadata;
+  readonly compareClassification?: InventoryCompareClassificationMetadata;
   readonly responseStatus: ProjectionResponseStatusSemantics;
   readonly resultVersion: string;
   readonly readability: string;
