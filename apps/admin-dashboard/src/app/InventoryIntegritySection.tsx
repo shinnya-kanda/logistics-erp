@@ -39,6 +39,7 @@ import type {
   InventoryCompareReason,
   InventoryCompareClassificationMetadata,
   InventoryCompareConfidenceMetadata,
+  InventoryCompareEvidenceMetadata,
   InventoryCompareHardeningMetadata,
   InventoryCompareMismatchClassification,
   InventoryCompareOperatorGuidanceMetadata,
@@ -411,6 +412,21 @@ function extractCompareTruthAggregationQuality(
     : null;
 }
 
+function extractCompareEvidence(value: unknown): InventoryCompareEvidenceMetadata | null {
+  if (!value || typeof value !== "object") return null;
+
+  const candidate = value as { readonly compareEvidence?: unknown };
+  if (!candidate.compareEvidence || typeof candidate.compareEvidence !== "object") {
+    return null;
+  }
+
+  const evidence = candidate.compareEvidence as Partial<InventoryCompareEvidenceMetadata>;
+  return typeof evidence.compareEvidence === "string" &&
+    typeof evidence.evidenceText === "string"
+    ? (evidence as InventoryCompareEvidenceMetadata)
+    : null;
+}
+
 function readableSignals(signals: readonly string[], limit = 4): string {
   const visibleSignals = signals.slice(0, limit).join(" / ");
   return signals.length > limit
@@ -553,6 +569,8 @@ export function InventoryIntegritySection() {
     useState<InventoryCompareProjectionFreshnessMetadata | null>(null);
   const [compareTruthAggregationQuality, setCompareTruthAggregationQuality] =
     useState<InventoryCompareTruthAggregationQualityMetadata | null>(null);
+  const [compareEvidence, setCompareEvidence] =
+    useState<InventoryCompareEvidenceMetadata | null>(null);
 
   useEffect(() => {
     const token = session?.access_token;
@@ -567,6 +585,7 @@ export function InventoryIntegritySection() {
       setCompareConfidence(null);
       setCompareProjectionFreshness(null);
       setCompareTruthAggregationQuality(null);
+      setCompareEvidence(null);
       return;
     }
 
@@ -597,6 +616,7 @@ export function InventoryIntegritySection() {
           setCompareTruthAggregationQuality(
             extractCompareTruthAggregationQuality(responseBody),
           );
+          setCompareEvidence(extractCompareEvidence(responseBody));
           return;
         }
 
@@ -610,6 +630,7 @@ export function InventoryIntegritySection() {
         setCompareConfidence(extractCompareConfidence(responseBody));
         setCompareProjectionFreshness(extractCompareProjectionFreshness(responseBody));
         setCompareTruthAggregationQuality(extractCompareTruthAggregationQuality(responseBody));
+        setCompareEvidence(extractCompareEvidence(responseBody));
         const readOnlyData = extractInventoryIntegrityReadOnlyData(responseBody);
         if (!readOnlyData) {
           setCompareSourceLabel("static fallback");
@@ -630,6 +651,7 @@ export function InventoryIntegritySection() {
           setCompareConfidence(null);
           setCompareProjectionFreshness(null);
           setCompareTruthAggregationQuality(null);
+          setCompareEvidence(null);
         }
       }
     }
@@ -779,6 +801,19 @@ export function InventoryIntegritySection() {
               </span>
             </>
           ) : null}
+          {compareEvidence ? (
+            <>
+              <span style={styles.summaryText}>{compareEvidence.evidenceText}</span>
+              <span style={styles.supportingText}>
+                compare evidence: {compareEvidence.compareEvidence} /{" "}
+                {compareEvidence.evidenceReason}
+              </span>
+              <span style={styles.supportingText}>
+                source: {compareEvidence.evidenceSource} / signals:{" "}
+                {readableSignals(compareEvidence.evidenceSignals)}
+              </span>
+            </>
+          ) : null}
           {compareOperatorTimeline ? (
             <span style={styles.supportingText}>
               operator timeline: {compareOperatorTimeline.timelineText} /{" "}
@@ -823,6 +858,7 @@ export function InventoryIntegritySection() {
         {compareTruthAggregationQuality
           ? ` truth aggregation quality ${compareTruthAggregationQuality.truthAggregationQuality}.`
           : ""}
+        {compareEvidence ? ` compare evidence ${compareEvidence.compareEvidence}.` : ""}
       </div>
 
       <div style={{ ...styles.notice, ...styles.neutralNotice }}>
@@ -958,6 +994,11 @@ export function InventoryIntegritySection() {
                   {projection.metadata.compareTruthAggregationQuality.truthQualityText}
                 </p>
               ) : null}
+              {projection.metadata.compareEvidence ? (
+                <p style={styles.description}>
+                  compare evidence: {projection.metadata.compareEvidence.evidenceText}
+                </p>
+              ) : null}
               {projection.metadata.compareOperatorGuidance ? (
                 <p style={styles.description}>
                   operator guidance: {projection.metadata.compareOperatorGuidance.operatorGuidance}
@@ -1063,6 +1104,13 @@ export function InventoryIntegritySection() {
                   {readableSignals(
                     projection.metadata.compareTruthAggregationQuality.truthQualitySignals,
                   )}
+                </p>
+              ) : null}
+              {projection.metadata.compareEvidence ? (
+                <p style={styles.supportingText}>
+                  evidence reason: {projection.metadata.compareEvidence.evidenceReason} / source:{" "}
+                  {projection.metadata.compareEvidence.evidenceSource} / signals:{" "}
+                  {readableSignals(projection.metadata.compareEvidence.evidenceSignals)}
                 </p>
               ) : null}
               {projection.metadata.compareOwnerActionability ? (
