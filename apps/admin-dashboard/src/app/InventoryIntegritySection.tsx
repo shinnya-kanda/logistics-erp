@@ -1,6 +1,7 @@
 "use client";
 
-import type { CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
+import { useAuth } from "@/auth/AuthProvider";
 import { getInventoryIntegrityMockData } from "./inventoryIntegrityMockData";
 import {
   getInventoryCompareDependencies,
@@ -37,12 +38,14 @@ import type {
   InventoryCompareSeverity,
   InventoryCompareReason,
   InventoryCompareScope,
+  InventoryCompareStatus,
   InventoryIntegrityAttentionLevel,
   InventoryIntegrityCompletenessLevel,
   InventoryIntegrityEvidenceConfidence,
   InventoryIntegrityEvidenceQuality,
   InventoryIntegrityFreshnessLevel,
   InventoryIntegrityLevel,
+  InventoryIntegrityReadOnlyData,
   InventoryIntegrityReviewReadinessLevel,
   InventoryIntegritySourceConfidence,
   InventoryIntegritySourceRelation,
@@ -93,6 +96,14 @@ function reasonLabel(reason: InventoryCompareReason): string {
   if (reason === "location_scope_gap") return "棚・場所範囲差異";
   if (reason === "project_scope_gap") return "project 範囲差異";
   return "未比較";
+}
+
+function compareStatusLabel(status?: InventoryCompareStatus): string {
+  if (status === "matched") return "matched";
+  if (status === "mismatched") return "mismatched";
+  if (status === "missing_projection") return "missing_projection";
+  if (status === "orphan_projection") return "orphan_projection";
+  return "static_visibility";
 }
 
 function scopeLabel(scope: InventoryCompareScope): string {
@@ -183,6 +194,30 @@ function sourceConfidenceLabel(confidence: InventoryIntegritySourceConfidence): 
 
 function semanticBoundaryLabel(boundary: "reasoning_visualization_only"): string {
   return boundary === "reasoning_visualization_only" ? "説明表示のみ" : boundary;
+}
+
+function isInventoryIntegrityReadOnlyData(value: unknown): value is InventoryIntegrityReadOnlyData {
+  if (!value || typeof value !== "object") return false;
+
+  const candidate = value as Partial<Record<keyof InventoryIntegrityReadOnlyData, unknown>>;
+  return (
+    Array.isArray(candidate.summaries) &&
+    Array.isArray(candidate.issues) &&
+    Array.isArray(candidate.signals) &&
+    Array.isArray(candidate.compareProjections) &&
+    Array.isArray(candidate.attentionProjections) &&
+    Array.isArray(candidate.evidenceProjections) &&
+    Array.isArray(candidate.sourceMappings)
+  );
+}
+
+function extractInventoryIntegrityReadOnlyData(value: unknown): InventoryIntegrityReadOnlyData | null {
+  if (!value || typeof value !== "object") return null;
+
+  const candidate = value as { readonly normalizedData?: unknown };
+  return isInventoryIntegrityReadOnlyData(candidate.normalizedData)
+    ? candidate.normalizedData
+    : null;
 }
 
 const styles: Record<string, CSSProperties> = {
@@ -277,7 +312,58 @@ const styles: Record<string, CSSProperties> = {
 };
 
 export function InventoryIntegritySection() {
-  const data = getInventoryIntegrityMockData();
+  const { session } = useAuth();
+  const [data, setData] = useState<InventoryIntegrityReadOnlyData>(() =>
+    getInventoryIntegrityMockData(),
+  );
+  const [compareSourceLabel, setCompareSourceLabel] = useState("static fallback");
+
+  useEffect(() => {
+    const token = session?.access_token;
+    if (!token) {
+      setCompareSourceLabel("static fallback");
+      return;
+    }
+
+    const controller = new AbortController();
+
+    async function loadCompareVisibility() {
+      try {
+        const response = await fetch("/api/inventory-integrity/compare-readonly", {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          setCompareSourceLabel("static fallback");
+          return;
+        }
+
+        const responseBody: unknown = await response.json();
+        const readOnlyData = extractInventoryIntegrityReadOnlyData(responseBody);
+        if (!readOnlyData) {
+          setCompareSourceLabel("static fallback");
+          return;
+        }
+
+        setData(readOnlyData);
+        setCompareSourceLabel("real read-only compare visibility");
+      } catch {
+        if (!controller.signal.aborted) {
+          setCompareSourceLabel("static fallback");
+        }
+      }
+    }
+
+    void loadCompareVisibility();
+
+    return () => controller.abort();
+  }, [session?.access_token]);
+
   const summaries = getInventoryIntegritySummaries(data);
   const issues = getInventoryIntegrityIssues(data);
   const signals = getInventoryIntegritySignals(data);
@@ -314,10 +400,10 @@ export function InventoryIntegritySection() {
         <div>
           <h2 id="inventory-integrity-heading">在庫整合性</h2>
           <p style={styles.lead}>
-            inventory_current と inventory_transactions の整合性を将来比較(compare)するための、
-            静的な参照表示です。inventory_transactions が在庫の真実(truth)であり、
+            inventory_current と inventory_transactions の整合性を read-only compare visibility
+            として確認する参照表示です。inventory_transactions が在庫の真実(truth)であり、
             inventory_current は比較対象の表示用 cache です。差異由来(lineage)、注意シグナル、
-            証跡(explainability) は説明表示のみで、実行機能ではありません。
+            証跡(explainability) は説明表示のみで、修正実行機能ではありません。
           </p>
         </div>
         <div style={styles.badgeRow} aria-label="Inventory integrity boundary">
@@ -333,9 +419,9 @@ export function InventoryIntegritySection() {
       </div>
 
       <div style={styles.notice}>
-        この画面では、データ取得、live compare、inventory_current 更新、再構築(rebuild)、
-        replay、correction は行いません。将来比較する場合も、期待現在庫は
-        inventory_transactions から導出する前提です。
+        この画面では、GET read-only compare visibility の表示だけを行います。
+        inventory_current 更新、再構築(rebuild)、replay、correction は行いません。
+        期待現在庫は inventory_transactions から導出する前提です。
       </div>
 
       <div style={styles.notice}>
@@ -370,6 +456,7 @@ export function InventoryIntegritySection() {
         {compareSeveritySummary.map((item) => `${severityLabel(item.severity)} ${item.count}`).join(", ")}
         {" / "}差異理由 {compareReasonSummary.map((item) => `${reasonLabel(item.reason)} ${item.count}`).join(", ")}
         {" / "}範囲 {compareScopeSummary.map((item) => `${scopeLabel(item.scope)} ${item.count}`).join(", ")}.
+        {" / "}source {compareSourceLabel}.
       </div>
 
       <div style={{ ...styles.notice, ...styles.neutralNotice }}>
@@ -450,7 +537,7 @@ export function InventoryIntegritySection() {
         <h3 style={{ marginTop: 0 }}>差異確認(compare)</h3>
         <p style={styles.lead}>
           inventory_current を真実(truth)として扱わず、inventory_transactions から導出した
-          期待現在庫と、表示用 cache を照合する考え方です。この画面では照合を実行しません。
+          期待現在庫と、表示用 cache を read-only に照合した visibility です。修正や再生成は実行しません。
         </p>
         <div style={styles.list}>
           {issues.map((issue) => (
@@ -471,9 +558,9 @@ export function InventoryIntegritySection() {
       <section style={styles.section}>
         <h3 style={{ marginTop: 0 }}>差異比較</h3>
         <p style={styles.lead}>
-          inventory_current と inventory_transactions aggregation を将来どう比較できるかを、
-          静的な表示として説明します。比較実行(compare execution)、再構築、replay、correction
-          は行いません。
+          inventory_current と inventory_transactions aggregation の差分を read-only
+          visibility として表示します。比較実行(compare execution)、再構築、replay、
+          correction は行いません。
         </p>
         <div style={styles.list}>
           {compareProjections.map((projection) => (
@@ -487,6 +574,9 @@ export function InventoryIntegritySection() {
                 表示用 cache 数量: {projection.difference.currentReadModelQuantity} / transaction
                 集計数量: {projection.difference.transactionAggregationQuantity} / 差異:{" "}
                 {projection.difference.differenceQuantity}
+              </p>
+              <p style={styles.description}>
+                compare status: {compareStatusLabel(projection.difference.compareStatus)}
               </p>
               <p style={styles.description}>truth の見方: {projection.truthStatement}</p>
               <p style={styles.description}>
