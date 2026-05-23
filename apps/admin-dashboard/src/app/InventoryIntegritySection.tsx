@@ -699,6 +699,13 @@ export function InventoryIntegritySection() {
                   {projection.metadata.compareOwnership.ownershipReason}
                 </p>
               ) : null}
+              {projection.metadata.compareOwnerActionability ? (
+                <p style={styles.description}>
+                  owner actionability:{" "}
+                  {projection.metadata.compareOwnerActionability.ownerActionability} /{" "}
+                  {projection.metadata.compareOwnerActionability.actionabilityReason}
+                </p>
+              ) : null}
               <p style={styles.description}>truth の見方: {projection.truthStatement}</p>
               <p style={styles.description}>
                 観測時点(snapshot): {projection.metadata.snapshot.snapshotId} /{" "}
