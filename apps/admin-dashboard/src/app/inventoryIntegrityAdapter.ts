@@ -257,6 +257,15 @@ function normalizeProjectionMetadata(
           ],
         }
       : undefined,
+    compareGovernanceReasoningCoherence: metadata.compareGovernanceReasoningCoherence
+      ? {
+          ...metadata.compareGovernanceReasoningCoherence,
+          reasoningCoherenceSignals: [
+            ...metadata.compareGovernanceReasoningCoherence
+              .reasoningCoherenceSignals,
+          ],
+        }
+      : undefined,
     confidence: normalizeConfidence(metadata.confidence),
     freshness: normalizeFreshness(metadata.freshness),
     completeness: normalizeCompleteness(metadata.completeness),
