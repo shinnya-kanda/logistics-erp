@@ -44,6 +44,7 @@ import type {
   InventoryCompareHardeningMetadata,
   InventoryCompareInterpretationStabilityMetadata,
   InventoryCompareMismatchClassification,
+  InventoryCompareGovernancePostureMetadata,
   InventoryCompareOperatorGuidanceMetadata,
   InventoryCompareOperatorMessageMetadata,
   InventoryCompareOperatorSummaryMetadata,
@@ -530,6 +531,27 @@ function extractCompareOperationalAttention(
     : null;
 }
 
+function extractCompareGovernancePosture(
+  value: unknown,
+): InventoryCompareGovernancePostureMetadata | null {
+  if (!value || typeof value !== "object") return null;
+
+  const candidate = value as { readonly compareGovernancePosture?: unknown };
+  if (
+    !candidate.compareGovernancePosture ||
+    typeof candidate.compareGovernancePosture !== "object"
+  ) {
+    return null;
+  }
+
+  const posture =
+    candidate.compareGovernancePosture as Partial<InventoryCompareGovernancePostureMetadata>;
+  return typeof posture.governancePosture === "string" &&
+    typeof posture.postureText === "string"
+    ? (posture as InventoryCompareGovernancePostureMetadata)
+    : null;
+}
+
 function readableSignals(signals: readonly string[], limit = 4): string {
   const visibleSignals = signals.slice(0, limit).join(" / ");
   return signals.length > limit
@@ -684,6 +706,8 @@ export function InventoryIntegritySection() {
     useState<InventoryCompareOperationalImpactMetadata | null>(null);
   const [compareOperationalAttention, setCompareOperationalAttention] =
     useState<InventoryCompareOperationalAttentionMetadata | null>(null);
+  const [compareGovernancePosture, setCompareGovernancePosture] =
+    useState<InventoryCompareGovernancePostureMetadata | null>(null);
 
   useEffect(() => {
     const token = session?.access_token;
@@ -704,6 +728,7 @@ export function InventoryIntegritySection() {
       setCompareDecisionReadiness(null);
       setCompareOperationalImpact(null);
       setCompareOperationalAttention(null);
+      setCompareGovernancePosture(null);
       return;
     }
 
@@ -742,6 +767,7 @@ export function InventoryIntegritySection() {
           setCompareDecisionReadiness(extractCompareDecisionReadiness(responseBody));
           setCompareOperationalImpact(extractCompareOperationalImpact(responseBody));
           setCompareOperationalAttention(extractCompareOperationalAttention(responseBody));
+          setCompareGovernancePosture(extractCompareGovernancePosture(responseBody));
           return;
         }
 
@@ -763,6 +789,7 @@ export function InventoryIntegritySection() {
         setCompareDecisionReadiness(extractCompareDecisionReadiness(responseBody));
         setCompareOperationalImpact(extractCompareOperationalImpact(responseBody));
         setCompareOperationalAttention(extractCompareOperationalAttention(responseBody));
+        setCompareGovernancePosture(extractCompareGovernancePosture(responseBody));
         const readOnlyData = extractInventoryIntegrityReadOnlyData(responseBody);
         if (!readOnlyData) {
           setCompareSourceLabel("static fallback");
@@ -789,6 +816,7 @@ export function InventoryIntegritySection() {
           setCompareDecisionReadiness(null);
           setCompareOperationalImpact(null);
           setCompareOperationalAttention(null);
+          setCompareGovernancePosture(null);
         }
       }
     }
@@ -893,6 +921,22 @@ export function InventoryIntegritySection() {
               <span style={styles.supportingText}>
                 source: {compareOperatorSummary.summarySource} / signals:{" "}
                 {readableSignals(compareOperatorSummary.summarySignals)}
+              </span>
+            </>
+          ) : null}
+          {compareGovernancePosture ? (
+            <>
+              <span style={styles.summaryText}>
+                {compareGovernancePosture.postureText}
+              </span>
+              <span style={styles.supportingText}>
+                compare governance posture:{" "}
+                {compareGovernancePosture.governancePosture} /{" "}
+                {compareGovernancePosture.postureReason}
+              </span>
+              <span style={styles.supportingText}>
+                source: {compareGovernancePosture.postureSource} / signals:{" "}
+                {readableSignals(compareGovernancePosture.postureSignals)}
               </span>
             </>
           ) : null}
@@ -1085,6 +1129,9 @@ export function InventoryIntegritySection() {
         {compareOperationalAttention
           ? ` operational attention ${compareOperationalAttention.operationalAttention}.`
           : ""}
+        {compareGovernancePosture
+          ? ` governance posture ${compareGovernancePosture.governancePosture}.`
+          : ""}
       </div>
 
       <div style={{ ...styles.notice, ...styles.neutralNotice }}>
@@ -1206,6 +1253,12 @@ export function InventoryIntegritySection() {
               {projection.metadata.compareRisk ? (
                 <p style={styles.description}>
                   compare risk: {projection.metadata.compareRisk.riskText}
+                </p>
+              ) : null}
+              {projection.metadata.compareGovernancePosture ? (
+                <p style={styles.description}>
+                  compare governance posture:{" "}
+                  {projection.metadata.compareGovernancePosture.postureText}
                 </p>
               ) : null}
               {projection.metadata.compareOperationalAttention ? (
@@ -1373,6 +1426,16 @@ export function InventoryIntegritySection() {
                   risk reason: {projection.metadata.compareRisk.riskReason} / source:{" "}
                   {projection.metadata.compareRisk.riskSource} / signals:{" "}
                   {readableSignals(projection.metadata.compareRisk.riskSignals)}
+                </p>
+              ) : null}
+              {projection.metadata.compareGovernancePosture ? (
+                <p style={styles.supportingText}>
+                  posture reason:{" "}
+                  {projection.metadata.compareGovernancePosture.postureReason} / source:{" "}
+                  {projection.metadata.compareGovernancePosture.postureSource} / signals:{" "}
+                  {readableSignals(
+                    projection.metadata.compareGovernancePosture.postureSignals,
+                  )}
                 </p>
               ) : null}
               {projection.metadata.compareOperationalAttention ? (
