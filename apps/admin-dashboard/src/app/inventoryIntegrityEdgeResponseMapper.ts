@@ -197,6 +197,14 @@ export function mapEdgeProjectionMetadata(
           ],
         }
       : undefined,
+    compareGovernanceExplainability: metadata.compareGovernanceExplainability
+      ? {
+          ...metadata.compareGovernanceExplainability,
+          explainabilitySignals: [
+            ...metadata.compareGovernanceExplainability.explainabilitySignals,
+          ],
+        }
+      : undefined,
     responseContractVersion: metadata.payloadVersion,
     readability: metadata.readability,
     adapterInputBoundary: metadata.adapterInputBoundary,

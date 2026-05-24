@@ -47,6 +47,7 @@ import type {
   InventoryCompareGovernanceDispositionMetadata,
   InventoryCompareGovernanceRetentionMetadata,
   InventoryCompareGovernanceAuditTrailMetadata,
+  InventoryCompareGovernanceExplainabilityMetadata,
   InventoryCompareGovernancePostureMetadata,
   InventoryCompareOperatorGuidanceMetadata,
   InventoryCompareOperatorMessageMetadata,
@@ -618,6 +619,27 @@ function extractCompareGovernanceAuditTrail(
     : null;
 }
 
+function extractCompareGovernanceExplainability(
+  value: unknown,
+): InventoryCompareGovernanceExplainabilityMetadata | null {
+  if (!value || typeof value !== "object") return null;
+
+  const candidate = value as { readonly compareGovernanceExplainability?: unknown };
+  if (
+    !candidate.compareGovernanceExplainability ||
+    typeof candidate.compareGovernanceExplainability !== "object"
+  ) {
+    return null;
+  }
+
+  const explainability =
+    candidate.compareGovernanceExplainability as Partial<InventoryCompareGovernanceExplainabilityMetadata>;
+  return typeof explainability.governanceExplainability === "string" &&
+    typeof explainability.explainabilityText === "string"
+    ? (explainability as InventoryCompareGovernanceExplainabilityMetadata)
+    : null;
+}
+
 function readableSignals(signals: readonly string[], limit = 4): string {
   const visibleSignals = signals.slice(0, limit).join(" / ");
   return signals.length > limit
@@ -780,6 +802,8 @@ export function InventoryIntegritySection() {
     useState<InventoryCompareGovernanceRetentionMetadata | null>(null);
   const [compareGovernanceAuditTrail, setCompareGovernanceAuditTrail] =
     useState<InventoryCompareGovernanceAuditTrailMetadata | null>(null);
+  const [compareGovernanceExplainability, setCompareGovernanceExplainability] =
+    useState<InventoryCompareGovernanceExplainabilityMetadata | null>(null);
 
   useEffect(() => {
     const token = session?.access_token;
@@ -804,6 +828,7 @@ export function InventoryIntegritySection() {
       setCompareGovernanceDisposition(null);
       setCompareGovernanceRetention(null);
       setCompareGovernanceAuditTrail(null);
+      setCompareGovernanceExplainability(null);
       return;
     }
 
@@ -852,6 +877,9 @@ export function InventoryIntegritySection() {
           setCompareGovernanceAuditTrail(
             extractCompareGovernanceAuditTrail(responseBody),
           );
+          setCompareGovernanceExplainability(
+            extractCompareGovernanceExplainability(responseBody),
+          );
           return;
         }
 
@@ -880,6 +908,9 @@ export function InventoryIntegritySection() {
         setCompareGovernanceRetention(extractCompareGovernanceRetention(responseBody));
         setCompareGovernanceAuditTrail(
           extractCompareGovernanceAuditTrail(responseBody),
+        );
+        setCompareGovernanceExplainability(
+          extractCompareGovernanceExplainability(responseBody),
         );
         const readOnlyData = extractInventoryIntegrityReadOnlyData(responseBody);
         if (!readOnlyData) {
@@ -911,6 +942,7 @@ export function InventoryIntegritySection() {
           setCompareGovernanceDisposition(null);
           setCompareGovernanceRetention(null);
           setCompareGovernanceAuditTrail(null);
+          setCompareGovernanceExplainability(null);
         }
       }
     }
@@ -1015,6 +1047,24 @@ export function InventoryIntegritySection() {
               <span style={styles.supportingText}>
                 source: {compareOperatorSummary.summarySource} / signals:{" "}
                 {readableSignals(compareOperatorSummary.summarySignals)}
+              </span>
+            </>
+          ) : null}
+          {compareGovernanceExplainability ? (
+            <>
+              <span style={styles.summaryText}>
+                {compareGovernanceExplainability.explainabilityText}
+              </span>
+              <span style={styles.supportingText}>
+                compare governance explainability:{" "}
+                {compareGovernanceExplainability.governanceExplainability} /{" "}
+                {compareGovernanceExplainability.explainabilityReason}
+              </span>
+              <span style={styles.supportingText}>
+                source: {compareGovernanceExplainability.explainabilitySource} / signals:{" "}
+                {readableSignals(
+                  compareGovernanceExplainability.explainabilitySignals,
+                )}
               </span>
             </>
           ) : null}
@@ -1283,6 +1333,9 @@ export function InventoryIntegritySection() {
         {compareGovernanceAuditTrail
           ? ` governance audit trail ${compareGovernanceAuditTrail.governanceAuditTrail}.`
           : ""}
+        {compareGovernanceExplainability
+          ? ` governance explainability ${compareGovernanceExplainability.governanceExplainability}.`
+          : ""}
       </div>
 
       <div style={{ ...styles.notice, ...styles.neutralNotice }}>
@@ -1416,6 +1469,12 @@ export function InventoryIntegritySection() {
                 <p style={styles.description}>
                   compare governance audit trail:{" "}
                   {projection.metadata.compareGovernanceAuditTrail.auditTrailText}
+                </p>
+              ) : null}
+              {projection.metadata.compareGovernanceExplainability ? (
+                <p style={styles.description}>
+                  compare governance explainability:{" "}
+                  {projection.metadata.compareGovernanceExplainability.explainabilityText}
                 </p>
               ) : null}
               {projection.metadata.compareGovernanceDisposition ? (
@@ -1614,6 +1673,17 @@ export function InventoryIntegritySection() {
                   {projection.metadata.compareGovernanceAuditTrail.auditTrailSource} / signals:{" "}
                   {readableSignals(
                     projection.metadata.compareGovernanceAuditTrail.auditTrailSignals,
+                  )}
+                </p>
+              ) : null}
+              {projection.metadata.compareGovernanceExplainability ? (
+                <p style={styles.supportingText}>
+                  explainability reason:{" "}
+                  {projection.metadata.compareGovernanceExplainability.explainabilityReason} / source:{" "}
+                  {projection.metadata.compareGovernanceExplainability.explainabilitySource} / signals:{" "}
+                  {readableSignals(
+                    projection.metadata.compareGovernanceExplainability
+                      .explainabilitySignals,
                   )}
                 </p>
               ) : null}

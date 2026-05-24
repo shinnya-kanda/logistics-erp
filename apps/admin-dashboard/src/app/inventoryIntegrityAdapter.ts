@@ -249,6 +249,14 @@ function normalizeProjectionMetadata(
           ],
         }
       : undefined,
+    compareGovernanceExplainability: metadata.compareGovernanceExplainability
+      ? {
+          ...metadata.compareGovernanceExplainability,
+          explainabilitySignals: [
+            ...metadata.compareGovernanceExplainability.explainabilitySignals,
+          ],
+        }
+      : undefined,
     confidence: normalizeConfidence(metadata.confidence),
     freshness: normalizeFreshness(metadata.freshness),
     completeness: normalizeCompleteness(metadata.completeness),
