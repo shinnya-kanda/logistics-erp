@@ -47,6 +47,7 @@ import type {
   InventoryCompareOperatorSummaryMetadata,
   InventoryCompareOperatorTimelineMetadata,
   InventoryCompareProjectionFreshnessMetadata,
+  InventoryCompareRiskMetadata,
   InventoryCompareScope,
   InventoryCompareStatus,
   InventoryCompareTruthAggregationQualityMetadata,
@@ -427,6 +428,20 @@ function extractCompareEvidence(value: unknown): InventoryCompareEvidenceMetadat
     : null;
 }
 
+function extractCompareRisk(value: unknown): InventoryCompareRiskMetadata | null {
+  if (!value || typeof value !== "object") return null;
+
+  const candidate = value as { readonly compareRisk?: unknown };
+  if (!candidate.compareRisk || typeof candidate.compareRisk !== "object") {
+    return null;
+  }
+
+  const risk = candidate.compareRisk as Partial<InventoryCompareRiskMetadata>;
+  return typeof risk.compareRisk === "string" && typeof risk.riskText === "string"
+    ? (risk as InventoryCompareRiskMetadata)
+    : null;
+}
+
 function readableSignals(signals: readonly string[], limit = 4): string {
   const visibleSignals = signals.slice(0, limit).join(" / ");
   return signals.length > limit
@@ -571,6 +586,8 @@ export function InventoryIntegritySection() {
     useState<InventoryCompareTruthAggregationQualityMetadata | null>(null);
   const [compareEvidence, setCompareEvidence] =
     useState<InventoryCompareEvidenceMetadata | null>(null);
+  const [compareRisk, setCompareRisk] =
+    useState<InventoryCompareRiskMetadata | null>(null);
 
   useEffect(() => {
     const token = session?.access_token;
@@ -586,6 +603,7 @@ export function InventoryIntegritySection() {
       setCompareProjectionFreshness(null);
       setCompareTruthAggregationQuality(null);
       setCompareEvidence(null);
+      setCompareRisk(null);
       return;
     }
 
@@ -617,6 +635,7 @@ export function InventoryIntegritySection() {
             extractCompareTruthAggregationQuality(responseBody),
           );
           setCompareEvidence(extractCompareEvidence(responseBody));
+          setCompareRisk(extractCompareRisk(responseBody));
           return;
         }
 
@@ -631,6 +650,7 @@ export function InventoryIntegritySection() {
         setCompareProjectionFreshness(extractCompareProjectionFreshness(responseBody));
         setCompareTruthAggregationQuality(extractCompareTruthAggregationQuality(responseBody));
         setCompareEvidence(extractCompareEvidence(responseBody));
+        setCompareRisk(extractCompareRisk(responseBody));
         const readOnlyData = extractInventoryIntegrityReadOnlyData(responseBody);
         if (!readOnlyData) {
           setCompareSourceLabel("static fallback");
@@ -652,6 +672,7 @@ export function InventoryIntegritySection() {
           setCompareProjectionFreshness(null);
           setCompareTruthAggregationQuality(null);
           setCompareEvidence(null);
+          setCompareRisk(null);
         }
       }
     }
@@ -759,6 +780,18 @@ export function InventoryIntegritySection() {
               </span>
             </>
           ) : null}
+          {compareRisk ? (
+            <>
+              <span style={styles.summaryText}>{compareRisk.riskText}</span>
+              <span style={styles.supportingText}>
+                compare risk: {compareRisk.compareRisk} / {compareRisk.riskReason}
+              </span>
+              <span style={styles.supportingText}>
+                source: {compareRisk.riskSource} / signals:{" "}
+                {readableSignals(compareRisk.riskSignals)}
+              </span>
+            </>
+          ) : null}
           {compareConfidence ? (
             <>
               <span style={styles.summaryText}>{compareConfidence.confidenceText}</span>
@@ -859,6 +892,7 @@ export function InventoryIntegritySection() {
           ? ` truth aggregation quality ${compareTruthAggregationQuality.truthAggregationQuality}.`
           : ""}
         {compareEvidence ? ` compare evidence ${compareEvidence.compareEvidence}.` : ""}
+        {compareRisk ? ` compare risk ${compareRisk.compareRisk}.` : ""}
       </div>
 
       <div style={{ ...styles.notice, ...styles.neutralNotice }}>
@@ -975,6 +1009,11 @@ export function InventoryIntegritySection() {
               {projection.metadata.compareOperatorMessage ? (
                 <p style={styles.description}>
                   operator message: {projection.metadata.compareOperatorMessage.messageText}
+                </p>
+              ) : null}
+              {projection.metadata.compareRisk ? (
+                <p style={styles.description}>
+                  compare risk: {projection.metadata.compareRisk.riskText}
                 </p>
               ) : null}
               {projection.metadata.compareConfidence ? (
@@ -1111,6 +1150,13 @@ export function InventoryIntegritySection() {
                   evidence reason: {projection.metadata.compareEvidence.evidenceReason} / source:{" "}
                   {projection.metadata.compareEvidence.evidenceSource} / signals:{" "}
                   {readableSignals(projection.metadata.compareEvidence.evidenceSignals)}
+                </p>
+              ) : null}
+              {projection.metadata.compareRisk ? (
+                <p style={styles.supportingText}>
+                  risk reason: {projection.metadata.compareRisk.riskReason} / source:{" "}
+                  {projection.metadata.compareRisk.riskSource} / signals:{" "}
+                  {readableSignals(projection.metadata.compareRisk.riskSignals)}
                 </p>
               ) : null}
               {projection.metadata.compareOwnerActionability ? (
