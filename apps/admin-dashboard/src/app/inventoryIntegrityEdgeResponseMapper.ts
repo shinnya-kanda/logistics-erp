@@ -239,6 +239,16 @@ export function mapEdgeProjectionMetadata(
           ],
         }
       : undefined,
+    compareGovernanceSemanticIntegrityBoundary:
+      metadata.compareGovernanceSemanticIntegrityBoundary
+        ? {
+            ...metadata.compareGovernanceSemanticIntegrityBoundary,
+            semanticIntegrityBoundarySignals: [
+              ...metadata.compareGovernanceSemanticIntegrityBoundary
+                .semanticIntegrityBoundarySignals,
+            ],
+          }
+        : undefined,
     responseContractVersion: metadata.payloadVersion,
     readability: metadata.readability,
     adapterInputBoundary: metadata.adapterInputBoundary,
