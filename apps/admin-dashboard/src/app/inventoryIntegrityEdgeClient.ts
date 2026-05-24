@@ -1257,6 +1257,7 @@ export function createInventoryIntegrityFetchResult(
   compareGovernancePosture?: InventoryIntegrityFetchResult["metadata"]["compareGovernancePosture"],
   compareGovernanceDisposition?: InventoryIntegrityFetchResult["metadata"]["compareGovernanceDisposition"],
   compareGovernanceRetention?: InventoryIntegrityFetchResult["metadata"]["compareGovernanceRetention"],
+  compareGovernanceAuditTrail?: InventoryIntegrityFetchResult["metadata"]["compareGovernanceAuditTrail"],
 ): InventoryIntegrityFetchResult {
   return {
     metadata: {
@@ -1325,6 +1326,7 @@ export function createInventoryIntegrityFetchResult(
       compareGovernancePosture,
       compareGovernanceDisposition,
       compareGovernanceRetention,
+      compareGovernanceAuditTrail,
       responseStatus,
       resultVersion: "inventory-integrity-static-fetch-result-v1",
       readability:

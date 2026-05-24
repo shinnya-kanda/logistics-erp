@@ -241,6 +241,14 @@ function normalizeProjectionMetadata(
           ],
         }
       : undefined,
+    compareGovernanceAuditTrail: metadata.compareGovernanceAuditTrail
+      ? {
+          ...metadata.compareGovernanceAuditTrail,
+          auditTrailSignals: [
+            ...metadata.compareGovernanceAuditTrail.auditTrailSignals,
+          ],
+        }
+      : undefined,
     confidence: normalizeConfidence(metadata.confidence),
     freshness: normalizeFreshness(metadata.freshness),
     completeness: normalizeCompleteness(metadata.completeness),

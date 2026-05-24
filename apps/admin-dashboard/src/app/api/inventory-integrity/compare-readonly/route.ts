@@ -33,6 +33,8 @@ import type {
   InventoryCompareGovernanceDispositionMetadata,
   InventoryCompareGovernanceRetention,
   InventoryCompareGovernanceRetentionMetadata,
+  InventoryCompareGovernanceAuditTrail,
+  InventoryCompareGovernanceAuditTrailMetadata,
   InventoryCompareOperationalImpact,
   InventoryCompareOperationalImpactMetadata,
   InventoryCompareOwnership,
@@ -3619,6 +3621,258 @@ function createCompareGovernanceRetentionMetadata({
   };
 }
 
+function governanceAuditTrailForSemantics({
+  compareHardening,
+  governanceRetention,
+  governanceDisposition,
+  governancePosture,
+  operationalAttention,
+  operationalImpact,
+  decisionReadiness,
+  interpretationStability,
+  compareRisk,
+  compareEvidence,
+  compareConfidence,
+  projectionFreshness,
+  truthAggregationQuality,
+  severity,
+  operationalPriority,
+  ownerActionability,
+  reviewReadiness,
+  escalationReadiness,
+  classification,
+  compareStatus,
+}: {
+  readonly compareHardening: InventoryCompareHardeningMetadata;
+  readonly governanceRetention: InventoryCompareGovernanceRetention;
+  readonly governanceDisposition: InventoryCompareGovernanceDisposition;
+  readonly governancePosture: InventoryCompareGovernancePosture;
+  readonly operationalAttention: InventoryCompareOperationalAttention;
+  readonly operationalImpact: InventoryCompareOperationalImpact;
+  readonly decisionReadiness: InventoryCompareDecisionReadiness;
+  readonly interpretationStability: InventoryCompareInterpretationStability;
+  readonly compareRisk: InventoryCompareRisk;
+  readonly compareEvidence: InventoryCompareEvidenceStrength;
+  readonly compareConfidence: InventoryCompareConfidence;
+  readonly projectionFreshness: InventoryCompareProjectionFreshness;
+  readonly truthAggregationQuality: InventoryCompareTruthAggregationQuality;
+  readonly severity: InventoryCompareSeverity;
+  readonly operationalPriority: InventoryCompareOperationalPriority;
+  readonly ownerActionability?: InventoryCompareOwnerActionability;
+  readonly reviewReadiness: InventoryCompareReviewReadiness;
+  readonly escalationReadiness: InventoryCompareEscalationReadiness;
+  readonly classification: InventoryCompareMismatchClassification;
+  readonly compareStatus?: InventoryCompareStatus;
+}): InventoryCompareGovernanceAuditTrail {
+  if (
+    governanceRetention === "retention_hold" ||
+    governanceDisposition === "disposition_hold" ||
+    governancePosture === "posture_unassessable" ||
+    operationalAttention === "attention_unassessable" ||
+    operationalImpact === "impact_unassessable" ||
+    decisionReadiness === "decision_hold_unavailable" ||
+    compareRisk === "risk_unassessable" ||
+    compareConfidence === "confidence_blocked" ||
+    compareEvidence === "evidence_unavailable" ||
+    projectionFreshness === "freshness_unavailable" ||
+    truthAggregationQuality === "truth_quality_unavailable" ||
+    interpretationStability === "stability_unavailable" ||
+    compareHardening.sourceStatus === "compare_source_unavailable" ||
+    compareHardening.scopeStatus === "unavailable_scope" ||
+    classification === "unavailable_projection"
+  ) {
+    return "audit_unavailable";
+  }
+  if (
+    compareEvidence === "evidence_missing" ||
+    compareConfidence === "confidence_unverified" ||
+    truthAggregationQuality === "truth_quality_unverified" ||
+    projectionFreshness === "freshness_unknown" ||
+    decisionReadiness === "decision_hold_unverified" ||
+    interpretationStability === "stability_unverified" ||
+    compareHardening.resultStatus === "compare_result_unverified" ||
+    classification === "compare_unverified"
+  ) {
+    return "audit_missing";
+  }
+  if (
+    compareEvidence === "evidence_weak" ||
+    compareConfidence === "confidence_low" ||
+    compareRisk === "risk_high" ||
+    governanceRetention === "retention_review" ||
+    compareHardening.scopeStatus === "degraded_scope" ||
+    compareHardening.resultStatus === "compare_result_partial" ||
+    projectionFreshness === "freshness_stale" ||
+    interpretationStability === "stability_fragile" ||
+    classification === "compare_partial" ||
+    classification === "degraded_projection" ||
+    classification === "stale_projection"
+  ) {
+    return "audit_weak";
+  }
+  if (
+    compareEvidence === "evidence_moderate" ||
+    compareConfidence === "confidence_medium" ||
+    compareRisk === "risk_medium" ||
+    governanceRetention === "retention_observe" ||
+    governanceDisposition === "disposition_observe_queue" ||
+    governancePosture === "posture_observe" ||
+    operationalAttention === "attention_observe" ||
+    projectionFreshness === "freshness_recent"
+  ) {
+    return "audit_partial";
+  }
+  if (
+    compareEvidence === "evidence_strong" &&
+    compareConfidence === "confidence_high" &&
+    projectionFreshness === "freshness_current" &&
+    truthAggregationQuality === "truth_quality_stable" &&
+    interpretationStability === "stability_stable" &&
+    compareRisk === "risk_low" &&
+    compareStatus === "matched" &&
+    severity === "info" &&
+    (governanceRetention === "retention_transient" ||
+      governanceRetention === "retention_persistent") &&
+    ownerActionability === "monitor_only" &&
+    reviewReadiness === "review_optional" &&
+    escalationReadiness === "escalation_optional" &&
+    operationalPriority === "priority_p3"
+  ) {
+    return "audit_traceable";
+  }
+  return "audit_partial";
+}
+
+function auditTrailText(
+  auditTrail: InventoryCompareGovernanceAuditTrail,
+): string {
+  if (auditTrail === "audit_traceable") {
+    return "audit trace が確認可能です";
+  }
+  if (auditTrail === "audit_partial") {
+    return "partial audit trace 状態です";
+  }
+  if (auditTrail === "audit_weak") {
+    return "audit trace が弱い可能性があります";
+  }
+  if (auditTrail === "audit_missing") {
+    return "audit trace が不足しています";
+  }
+  return "source / evidence unavailable のため audit trace 保留です";
+}
+
+function auditTrailReason(
+  auditTrail: InventoryCompareGovernanceAuditTrail,
+): string {
+  if (auditTrail === "audit_traceable") {
+    return "truth source、strong evidence、high confidence、current freshness、stable interpretation がそろって見えるため、audit trace を確認しやすい状態として整理します";
+  }
+  if (auditTrail === "audit_partial") {
+    return "moderate evidence、medium confidence、observe retention など一部 caveat を含むため、partial audit trace として整理します";
+  }
+  if (auditTrail === "audit_weak") {
+    return "weak evidence、low confidence、degraded scope、partial compare、stale projection など追跡説明が弱く見える signal があるため、audit trace weak として整理します";
+  }
+  if (auditTrail === "audit_missing") {
+    return "missing evidence、unverified confidence、unknown freshness、unverified truth quality など監査説明材料が不足して見えるため、audit trace missing として整理します";
+  }
+  return "source、scope、evidence、confidence のいずれかが利用できないため、audit trace unavailable として整理します";
+}
+
+function createCompareGovernanceAuditTrailMetadata({
+  governanceAuditTrail,
+  compareHardening,
+  governanceRetention,
+  governanceDisposition,
+  governancePosture,
+  operationalAttention,
+  operationalImpact,
+  decisionReadiness,
+  interpretationStability,
+  compareRisk,
+  compareEvidence,
+  compareConfidence,
+  projectionFreshness,
+  truthAggregationQuality,
+  severity,
+  operationalPriority,
+  ownerActionability,
+  reviewReadiness,
+  escalationReadiness,
+  operatorSummary,
+  operatorTimeline,
+  classification,
+  auditTrailSource,
+  auditTrailSignals,
+}: {
+  readonly governanceAuditTrail: InventoryCompareGovernanceAuditTrail;
+  readonly compareHardening: InventoryCompareHardeningMetadata;
+  readonly governanceRetention: InventoryCompareGovernanceRetention;
+  readonly governanceDisposition: InventoryCompareGovernanceDisposition;
+  readonly governancePosture: InventoryCompareGovernancePosture;
+  readonly operationalAttention: InventoryCompareOperationalAttention;
+  readonly operationalImpact: InventoryCompareOperationalImpact;
+  readonly decisionReadiness: InventoryCompareDecisionReadiness;
+  readonly interpretationStability: InventoryCompareInterpretationStability;
+  readonly compareRisk: InventoryCompareRisk;
+  readonly compareEvidence: InventoryCompareEvidenceStrength;
+  readonly compareConfidence: InventoryCompareConfidence;
+  readonly projectionFreshness: InventoryCompareProjectionFreshness;
+  readonly truthAggregationQuality: InventoryCompareTruthAggregationQuality;
+  readonly severity: InventoryCompareSeverity;
+  readonly operationalPriority: InventoryCompareOperationalPriority;
+  readonly ownerActionability?: InventoryCompareOwnerActionability;
+  readonly reviewReadiness: InventoryCompareReviewReadiness;
+  readonly escalationReadiness: InventoryCompareEscalationReadiness;
+  readonly operatorSummary?: InventoryCompareOperatorSummary;
+  readonly operatorTimeline?: InventoryCompareOperatorTimeline;
+  readonly classification: InventoryCompareMismatchClassification;
+  readonly auditTrailSource: string;
+  readonly auditTrailSignals: readonly string[];
+}): InventoryCompareGovernanceAuditTrailMetadata {
+  return {
+    auditTrailId: `inventory-integrity-compare-readonly-${classification}-${governanceAuditTrail}`,
+    governanceAuditTrail,
+    auditTrailText: auditTrailText(governanceAuditTrail),
+    auditTrailReason: auditTrailReason(governanceAuditTrail),
+    auditTrailSource,
+    auditTrailSignals,
+    label: "read-only compare governance audit trail semantics",
+    interpretation:
+      "compare governance audit trail は compare 状態が後からどの程度 trace / audit 可能に見えるかを示す observability metadata です。",
+    noExecutionMeaning:
+      "compare governance audit trail は監査開始、追跡処理、承認、現場作業、担当設定の変更、在庫変更を開始しません。",
+    governanceRetention,
+    governanceDisposition,
+    governancePosture,
+    operationalAttention,
+    operationalImpact,
+    decisionReadiness,
+    interpretationStability,
+    compareRisk,
+    compareEvidence,
+    compareConfidence,
+    projectionFreshness,
+    truthAggregationQuality,
+    severity,
+    operationalPriority,
+    ownerActionability,
+    reviewReadiness,
+    escalationReadiness,
+    operatorSummary,
+    operatorTimeline,
+    classification,
+    sourceStatus: compareHardening.sourceStatus,
+    resultStatus: compareHardening.resultStatus,
+    scopeStatus: compareHardening.scopeStatus,
+    truthSource: "inventory_transactions",
+    cacheCompareTarget: "inventory_current",
+    semanticBoundary: "reasoning_visualization_only",
+    executionBoundary:
+      "InventoryCompareGovernanceAuditTrailMetadata は read-only audit trail visibility です。操作導線、監査開始、追跡処理、承認、在庫変更は実行しません。",
+  };
+}
+
 function createUnavailableReadOnlyResponse({
   status,
   error,
@@ -4191,6 +4445,61 @@ function createUnavailableReadOnlyResponse({
       compareHardening.scopeStatus,
     ],
   });
+  const compareGovernanceAuditTrail = createCompareGovernanceAuditTrailMetadata({
+    governanceAuditTrail: "audit_unavailable",
+    compareHardening,
+    governanceRetention: compareGovernanceRetention.governanceRetention,
+    governanceDisposition: compareGovernanceDisposition.governanceDisposition,
+    governancePosture: compareGovernancePosture.governancePosture,
+    operationalAttention: compareOperationalAttention.operationalAttention,
+    operationalImpact: compareOperationalImpact.operationalImpact,
+    decisionReadiness: compareDecisionReadiness.decisionReadiness,
+    interpretationStability:
+      compareInterpretationStability.interpretationStability,
+    compareRisk: compareRisk.compareRisk,
+    compareEvidence: compareEvidence.compareEvidence,
+    compareConfidence: compareConfidence.compareConfidence,
+    projectionFreshness: compareProjectionFreshness.projectionFreshness,
+    truthAggregationQuality:
+      compareTruthAggregationQuality.truthAggregationQuality,
+    severity: compareSeverity.severity,
+    operationalPriority: compareOperationalPriority.priority,
+    ownerActionability: compareOwnerActionability.ownerActionability,
+    reviewReadiness: compareReviewReadiness.readiness,
+    escalationReadiness: compareEscalationReadiness.readiness,
+    operatorSummary: compareOperatorSummary.operatorSummary,
+    operatorTimeline: compareOperatorTimeline.operatorTimeline,
+    classification: compareClassification.classification,
+    auditTrailSource: "compare_source_unavailable",
+    auditTrailSignals: [
+      compareGovernanceRetention.governanceRetention,
+      compareGovernanceDisposition.governanceDisposition,
+      compareGovernancePosture.governancePosture,
+      compareOperationalAttention.operationalAttention,
+      compareOperationalImpact.operationalImpact,
+      compareDecisionReadiness.decisionReadiness,
+      compareInterpretationStability.interpretationStability,
+      compareRisk.compareRisk,
+      compareEvidence.compareEvidence,
+      compareTruthAggregationQuality.truthAggregationQuality,
+      compareProjectionFreshness.projectionFreshness,
+      compareConfidence.compareConfidence,
+      compareOperatorTimeline.operatorTimeline,
+      compareOperatorSummary.operatorSummary,
+      compareOwnerActionability.ownerActionability,
+      compareOperationalPriority.priority,
+      compareEscalationReadiness.readiness,
+      compareReviewReadiness.readiness,
+      compareSeverity.severity,
+      compareClassification.classification,
+      compareHardening.sourceStatus,
+      compareHardening.resultStatus,
+      compareHardening.scopeStatus,
+      "truth_source_inventory_transactions",
+      "cache_compare_target_inventory_current",
+      "read_only_boundary",
+    ],
+  });
 
   return NextResponse.json(
     {
@@ -4224,6 +4533,7 @@ function createUnavailableReadOnlyResponse({
       compareGovernancePosture,
       compareGovernanceDisposition,
       compareGovernanceRetention,
+      compareGovernanceAuditTrail,
       semanticBoundary: "reasoning_visualization_only",
       executionBoundary:
         "compare-readonly endpoint failure は read-only unavailable visibility です。修正、再生成、在庫変更は実行しません。",
@@ -5238,6 +5548,87 @@ function buildCompareProjection(
       compareStatus,
     ],
   });
+  const compareGovernanceAuditTrail = createCompareGovernanceAuditTrailMetadata({
+    governanceAuditTrail: governanceAuditTrailForSemantics({
+      compareHardening,
+      governanceRetention: compareGovernanceRetention.governanceRetention,
+      governanceDisposition: compareGovernanceDisposition.governanceDisposition,
+      governancePosture: compareGovernancePosture.governancePosture,
+      operationalAttention: compareOperationalAttention.operationalAttention,
+      operationalImpact: compareOperationalImpact.operationalImpact,
+      decisionReadiness: compareDecisionReadiness.decisionReadiness,
+      interpretationStability:
+        compareInterpretationStability.interpretationStability,
+      compareRisk: compareRisk.compareRisk,
+      compareEvidence: compareEvidence.compareEvidence,
+      compareConfidence: compareConfidence.compareConfidence,
+      projectionFreshness: compareProjectionFreshness.projectionFreshness,
+      truthAggregationQuality:
+        compareTruthAggregationQuality.truthAggregationQuality,
+      severity: compareSeverity.severity,
+      operationalPriority: compareOperationalPriority.priority,
+      ownerActionability: compareOwnerActionability.ownerActionability,
+      reviewReadiness: compareReviewReadiness.readiness,
+      escalationReadiness: compareEscalationReadiness.readiness,
+      classification: mismatchClassification,
+      compareStatus,
+    }),
+    compareHardening,
+    governanceRetention: compareGovernanceRetention.governanceRetention,
+    governanceDisposition: compareGovernanceDisposition.governanceDisposition,
+    governancePosture: compareGovernancePosture.governancePosture,
+    operationalAttention: compareOperationalAttention.operationalAttention,
+    operationalImpact: compareOperationalImpact.operationalImpact,
+    decisionReadiness: compareDecisionReadiness.decisionReadiness,
+    interpretationStability:
+      compareInterpretationStability.interpretationStability,
+    compareRisk: compareRisk.compareRisk,
+    compareEvidence: compareEvidence.compareEvidence,
+    compareConfidence: compareConfidence.compareConfidence,
+    projectionFreshness: compareProjectionFreshness.projectionFreshness,
+    truthAggregationQuality:
+      compareTruthAggregationQuality.truthAggregationQuality,
+    severity: compareSeverity.severity,
+    operationalPriority: compareOperationalPriority.priority,
+    ownerActionability: compareOwnerActionability.ownerActionability,
+    reviewReadiness: compareReviewReadiness.readiness,
+    escalationReadiness: compareEscalationReadiness.readiness,
+    operatorSummary: compareOperatorTimeline.operatorSummary,
+    operatorTimeline: compareOperatorTimeline.operatorTimeline,
+    classification: mismatchClassification,
+    auditTrailSource: "compare_governance_audit_trail_semantics_chain",
+    auditTrailSignals: [
+      compareGovernanceRetention.governanceRetention,
+      compareGovernanceDisposition.governanceDisposition,
+      compareGovernancePosture.governancePosture,
+      compareOperationalAttention.operationalAttention,
+      compareOperationalImpact.operationalImpact,
+      compareDecisionReadiness.decisionReadiness,
+      compareInterpretationStability.interpretationStability,
+      compareRisk.compareRisk,
+      compareEvidence.compareEvidence,
+      compareTruthAggregationQuality.truthAggregationQuality,
+      compareProjectionFreshness.projectionFreshness,
+      compareConfidence.compareConfidence,
+      compareOperatorTimeline.operatorTimeline,
+      compareOperatorMessage.operatorMessage,
+      compareOperatorGuidance.operatorGuidance,
+      compareOwnerActionability.ownerActionability,
+      compareOperationalPriority.priority,
+      compareEscalationReadiness.readiness,
+      compareReviewReadiness.readiness,
+      compareSeverity.severity,
+      mismatchClassification,
+      compareHardening.sourceStatus,
+      compareHardening.resultStatus,
+      compareHardening.scopeStatus,
+      compareStatus,
+      "truth_source_inventory_transactions",
+      "cache_compare_target_inventory_current",
+      "read_only_boundary",
+      "projection_traceability_metadata",
+    ],
+  });
   const projectionId = `real-compare-${row.warehouseCode}-${row.partNo}`;
 
   return {
@@ -5316,6 +5707,7 @@ function buildCompareProjection(
       compareGovernancePosture,
       compareGovernanceDisposition,
       compareGovernanceRetention,
+      compareGovernanceAuditTrail,
       confidence: {
         level: "medium",
         reason: "real read-only compare rows から作成した visibility です。",
@@ -6902,6 +7294,132 @@ function resolveResponseGovernanceRetention(
   });
 }
 
+function resolveResponseGovernanceAuditTrail(
+  compareHardening: InventoryCompareHardeningMetadata,
+  compareOperatorSummary: InventoryCompareOperatorSummaryMetadata,
+  compareOperatorTimeline: InventoryCompareOperatorTimelineMetadata,
+  compareConfidence: InventoryCompareConfidenceMetadata,
+  compareProjectionFreshness: InventoryCompareProjectionFreshnessMetadata,
+  compareTruthAggregationQuality: InventoryCompareTruthAggregationQualityMetadata,
+  compareEvidence: InventoryCompareEvidenceMetadata,
+  compareRisk: InventoryCompareRiskMetadata,
+  compareInterpretationStability: InventoryCompareInterpretationStabilityMetadata,
+  compareDecisionReadiness: InventoryCompareDecisionReadinessMetadata,
+  compareOperationalImpact: InventoryCompareOperationalImpactMetadata,
+  compareOperationalAttention: InventoryCompareOperationalAttentionMetadata,
+  compareGovernancePosture: InventoryCompareGovernancePostureMetadata,
+  compareGovernanceDisposition: InventoryCompareGovernanceDispositionMetadata,
+  compareGovernanceRetention: InventoryCompareGovernanceRetentionMetadata,
+  compareProjections: readonly InventoryCompareProjection[],
+): InventoryCompareGovernanceAuditTrailMetadata {
+  const firstUnavailableAuditTrail = compareProjections.find(
+    (projection) =>
+      projection.metadata.compareGovernanceAuditTrail?.governanceAuditTrail ===
+      "audit_unavailable",
+  )?.metadata.compareGovernanceAuditTrail;
+  if (firstUnavailableAuditTrail) return firstUnavailableAuditTrail;
+
+  const firstMissingAuditTrail = compareProjections.find(
+    (projection) =>
+      projection.metadata.compareGovernanceAuditTrail?.governanceAuditTrail ===
+      "audit_missing",
+  )?.metadata.compareGovernanceAuditTrail;
+  if (firstMissingAuditTrail) return firstMissingAuditTrail;
+
+  const firstWeakAuditTrail = compareProjections.find(
+    (projection) =>
+      projection.metadata.compareGovernanceAuditTrail?.governanceAuditTrail ===
+      "audit_weak",
+  )?.metadata.compareGovernanceAuditTrail;
+  if (firstWeakAuditTrail) return firstWeakAuditTrail;
+
+  const firstPartialAuditTrail = compareProjections.find(
+    (projection) =>
+      projection.metadata.compareGovernanceAuditTrail?.governanceAuditTrail ===
+      "audit_partial",
+  )?.metadata.compareGovernanceAuditTrail;
+  if (firstPartialAuditTrail) return firstPartialAuditTrail;
+
+  return createCompareGovernanceAuditTrailMetadata({
+    governanceAuditTrail: governanceAuditTrailForSemantics({
+      compareHardening,
+      governanceRetention: compareGovernanceRetention.governanceRetention,
+      governanceDisposition: compareGovernanceDisposition.governanceDisposition,
+      governancePosture: compareGovernancePosture.governancePosture,
+      operationalAttention: compareOperationalAttention.operationalAttention,
+      operationalImpact: compareOperationalImpact.operationalImpact,
+      decisionReadiness: compareDecisionReadiness.decisionReadiness,
+      interpretationStability:
+        compareInterpretationStability.interpretationStability,
+      compareRisk: compareRisk.compareRisk,
+      compareEvidence: compareEvidence.compareEvidence,
+      compareConfidence: compareConfidence.compareConfidence,
+      projectionFreshness: compareProjectionFreshness.projectionFreshness,
+      truthAggregationQuality:
+        compareTruthAggregationQuality.truthAggregationQuality,
+      severity: compareOperatorTimeline.severity,
+      operationalPriority: compareOperatorTimeline.operationalPriority,
+      ownerActionability: compareOperatorTimeline.ownerActionability,
+      reviewReadiness: compareOperatorTimeline.reviewReadiness,
+      escalationReadiness: compareOperatorTimeline.escalationReadiness,
+      classification: compareOperatorTimeline.classification,
+    }),
+    compareHardening,
+    governanceRetention: compareGovernanceRetention.governanceRetention,
+    governanceDisposition: compareGovernanceDisposition.governanceDisposition,
+    governancePosture: compareGovernancePosture.governancePosture,
+    operationalAttention: compareOperationalAttention.operationalAttention,
+    operationalImpact: compareOperationalImpact.operationalImpact,
+    decisionReadiness: compareDecisionReadiness.decisionReadiness,
+    interpretationStability:
+      compareInterpretationStability.interpretationStability,
+    compareRisk: compareRisk.compareRisk,
+    compareEvidence: compareEvidence.compareEvidence,
+    compareConfidence: compareConfidence.compareConfidence,
+    projectionFreshness: compareProjectionFreshness.projectionFreshness,
+    truthAggregationQuality:
+      compareTruthAggregationQuality.truthAggregationQuality,
+    severity: compareOperatorTimeline.severity,
+    operationalPriority: compareOperatorTimeline.operationalPriority,
+    ownerActionability: compareOperatorTimeline.ownerActionability,
+    reviewReadiness: compareOperatorTimeline.reviewReadiness,
+    escalationReadiness: compareOperatorTimeline.escalationReadiness,
+    operatorSummary: compareOperatorSummary.operatorSummary,
+    operatorTimeline: compareOperatorTimeline.operatorTimeline,
+    classification: compareOperatorTimeline.classification,
+    auditTrailSource: "response_level_governance_audit_trail_semantics_chain",
+    auditTrailSignals: [
+      compareGovernanceRetention.governanceRetention,
+      compareGovernanceDisposition.governanceDisposition,
+      compareGovernancePosture.governancePosture,
+      compareOperationalAttention.operationalAttention,
+      compareOperationalImpact.operationalImpact,
+      compareDecisionReadiness.decisionReadiness,
+      compareInterpretationStability.interpretationStability,
+      compareRisk.compareRisk,
+      compareEvidence.compareEvidence,
+      compareTruthAggregationQuality.truthAggregationQuality,
+      compareProjectionFreshness.projectionFreshness,
+      compareConfidence.compareConfidence,
+      compareOperatorSummary.operatorSummary,
+      compareOperatorTimeline.operatorTimeline,
+      compareOperatorTimeline.operatorMessage,
+      compareOperatorTimeline.ownerActionability,
+      compareOperatorTimeline.operationalPriority,
+      compareOperatorTimeline.escalationReadiness,
+      compareOperatorTimeline.reviewReadiness,
+      compareOperatorTimeline.severity,
+      compareOperatorTimeline.classification,
+      compareHardening.sourceStatus,
+      compareHardening.resultStatus,
+      compareHardening.scopeStatus,
+      "truth_source_inventory_transactions",
+      "cache_compare_target_inventory_current",
+      "read_only_boundary",
+    ],
+  });
+}
+
 export async function GET(req: NextRequest) {
   const guard = await requireAdminDashboardRole(req);
   if (!guard.ok) {
@@ -7181,6 +7699,24 @@ export async function GET(req: NextRequest) {
     compareGovernanceDisposition,
     readOnlyData.compareProjections,
   );
+  const compareGovernanceAuditTrail = resolveResponseGovernanceAuditTrail(
+    compareHardening,
+    compareOperatorSummary,
+    compareOperatorTimeline,
+    compareConfidence,
+    compareProjectionFreshness,
+    compareTruthAggregationQuality,
+    compareEvidence,
+    compareRisk,
+    compareInterpretationStability,
+    compareDecisionReadiness,
+    compareOperationalImpact,
+    compareOperationalAttention,
+    compareGovernancePosture,
+    compareGovernanceDisposition,
+    compareGovernanceRetention,
+    readOnlyData.compareProjections,
+  );
   const endpointContract = createInventoryIntegrityReadOnlyEndpointContract(endpointPath);
   const request = createInventoryIntegrityReadOnlyEdgeRequest(endpointContract);
   const fetchResult = createInventoryIntegrityFetchResult(
@@ -7213,6 +7749,7 @@ export async function GET(req: NextRequest) {
     compareGovernancePosture,
     compareGovernanceDisposition,
     compareGovernanceRetention,
+    compareGovernanceAuditTrail,
   );
   const payload = adaptFetchResponseToPayload(fetchResult);
   const mappedResponse = mapEdgeProjectionResponse({
@@ -7252,6 +7789,7 @@ export async function GET(req: NextRequest) {
     compareGovernancePosture,
     compareGovernanceDisposition,
     compareGovernanceRetention,
+    compareGovernanceAuditTrail,
     normalizedData: mappedResponse.normalizedData,
     metadata: mappedResponse.metadata,
     statusSemantics: mappedResponse.statusSemantics,
