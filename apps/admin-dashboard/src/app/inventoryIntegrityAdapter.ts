@@ -274,6 +274,15 @@ function normalizeProjectionMetadata(
           ],
         }
       : undefined,
+    compareGovernanceSemanticConvergence: metadata.compareGovernanceSemanticConvergence
+      ? {
+          ...metadata.compareGovernanceSemanticConvergence,
+          semanticConvergenceSignals: [
+            ...metadata.compareGovernanceSemanticConvergence
+              .semanticConvergenceSignals,
+          ],
+        }
+      : undefined,
     confidence: normalizeConfidence(metadata.confidence),
     freshness: normalizeFreshness(metadata.freshness),
     completeness: normalizeCompleteness(metadata.completeness),
