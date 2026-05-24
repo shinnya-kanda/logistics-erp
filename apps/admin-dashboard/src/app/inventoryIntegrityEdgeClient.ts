@@ -1251,6 +1251,7 @@ export function createInventoryIntegrityFetchResult(
   compareEvidence?: InventoryIntegrityFetchResult["metadata"]["compareEvidence"],
   compareRisk?: InventoryIntegrityFetchResult["metadata"]["compareRisk"],
   compareInterpretationStability?: InventoryIntegrityFetchResult["metadata"]["compareInterpretationStability"],
+  compareDecisionReadiness?: InventoryIntegrityFetchResult["metadata"]["compareDecisionReadiness"],
 ): InventoryIntegrityFetchResult {
   return {
     metadata: {
@@ -1313,6 +1314,7 @@ export function createInventoryIntegrityFetchResult(
       compareEvidence,
       compareRisk,
       compareInterpretationStability,
+      compareDecisionReadiness,
       responseStatus,
       resultVersion: "inventory-integrity-static-fetch-result-v1",
       readability:

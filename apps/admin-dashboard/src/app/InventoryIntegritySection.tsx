@@ -39,6 +39,7 @@ import type {
   InventoryCompareReason,
   InventoryCompareClassificationMetadata,
   InventoryCompareConfidenceMetadata,
+  InventoryCompareDecisionReadinessMetadata,
   InventoryCompareEvidenceMetadata,
   InventoryCompareHardeningMetadata,
   InventoryCompareInterpretationStabilityMetadata,
@@ -464,6 +465,27 @@ function extractCompareInterpretationStability(
     : null;
 }
 
+function extractCompareDecisionReadiness(
+  value: unknown,
+): InventoryCompareDecisionReadinessMetadata | null {
+  if (!value || typeof value !== "object") return null;
+
+  const candidate = value as { readonly compareDecisionReadiness?: unknown };
+  if (
+    !candidate.compareDecisionReadiness ||
+    typeof candidate.compareDecisionReadiness !== "object"
+  ) {
+    return null;
+  }
+
+  const decision =
+    candidate.compareDecisionReadiness as Partial<InventoryCompareDecisionReadinessMetadata>;
+  return typeof decision.decisionReadiness === "string" &&
+    typeof decision.decisionText === "string"
+    ? (decision as InventoryCompareDecisionReadinessMetadata)
+    : null;
+}
+
 function readableSignals(signals: readonly string[], limit = 4): string {
   const visibleSignals = signals.slice(0, limit).join(" / ");
   return signals.length > limit
@@ -612,6 +634,8 @@ export function InventoryIntegritySection() {
     useState<InventoryCompareRiskMetadata | null>(null);
   const [compareInterpretationStability, setCompareInterpretationStability] =
     useState<InventoryCompareInterpretationStabilityMetadata | null>(null);
+  const [compareDecisionReadiness, setCompareDecisionReadiness] =
+    useState<InventoryCompareDecisionReadinessMetadata | null>(null);
 
   useEffect(() => {
     const token = session?.access_token;
@@ -629,6 +653,7 @@ export function InventoryIntegritySection() {
       setCompareEvidence(null);
       setCompareRisk(null);
       setCompareInterpretationStability(null);
+      setCompareDecisionReadiness(null);
       return;
     }
 
@@ -664,6 +689,7 @@ export function InventoryIntegritySection() {
           setCompareInterpretationStability(
             extractCompareInterpretationStability(responseBody),
           );
+          setCompareDecisionReadiness(extractCompareDecisionReadiness(responseBody));
           return;
         }
 
@@ -682,6 +708,7 @@ export function InventoryIntegritySection() {
         setCompareInterpretationStability(
           extractCompareInterpretationStability(responseBody),
         );
+        setCompareDecisionReadiness(extractCompareDecisionReadiness(responseBody));
         const readOnlyData = extractInventoryIntegrityReadOnlyData(responseBody);
         if (!readOnlyData) {
           setCompareSourceLabel("static fallback");
@@ -705,6 +732,7 @@ export function InventoryIntegritySection() {
           setCompareEvidence(null);
           setCompareRisk(null);
           setCompareInterpretationStability(null);
+          setCompareDecisionReadiness(null);
         }
       }
     }
@@ -809,6 +837,22 @@ export function InventoryIntegritySection() {
               <span style={styles.supportingText}>
                 source: {compareOperatorSummary.summarySource} / signals:{" "}
                 {readableSignals(compareOperatorSummary.summarySignals)}
+              </span>
+            </>
+          ) : null}
+          {compareDecisionReadiness ? (
+            <>
+              <span style={styles.summaryText}>
+                {compareDecisionReadiness.decisionText}
+              </span>
+              <span style={styles.supportingText}>
+                compare decision readiness:{" "}
+                {compareDecisionReadiness.decisionReadiness} /{" "}
+                {compareDecisionReadiness.decisionReason}
+              </span>
+              <span style={styles.supportingText}>
+                source: {compareDecisionReadiness.decisionSource} / signals:{" "}
+                {readableSignals(compareDecisionReadiness.decisionSignals)}
               </span>
             </>
           ) : null}
@@ -944,6 +988,9 @@ export function InventoryIntegritySection() {
         {compareInterpretationStability
           ? ` interpretation stability ${compareInterpretationStability.interpretationStability}.`
           : ""}
+        {compareDecisionReadiness
+          ? ` decision readiness ${compareDecisionReadiness.decisionReadiness}.`
+          : ""}
       </div>
 
       <div style={{ ...styles.notice, ...styles.neutralNotice }}>
@@ -1065,6 +1112,12 @@ export function InventoryIntegritySection() {
               {projection.metadata.compareRisk ? (
                 <p style={styles.description}>
                   compare risk: {projection.metadata.compareRisk.riskText}
+                </p>
+              ) : null}
+              {projection.metadata.compareDecisionReadiness ? (
+                <p style={styles.description}>
+                  compare decision readiness:{" "}
+                  {projection.metadata.compareDecisionReadiness.decisionText}
                 </p>
               ) : null}
               {projection.metadata.compareInterpretationStability ? (
@@ -1214,6 +1267,16 @@ export function InventoryIntegritySection() {
                   risk reason: {projection.metadata.compareRisk.riskReason} / source:{" "}
                   {projection.metadata.compareRisk.riskSource} / signals:{" "}
                   {readableSignals(projection.metadata.compareRisk.riskSignals)}
+                </p>
+              ) : null}
+              {projection.metadata.compareDecisionReadiness ? (
+                <p style={styles.supportingText}>
+                  decision reason:{" "}
+                  {projection.metadata.compareDecisionReadiness.decisionReason} / source:{" "}
+                  {projection.metadata.compareDecisionReadiness.decisionSource} / signals:{" "}
+                  {readableSignals(
+                    projection.metadata.compareDecisionReadiness.decisionSignals,
+                  )}
                 </p>
               ) : null}
               {projection.metadata.compareInterpretationStability ? (
