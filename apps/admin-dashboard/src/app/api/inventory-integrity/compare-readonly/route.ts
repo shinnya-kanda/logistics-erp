@@ -18,6 +18,8 @@ import type {
   InventoryCompareEscalationReadiness,
   InventoryCompareEscalationReadinessMetadata,
   InventoryCompareHardeningMetadata,
+  InventoryCompareInterpretationStability,
+  InventoryCompareInterpretationStabilityMetadata,
   InventoryCompareMismatchClassification,
   InventoryCompareOperationalPriority,
   InventoryCompareOperationalPriorityMetadata,
@@ -1985,6 +1987,202 @@ function createCompareRiskMetadata({
   };
 }
 
+function interpretationStabilityForSemantics({
+  compareHardening,
+  compareConfidence,
+  projectionFreshness,
+  truthAggregationQuality,
+  compareEvidence,
+  compareRisk,
+  classification,
+  severity,
+  operatorSummary,
+  operatorTimeline,
+  compareStatus,
+}: {
+  readonly compareHardening: InventoryCompareHardeningMetadata;
+  readonly compareConfidence: InventoryCompareConfidence;
+  readonly projectionFreshness: InventoryCompareProjectionFreshness;
+  readonly truthAggregationQuality: InventoryCompareTruthAggregationQuality;
+  readonly compareEvidence: InventoryCompareEvidenceStrength;
+  readonly compareRisk: InventoryCompareRisk;
+  readonly classification: InventoryCompareMismatchClassification;
+  readonly severity: InventoryCompareSeverity;
+  readonly operatorSummary?: InventoryCompareOperatorSummary;
+  readonly operatorTimeline?: InventoryCompareOperatorTimeline;
+  readonly compareStatus?: InventoryCompareStatus;
+}): InventoryCompareInterpretationStability {
+  if (
+    compareConfidence === "confidence_blocked" ||
+    projectionFreshness === "freshness_unavailable" ||
+    truthAggregationQuality === "truth_quality_unavailable" ||
+    compareEvidence === "evidence_unavailable" ||
+    compareHardening.sourceStatus === "compare_source_unavailable" ||
+    compareHardening.scopeStatus === "unavailable_scope" ||
+    classification === "unavailable_projection"
+  ) {
+    return "stability_unavailable";
+  }
+  if (
+    compareConfidence === "confidence_unverified" ||
+    projectionFreshness === "freshness_unknown" ||
+    truthAggregationQuality === "truth_quality_unverified" ||
+    compareEvidence === "evidence_missing" ||
+    compareRisk === "risk_unassessable" ||
+    classification === "compare_unverified" ||
+    severity === "unverified" ||
+    operatorSummary === "summary_source_unverified" ||
+    operatorTimeline === "timeline_wait_for_confirmation" ||
+    compareHardening.resultStatus === "compare_result_unverified"
+  ) {
+    return "stability_unverified";
+  }
+  if (
+    compareConfidence === "confidence_low" ||
+    projectionFreshness === "freshness_stale" ||
+    truthAggregationQuality === "truth_quality_incomplete" ||
+    compareEvidence === "evidence_weak" ||
+    compareRisk === "risk_high" ||
+    compareRisk === "risk_critical" ||
+    compareHardening.sourceStatus === "compare_source_degraded" ||
+    compareHardening.scopeStatus === "degraded_scope" ||
+    compareHardening.scopeStatus === "invalid_scope" ||
+    compareHardening.resultStatus === "compare_result_empty" ||
+    compareHardening.resultStatus === "compare_result_partial" ||
+    classification === "compare_partial" ||
+    classification === "scope_mismatch" ||
+    classification === "stale_projection" ||
+    classification === "degraded_projection"
+  ) {
+    return "stability_fragile";
+  }
+  if (
+    severity === "warning" ||
+    compareConfidence === "confidence_medium" ||
+    projectionFreshness === "freshness_recent" ||
+    truthAggregationQuality === "truth_quality_warning" ||
+    compareEvidence === "evidence_moderate" ||
+    compareRisk === "risk_medium" ||
+    operatorSummary === "summary_review_needed" ||
+    operatorSummary === "summary_action_required" ||
+    operatorTimeline === "timeline_verify_source" ||
+    operatorTimeline === "timeline_review_projection"
+  ) {
+    return "stability_fluctuating";
+  }
+  if (
+    compareHardening.sourceStatus === "compare_source_available" &&
+    compareHardening.scopeStatus === "valid_scope" &&
+    compareConfidence === "confidence_high" &&
+    projectionFreshness === "freshness_current" &&
+    truthAggregationQuality === "truth_quality_stable" &&
+    compareEvidence === "evidence_strong" &&
+    compareRisk === "risk_low" &&
+    severity === "info" &&
+    compareStatus === "matched"
+  ) {
+    return "stability_stable";
+  }
+  return "stability_fluctuating";
+}
+
+function stabilityText(
+  stability: InventoryCompareInterpretationStability,
+): string {
+  if (stability === "stability_stable") {
+    return "compare 解釈は安定して見えます";
+  }
+  if (stability === "stability_fluctuating") {
+    return "compare 解釈は変動する可能性があります";
+  }
+  if (stability === "stability_fragile") {
+    return "compare 解釈は不安定な可能性があります";
+  }
+  if (stability === "stability_unverified") {
+    return "compare 解釈は未検証です";
+  }
+  return "source / evidence unavailable のため解釈保留です";
+}
+
+function stabilityReason(
+  stability: InventoryCompareInterpretationStability,
+): string {
+  if (stability === "stability_stable") {
+    return "confidence / freshness / truth quality / evidence / risk がそろって見えるため、安定した解釈表示として整理します";
+  }
+  if (stability === "stability_fluctuating") {
+    return "warning、medium confidence、recent freshness、moderate evidence などの条件付き signal が見えるため、変動し得る解釈表示として整理します";
+  }
+  if (stability === "stability_fragile") {
+    return "partial / degraded / stale / low confidence / weak evidence / high risk などの signal が見えるため、不安定な解釈表示として整理します";
+  }
+  if (stability === "stability_unverified") {
+    return "未検証または根拠不足の signal が見えるため、解釈を確定しない表示として整理します";
+  }
+  return "source または scope が利用できないため、解釈保留の表示として整理します";
+}
+
+function createCompareInterpretationStabilityMetadata({
+  interpretationStability,
+  compareHardening,
+  compareConfidence,
+  projectionFreshness,
+  truthAggregationQuality,
+  compareEvidence,
+  compareRisk,
+  classification,
+  severity,
+  operatorSummary,
+  operatorTimeline,
+  stabilitySource,
+  stabilitySignals,
+}: {
+  readonly interpretationStability: InventoryCompareInterpretationStability;
+  readonly compareHardening: InventoryCompareHardeningMetadata;
+  readonly compareConfidence: InventoryCompareConfidence;
+  readonly projectionFreshness: InventoryCompareProjectionFreshness;
+  readonly truthAggregationQuality: InventoryCompareTruthAggregationQuality;
+  readonly compareEvidence: InventoryCompareEvidenceStrength;
+  readonly compareRisk: InventoryCompareRisk;
+  readonly classification: InventoryCompareMismatchClassification;
+  readonly severity: InventoryCompareSeverity;
+  readonly operatorSummary?: InventoryCompareOperatorSummary;
+  readonly operatorTimeline?: InventoryCompareOperatorTimeline;
+  readonly stabilitySource: string;
+  readonly stabilitySignals: readonly string[];
+}): InventoryCompareInterpretationStabilityMetadata {
+  return {
+    stabilityId: `inventory-integrity-compare-readonly-${classification}-${interpretationStability}`,
+    interpretationStability,
+    stabilityText: stabilityText(interpretationStability),
+    stabilityReason: stabilityReason(interpretationStability),
+    stabilitySource,
+    stabilitySignals,
+    label: "read-only compare interpretation stability semantics",
+    interpretation:
+      "compare interpretation stability は compare 解釈がどの程度安定して読めるかを示す governance / operational observability metadata です。",
+    noExecutionMeaning:
+      "compare interpretation stability は在庫操作、外部連携、担当設定の変更、安定性表示に基づく在庫変更を開始しません。",
+    compareConfidence,
+    projectionFreshness,
+    truthAggregationQuality,
+    compareEvidence,
+    compareRisk,
+    classification,
+    severity,
+    operatorSummary,
+    operatorTimeline,
+    sourceStatus: compareHardening.sourceStatus,
+    resultStatus: compareHardening.resultStatus,
+    scopeStatus: compareHardening.scopeStatus,
+    truthSource: "inventory_transactions",
+    cacheCompareTarget: "inventory_current",
+    semanticBoundary: "reasoning_visualization_only",
+    executionBoundary:
+      "InventoryCompareInterpretationStabilityMetadata は read-only stability visibility です。操作導線、担当設定の変更、在庫変更は実行しません。",
+  };
+}
+
 function createUnavailableReadOnlyResponse({
   status,
   error,
@@ -2255,6 +2453,36 @@ function createUnavailableReadOnlyResponse({
       compareHardening.scopeStatus,
     ],
   });
+  const compareInterpretationStability =
+    createCompareInterpretationStabilityMetadata({
+      interpretationStability: "stability_unavailable",
+      compareHardening,
+      compareConfidence: compareConfidence.compareConfidence,
+      projectionFreshness: compareProjectionFreshness.projectionFreshness,
+      truthAggregationQuality:
+        compareTruthAggregationQuality.truthAggregationQuality,
+      compareEvidence: compareEvidence.compareEvidence,
+      compareRisk: compareRisk.compareRisk,
+      classification: compareClassification.classification,
+      severity: compareSeverity.severity,
+      operatorSummary: compareOperatorSummary.operatorSummary,
+      operatorTimeline: compareOperatorTimeline.operatorTimeline,
+      stabilitySource: "compare_source_unavailable",
+      stabilitySignals: [
+        compareRisk.compareRisk,
+        compareEvidence.compareEvidence,
+        compareTruthAggregationQuality.truthAggregationQuality,
+        compareProjectionFreshness.projectionFreshness,
+        compareConfidence.compareConfidence,
+        compareOperatorTimeline.operatorTimeline,
+        compareOperatorSummary.operatorSummary,
+        compareSeverity.severity,
+        compareClassification.classification,
+        compareHardening.sourceStatus,
+        compareHardening.resultStatus,
+        compareHardening.scopeStatus,
+      ],
+    });
 
   return NextResponse.json(
     {
@@ -2281,6 +2509,7 @@ function createUnavailableReadOnlyResponse({
       compareTruthAggregationQuality,
       compareEvidence,
       compareRisk,
+      compareInterpretationStability,
       semanticBoundary: "reasoning_visualization_only",
       executionBoundary:
         "compare-readonly endpoint failure は read-only unavailable visibility です。修正、再生成、在庫変更は実行しません。",
@@ -2839,6 +3068,54 @@ function buildCompareProjection(
       compareStatus,
     ],
   });
+  const compareInterpretationStability =
+    createCompareInterpretationStabilityMetadata({
+      interpretationStability: interpretationStabilityForSemantics({
+        compareHardening,
+        compareConfidence: compareConfidence.compareConfidence,
+        projectionFreshness: compareProjectionFreshness.projectionFreshness,
+        truthAggregationQuality:
+          compareTruthAggregationQuality.truthAggregationQuality,
+        compareEvidence: compareEvidence.compareEvidence,
+        compareRisk: compareRisk.compareRisk,
+        classification: mismatchClassification,
+        severity: compareSeverity.severity,
+        operatorTimeline: compareOperatorTimeline.operatorTimeline,
+        compareStatus,
+      }),
+      compareHardening,
+      compareConfidence: compareConfidence.compareConfidence,
+      projectionFreshness: compareProjectionFreshness.projectionFreshness,
+      truthAggregationQuality:
+        compareTruthAggregationQuality.truthAggregationQuality,
+      compareEvidence: compareEvidence.compareEvidence,
+      compareRisk: compareRisk.compareRisk,
+      classification: mismatchClassification,
+      severity: compareSeverity.severity,
+      operatorTimeline: compareOperatorTimeline.operatorTimeline,
+      stabilitySource: "compare_interpretation_stability_semantics_chain",
+      stabilitySignals: [
+        compareRisk.compareRisk,
+        compareEvidence.compareEvidence,
+        compareTruthAggregationQuality.truthAggregationQuality,
+        compareProjectionFreshness.projectionFreshness,
+        compareConfidence.compareConfidence,
+        compareOperatorTimeline.operatorTimeline,
+        compareOperatorMessage.operatorMessage,
+        compareOperatorGuidance.operatorGuidance,
+        compareOwnerActionability.ownerActionability,
+        compareOwnership.ownership,
+        compareOperationalPriority.priority,
+        compareEscalationReadiness.readiness,
+        compareReviewReadiness.readiness,
+        compareSeverity.severity,
+        mismatchClassification,
+        compareHardening.sourceStatus,
+        compareHardening.resultStatus,
+        compareHardening.scopeStatus,
+        compareStatus,
+      ],
+    });
   const projectionId = `real-compare-${row.warehouseCode}-${row.partNo}`;
 
   return {
@@ -2910,6 +3187,7 @@ function buildCompareProjection(
       compareTruthAggregationQuality,
       compareEvidence,
       compareRisk,
+      compareInterpretationStability,
       confidence: {
         level: "medium",
         reason: "real read-only compare rows から作成した visibility です。",
@@ -3742,6 +4020,95 @@ function resolveResponseCompareRisk(
   });
 }
 
+function resolveResponseInterpretationStability(
+  compareHardening: InventoryCompareHardeningMetadata,
+  compareOperatorSummary: InventoryCompareOperatorSummaryMetadata,
+  compareOperatorTimeline: InventoryCompareOperatorTimelineMetadata,
+  compareConfidence: InventoryCompareConfidenceMetadata,
+  compareProjectionFreshness: InventoryCompareProjectionFreshnessMetadata,
+  compareTruthAggregationQuality: InventoryCompareTruthAggregationQualityMetadata,
+  compareEvidence: InventoryCompareEvidenceMetadata,
+  compareRisk: InventoryCompareRiskMetadata,
+  compareProjections: readonly InventoryCompareProjection[],
+): InventoryCompareInterpretationStabilityMetadata {
+  const firstUnavailableStability = compareProjections.find(
+    (projection) =>
+      projection.metadata.compareInterpretationStability
+        ?.interpretationStability === "stability_unavailable",
+  )?.metadata.compareInterpretationStability;
+  if (firstUnavailableStability) return firstUnavailableStability;
+
+  const firstUnverifiedStability = compareProjections.find(
+    (projection) =>
+      projection.metadata.compareInterpretationStability
+        ?.interpretationStability === "stability_unverified",
+  )?.metadata.compareInterpretationStability;
+  if (firstUnverifiedStability) return firstUnverifiedStability;
+
+  const firstFragileStability = compareProjections.find(
+    (projection) =>
+      projection.metadata.compareInterpretationStability
+        ?.interpretationStability === "stability_fragile",
+  )?.metadata.compareInterpretationStability;
+  if (firstFragileStability) return firstFragileStability;
+
+  const firstFluctuatingStability = compareProjections.find(
+    (projection) =>
+      projection.metadata.compareInterpretationStability
+        ?.interpretationStability === "stability_fluctuating",
+  )?.metadata.compareInterpretationStability;
+  if (firstFluctuatingStability) return firstFluctuatingStability;
+
+  return createCompareInterpretationStabilityMetadata({
+    interpretationStability: interpretationStabilityForSemantics({
+      compareHardening,
+      compareConfidence: compareConfidence.compareConfidence,
+      projectionFreshness: compareProjectionFreshness.projectionFreshness,
+      truthAggregationQuality:
+        compareTruthAggregationQuality.truthAggregationQuality,
+      compareEvidence: compareEvidence.compareEvidence,
+      compareRisk: compareRisk.compareRisk,
+      classification: compareOperatorTimeline.classification,
+      severity: compareOperatorTimeline.severity,
+      operatorSummary: compareOperatorSummary.operatorSummary,
+      operatorTimeline: compareOperatorTimeline.operatorTimeline,
+    }),
+    compareHardening,
+    compareConfidence: compareConfidence.compareConfidence,
+    projectionFreshness: compareProjectionFreshness.projectionFreshness,
+    truthAggregationQuality:
+      compareTruthAggregationQuality.truthAggregationQuality,
+    compareEvidence: compareEvidence.compareEvidence,
+    compareRisk: compareRisk.compareRisk,
+    classification: compareOperatorTimeline.classification,
+    severity: compareOperatorTimeline.severity,
+    operatorSummary: compareOperatorSummary.operatorSummary,
+    operatorTimeline: compareOperatorTimeline.operatorTimeline,
+    stabilitySource: "response_level_interpretation_stability_semantics_chain",
+    stabilitySignals: [
+      compareRisk.compareRisk,
+      compareEvidence.compareEvidence,
+      compareTruthAggregationQuality.truthAggregationQuality,
+      compareProjectionFreshness.projectionFreshness,
+      compareConfidence.compareConfidence,
+      compareOperatorSummary.operatorSummary,
+      compareOperatorTimeline.operatorTimeline,
+      compareOperatorTimeline.operatorMessage,
+      compareOperatorTimeline.operatorGuidance,
+      compareOperatorTimeline.ownerActionability,
+      compareOperatorTimeline.ownership,
+      compareOperatorTimeline.operationalPriority,
+      compareOperatorTimeline.escalationReadiness,
+      compareOperatorTimeline.reviewReadiness,
+      compareOperatorTimeline.severity,
+      compareOperatorTimeline.classification,
+      compareHardening.sourceStatus,
+      compareHardening.resultStatus,
+      compareHardening.scopeStatus,
+    ],
+  });
+}
+
 export async function GET(req: NextRequest) {
   const guard = await requireAdminDashboardRole(req);
   if (!guard.ok) {
@@ -3921,6 +4288,18 @@ export async function GET(req: NextRequest) {
     compareEvidence,
     readOnlyData.compareProjections,
   );
+  const compareInterpretationStability =
+    resolveResponseInterpretationStability(
+      compareHardening,
+      compareOperatorSummary,
+      compareOperatorTimeline,
+      compareConfidence,
+      compareProjectionFreshness,
+      compareTruthAggregationQuality,
+      compareEvidence,
+      compareRisk,
+      readOnlyData.compareProjections,
+    );
   const endpointContract = createInventoryIntegrityReadOnlyEndpointContract(endpointPath);
   const request = createInventoryIntegrityReadOnlyEdgeRequest(endpointContract);
   const fetchResult = createInventoryIntegrityFetchResult(
@@ -3946,6 +4325,7 @@ export async function GET(req: NextRequest) {
     compareTruthAggregationQuality,
     compareEvidence,
     compareRisk,
+    compareInterpretationStability,
   );
   const payload = adaptFetchResponseToPayload(fetchResult);
   const mappedResponse = mapEdgeProjectionResponse({
@@ -3978,6 +4358,7 @@ export async function GET(req: NextRequest) {
     compareTruthAggregationQuality,
     compareEvidence,
     compareRisk,
+    compareInterpretationStability,
     normalizedData: mappedResponse.normalizedData,
     metadata: mappedResponse.metadata,
     statusSemantics: mappedResponse.statusSemantics,

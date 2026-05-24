@@ -139,6 +139,14 @@ export function mapEdgeProjectionMetadata(
           riskSignals: [...metadata.compareRisk.riskSignals],
         }
       : undefined,
+    compareInterpretationStability: metadata.compareInterpretationStability
+      ? {
+          ...metadata.compareInterpretationStability,
+          stabilitySignals: [
+            ...metadata.compareInterpretationStability.stabilitySignals,
+          ],
+        }
+      : undefined,
     responseContractVersion: metadata.payloadVersion,
     readability: metadata.readability,
     adapterInputBoundary: metadata.adapterInputBoundary,
