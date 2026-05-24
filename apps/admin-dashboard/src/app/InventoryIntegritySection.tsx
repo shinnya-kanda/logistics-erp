@@ -48,6 +48,7 @@ import type {
   InventoryCompareOperatorMessageMetadata,
   InventoryCompareOperatorSummaryMetadata,
   InventoryCompareOperatorTimelineMetadata,
+  InventoryCompareOperationalImpactMetadata,
   InventoryCompareProjectionFreshnessMetadata,
   InventoryCompareRiskMetadata,
   InventoryCompareScope,
@@ -486,6 +487,27 @@ function extractCompareDecisionReadiness(
     : null;
 }
 
+function extractCompareOperationalImpact(
+  value: unknown,
+): InventoryCompareOperationalImpactMetadata | null {
+  if (!value || typeof value !== "object") return null;
+
+  const candidate = value as { readonly compareOperationalImpact?: unknown };
+  if (
+    !candidate.compareOperationalImpact ||
+    typeof candidate.compareOperationalImpact !== "object"
+  ) {
+    return null;
+  }
+
+  const impact =
+    candidate.compareOperationalImpact as Partial<InventoryCompareOperationalImpactMetadata>;
+  return typeof impact.operationalImpact === "string" &&
+    typeof impact.impactText === "string"
+    ? (impact as InventoryCompareOperationalImpactMetadata)
+    : null;
+}
+
 function readableSignals(signals: readonly string[], limit = 4): string {
   const visibleSignals = signals.slice(0, limit).join(" / ");
   return signals.length > limit
@@ -636,6 +658,8 @@ export function InventoryIntegritySection() {
     useState<InventoryCompareInterpretationStabilityMetadata | null>(null);
   const [compareDecisionReadiness, setCompareDecisionReadiness] =
     useState<InventoryCompareDecisionReadinessMetadata | null>(null);
+  const [compareOperationalImpact, setCompareOperationalImpact] =
+    useState<InventoryCompareOperationalImpactMetadata | null>(null);
 
   useEffect(() => {
     const token = session?.access_token;
@@ -654,6 +678,7 @@ export function InventoryIntegritySection() {
       setCompareRisk(null);
       setCompareInterpretationStability(null);
       setCompareDecisionReadiness(null);
+      setCompareOperationalImpact(null);
       return;
     }
 
@@ -690,6 +715,7 @@ export function InventoryIntegritySection() {
             extractCompareInterpretationStability(responseBody),
           );
           setCompareDecisionReadiness(extractCompareDecisionReadiness(responseBody));
+          setCompareOperationalImpact(extractCompareOperationalImpact(responseBody));
           return;
         }
 
@@ -709,6 +735,7 @@ export function InventoryIntegritySection() {
           extractCompareInterpretationStability(responseBody),
         );
         setCompareDecisionReadiness(extractCompareDecisionReadiness(responseBody));
+        setCompareOperationalImpact(extractCompareOperationalImpact(responseBody));
         const readOnlyData = extractInventoryIntegrityReadOnlyData(responseBody);
         if (!readOnlyData) {
           setCompareSourceLabel("static fallback");
@@ -733,6 +760,7 @@ export function InventoryIntegritySection() {
           setCompareRisk(null);
           setCompareInterpretationStability(null);
           setCompareDecisionReadiness(null);
+          setCompareOperationalImpact(null);
         }
       }
     }
@@ -837,6 +865,22 @@ export function InventoryIntegritySection() {
               <span style={styles.supportingText}>
                 source: {compareOperatorSummary.summarySource} / signals:{" "}
                 {readableSignals(compareOperatorSummary.summarySignals)}
+              </span>
+            </>
+          ) : null}
+          {compareOperationalImpact ? (
+            <>
+              <span style={styles.summaryText}>
+                {compareOperationalImpact.impactText}
+              </span>
+              <span style={styles.supportingText}>
+                compare operational impact:{" "}
+                {compareOperationalImpact.operationalImpact} /{" "}
+                {compareOperationalImpact.impactReason}
+              </span>
+              <span style={styles.supportingText}>
+                source: {compareOperationalImpact.impactSource} / signals:{" "}
+                {readableSignals(compareOperationalImpact.impactSignals)}
               </span>
             </>
           ) : null}
@@ -991,6 +1035,9 @@ export function InventoryIntegritySection() {
         {compareDecisionReadiness
           ? ` decision readiness ${compareDecisionReadiness.decisionReadiness}.`
           : ""}
+        {compareOperationalImpact
+          ? ` operational impact ${compareOperationalImpact.operationalImpact}.`
+          : ""}
       </div>
 
       <div style={{ ...styles.notice, ...styles.neutralNotice }}>
@@ -1112,6 +1159,12 @@ export function InventoryIntegritySection() {
               {projection.metadata.compareRisk ? (
                 <p style={styles.description}>
                   compare risk: {projection.metadata.compareRisk.riskText}
+                </p>
+              ) : null}
+              {projection.metadata.compareOperationalImpact ? (
+                <p style={styles.description}>
+                  compare operational impact:{" "}
+                  {projection.metadata.compareOperationalImpact.impactText}
                 </p>
               ) : null}
               {projection.metadata.compareDecisionReadiness ? (
@@ -1267,6 +1320,16 @@ export function InventoryIntegritySection() {
                   risk reason: {projection.metadata.compareRisk.riskReason} / source:{" "}
                   {projection.metadata.compareRisk.riskSource} / signals:{" "}
                   {readableSignals(projection.metadata.compareRisk.riskSignals)}
+                </p>
+              ) : null}
+              {projection.metadata.compareOperationalImpact ? (
+                <p style={styles.supportingText}>
+                  impact reason:{" "}
+                  {projection.metadata.compareOperationalImpact.impactReason} / source:{" "}
+                  {projection.metadata.compareOperationalImpact.impactSource} / signals:{" "}
+                  {readableSignals(
+                    projection.metadata.compareOperationalImpact.impactSignals,
+                  )}
                 </p>
               ) : null}
               {projection.metadata.compareDecisionReadiness ? (

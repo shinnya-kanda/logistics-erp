@@ -205,6 +205,12 @@ function normalizeProjectionMetadata(
           decisionSignals: [...metadata.compareDecisionReadiness.decisionSignals],
         }
       : undefined,
+    compareOperationalImpact: metadata.compareOperationalImpact
+      ? {
+          ...metadata.compareOperationalImpact,
+          impactSignals: [...metadata.compareOperationalImpact.impactSignals],
+        }
+      : undefined,
     confidence: normalizeConfidence(metadata.confidence),
     freshness: normalizeFreshness(metadata.freshness),
     completeness: normalizeCompleteness(metadata.completeness),

@@ -153,6 +153,12 @@ export function mapEdgeProjectionMetadata(
           decisionSignals: [...metadata.compareDecisionReadiness.decisionSignals],
         }
       : undefined,
+    compareOperationalImpact: metadata.compareOperationalImpact
+      ? {
+          ...metadata.compareOperationalImpact,
+          impactSignals: [...metadata.compareOperationalImpact.impactSignals],
+        }
+      : undefined,
     responseContractVersion: metadata.payloadVersion,
     readability: metadata.readability,
     adapterInputBoundary: metadata.adapterInputBoundary,
