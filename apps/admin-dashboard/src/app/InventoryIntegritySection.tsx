@@ -49,6 +49,7 @@ import type {
   InventoryCompareGovernanceAuditTrailMetadata,
   InventoryCompareGovernanceExplainabilityMetadata,
   InventoryCompareGovernanceReasoningCoherenceMetadata,
+  InventoryCompareGovernanceSemanticDriftMetadata,
   InventoryCompareGovernancePostureMetadata,
   InventoryCompareOperatorGuidanceMetadata,
   InventoryCompareOperatorMessageMetadata,
@@ -664,6 +665,27 @@ function extractCompareGovernanceReasoningCoherence(
     : null;
 }
 
+function extractCompareGovernanceSemanticDrift(
+  value: unknown,
+): InventoryCompareGovernanceSemanticDriftMetadata | null {
+  if (!value || typeof value !== "object") return null;
+
+  const candidate = value as { readonly compareGovernanceSemanticDrift?: unknown };
+  if (
+    !candidate.compareGovernanceSemanticDrift ||
+    typeof candidate.compareGovernanceSemanticDrift !== "object"
+  ) {
+    return null;
+  }
+
+  const semanticDrift =
+    candidate.compareGovernanceSemanticDrift as Partial<InventoryCompareGovernanceSemanticDriftMetadata>;
+  return typeof semanticDrift.governanceSemanticDrift === "string" &&
+    typeof semanticDrift.semanticDriftText === "string"
+    ? (semanticDrift as InventoryCompareGovernanceSemanticDriftMetadata)
+    : null;
+}
+
 function readableSignals(signals: readonly string[], limit = 4): string {
   const visibleSignals = signals.slice(0, limit).join(" / ");
   return signals.length > limit
@@ -832,6 +854,8 @@ export function InventoryIntegritySection() {
     compareGovernanceReasoningCoherence,
     setCompareGovernanceReasoningCoherence,
   ] = useState<InventoryCompareGovernanceReasoningCoherenceMetadata | null>(null);
+  const [compareGovernanceSemanticDrift, setCompareGovernanceSemanticDrift] =
+    useState<InventoryCompareGovernanceSemanticDriftMetadata | null>(null);
 
   useEffect(() => {
     const token = session?.access_token;
@@ -858,6 +882,7 @@ export function InventoryIntegritySection() {
       setCompareGovernanceAuditTrail(null);
       setCompareGovernanceExplainability(null);
       setCompareGovernanceReasoningCoherence(null);
+      setCompareGovernanceSemanticDrift(null);
       return;
     }
 
@@ -912,6 +937,9 @@ export function InventoryIntegritySection() {
           setCompareGovernanceReasoningCoherence(
             extractCompareGovernanceReasoningCoherence(responseBody),
           );
+          setCompareGovernanceSemanticDrift(
+            extractCompareGovernanceSemanticDrift(responseBody),
+          );
           return;
         }
 
@@ -947,6 +975,9 @@ export function InventoryIntegritySection() {
         setCompareGovernanceReasoningCoherence(
           extractCompareGovernanceReasoningCoherence(responseBody),
         );
+        setCompareGovernanceSemanticDrift(
+          extractCompareGovernanceSemanticDrift(responseBody),
+        );
         const readOnlyData = extractInventoryIntegrityReadOnlyData(responseBody);
         if (!readOnlyData) {
           setCompareSourceLabel("static fallback");
@@ -979,6 +1010,7 @@ export function InventoryIntegritySection() {
           setCompareGovernanceAuditTrail(null);
           setCompareGovernanceExplainability(null);
           setCompareGovernanceReasoningCoherence(null);
+          setCompareGovernanceSemanticDrift(null);
         }
       }
     }
@@ -1083,6 +1115,22 @@ export function InventoryIntegritySection() {
               <span style={styles.supportingText}>
                 source: {compareOperatorSummary.summarySource} / signals:{" "}
                 {readableSignals(compareOperatorSummary.summarySignals)}
+              </span>
+            </>
+          ) : null}
+          {compareGovernanceSemanticDrift ? (
+            <>
+              <span style={styles.summaryText}>
+                {compareGovernanceSemanticDrift.semanticDriftText}
+              </span>
+              <span style={styles.supportingText}>
+                compare governance semantic drift:{" "}
+                {compareGovernanceSemanticDrift.governanceSemanticDrift} /{" "}
+                {compareGovernanceSemanticDrift.semanticDriftReason}
+              </span>
+              <span style={styles.supportingText}>
+                source: {compareGovernanceSemanticDrift.semanticDriftSource} / signals:{" "}
+                {readableSignals(compareGovernanceSemanticDrift.semanticDriftSignals)}
               </span>
             </>
           ) : null}
@@ -1395,6 +1443,9 @@ export function InventoryIntegritySection() {
         {compareGovernanceReasoningCoherence
           ? ` governance reasoning coherence ${compareGovernanceReasoningCoherence.governanceReasoningCoherence}.`
           : ""}
+        {compareGovernanceSemanticDrift
+          ? ` governance semantic drift ${compareGovernanceSemanticDrift.governanceSemanticDrift}.`
+          : ""}
       </div>
 
       <div style={{ ...styles.notice, ...styles.neutralNotice }}>
@@ -1543,6 +1594,12 @@ export function InventoryIntegritySection() {
                     projection.metadata.compareGovernanceReasoningCoherence
                       .reasoningCoherenceText
                   }
+                </p>
+              ) : null}
+              {projection.metadata.compareGovernanceSemanticDrift ? (
+                <p style={styles.description}>
+                  compare governance semantic drift:{" "}
+                  {projection.metadata.compareGovernanceSemanticDrift.semanticDriftText}
                 </p>
               ) : null}
               {projection.metadata.compareGovernanceDisposition ? (
@@ -1771,6 +1828,25 @@ export function InventoryIntegritySection() {
                   {readableSignals(
                     projection.metadata.compareGovernanceReasoningCoherence
                       .reasoningCoherenceSignals,
+                  )}
+                </p>
+              ) : null}
+              {projection.metadata.compareGovernanceSemanticDrift ? (
+                <p style={styles.supportingText}>
+                  semantic drift reason:{" "}
+                  {
+                    projection.metadata.compareGovernanceSemanticDrift
+                      .semanticDriftReason
+                  }{" "}
+                  / source:{" "}
+                  {
+                    projection.metadata.compareGovernanceSemanticDrift
+                      .semanticDriftSource
+                  }{" "}
+                  / signals:{" "}
+                  {readableSignals(
+                    projection.metadata.compareGovernanceSemanticDrift
+                      .semanticDriftSignals,
                   )}
                 </p>
               ) : null}

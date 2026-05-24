@@ -214,6 +214,14 @@ export function mapEdgeProjectionMetadata(
           ],
         }
       : undefined,
+    compareGovernanceSemanticDrift: metadata.compareGovernanceSemanticDrift
+      ? {
+          ...metadata.compareGovernanceSemanticDrift,
+          semanticDriftSignals: [
+            ...metadata.compareGovernanceSemanticDrift.semanticDriftSignals,
+          ],
+        }
+      : undefined,
     responseContractVersion: metadata.payloadVersion,
     readability: metadata.readability,
     adapterInputBoundary: metadata.adapterInputBoundary,
