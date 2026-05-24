@@ -44,6 +44,7 @@ import type {
   InventoryCompareHardeningMetadata,
   InventoryCompareInterpretationStabilityMetadata,
   InventoryCompareMismatchClassification,
+  InventoryCompareGovernanceDispositionMetadata,
   InventoryCompareGovernancePostureMetadata,
   InventoryCompareOperatorGuidanceMetadata,
   InventoryCompareOperatorMessageMetadata,
@@ -552,6 +553,27 @@ function extractCompareGovernancePosture(
     : null;
 }
 
+function extractCompareGovernanceDisposition(
+  value: unknown,
+): InventoryCompareGovernanceDispositionMetadata | null {
+  if (!value || typeof value !== "object") return null;
+
+  const candidate = value as { readonly compareGovernanceDisposition?: unknown };
+  if (
+    !candidate.compareGovernanceDisposition ||
+    typeof candidate.compareGovernanceDisposition !== "object"
+  ) {
+    return null;
+  }
+
+  const disposition =
+    candidate.compareGovernanceDisposition as Partial<InventoryCompareGovernanceDispositionMetadata>;
+  return typeof disposition.governanceDisposition === "string" &&
+    typeof disposition.dispositionText === "string"
+    ? (disposition as InventoryCompareGovernanceDispositionMetadata)
+    : null;
+}
+
 function readableSignals(signals: readonly string[], limit = 4): string {
   const visibleSignals = signals.slice(0, limit).join(" / ");
   return signals.length > limit
@@ -708,6 +730,8 @@ export function InventoryIntegritySection() {
     useState<InventoryCompareOperationalAttentionMetadata | null>(null);
   const [compareGovernancePosture, setCompareGovernancePosture] =
     useState<InventoryCompareGovernancePostureMetadata | null>(null);
+  const [compareGovernanceDisposition, setCompareGovernanceDisposition] =
+    useState<InventoryCompareGovernanceDispositionMetadata | null>(null);
 
   useEffect(() => {
     const token = session?.access_token;
@@ -729,6 +753,7 @@ export function InventoryIntegritySection() {
       setCompareOperationalImpact(null);
       setCompareOperationalAttention(null);
       setCompareGovernancePosture(null);
+      setCompareGovernanceDisposition(null);
       return;
     }
 
@@ -768,6 +793,9 @@ export function InventoryIntegritySection() {
           setCompareOperationalImpact(extractCompareOperationalImpact(responseBody));
           setCompareOperationalAttention(extractCompareOperationalAttention(responseBody));
           setCompareGovernancePosture(extractCompareGovernancePosture(responseBody));
+          setCompareGovernanceDisposition(
+            extractCompareGovernanceDisposition(responseBody),
+          );
           return;
         }
 
@@ -790,6 +818,9 @@ export function InventoryIntegritySection() {
         setCompareOperationalImpact(extractCompareOperationalImpact(responseBody));
         setCompareOperationalAttention(extractCompareOperationalAttention(responseBody));
         setCompareGovernancePosture(extractCompareGovernancePosture(responseBody));
+        setCompareGovernanceDisposition(
+          extractCompareGovernanceDisposition(responseBody),
+        );
         const readOnlyData = extractInventoryIntegrityReadOnlyData(responseBody);
         if (!readOnlyData) {
           setCompareSourceLabel("static fallback");
@@ -817,6 +848,7 @@ export function InventoryIntegritySection() {
           setCompareOperationalImpact(null);
           setCompareOperationalAttention(null);
           setCompareGovernancePosture(null);
+          setCompareGovernanceDisposition(null);
         }
       }
     }
@@ -921,6 +953,22 @@ export function InventoryIntegritySection() {
               <span style={styles.supportingText}>
                 source: {compareOperatorSummary.summarySource} / signals:{" "}
                 {readableSignals(compareOperatorSummary.summarySignals)}
+              </span>
+            </>
+          ) : null}
+          {compareGovernanceDisposition ? (
+            <>
+              <span style={styles.summaryText}>
+                {compareGovernanceDisposition.dispositionText}
+              </span>
+              <span style={styles.supportingText}>
+                compare governance disposition:{" "}
+                {compareGovernanceDisposition.governanceDisposition} /{" "}
+                {compareGovernanceDisposition.dispositionReason}
+              </span>
+              <span style={styles.supportingText}>
+                source: {compareGovernanceDisposition.dispositionSource} / signals:{" "}
+                {readableSignals(compareGovernanceDisposition.dispositionSignals)}
               </span>
             </>
           ) : null}
@@ -1132,6 +1180,9 @@ export function InventoryIntegritySection() {
         {compareGovernancePosture
           ? ` governance posture ${compareGovernancePosture.governancePosture}.`
           : ""}
+        {compareGovernanceDisposition
+          ? ` governance disposition ${compareGovernanceDisposition.governanceDisposition}.`
+          : ""}
       </div>
 
       <div style={{ ...styles.notice, ...styles.neutralNotice }}>
@@ -1253,6 +1304,12 @@ export function InventoryIntegritySection() {
               {projection.metadata.compareRisk ? (
                 <p style={styles.description}>
                   compare risk: {projection.metadata.compareRisk.riskText}
+                </p>
+              ) : null}
+              {projection.metadata.compareGovernanceDisposition ? (
+                <p style={styles.description}>
+                  compare governance disposition:{" "}
+                  {projection.metadata.compareGovernanceDisposition.dispositionText}
                 </p>
               ) : null}
               {projection.metadata.compareGovernancePosture ? (
@@ -1426,6 +1483,16 @@ export function InventoryIntegritySection() {
                   risk reason: {projection.metadata.compareRisk.riskReason} / source:{" "}
                   {projection.metadata.compareRisk.riskSource} / signals:{" "}
                   {readableSignals(projection.metadata.compareRisk.riskSignals)}
+                </p>
+              ) : null}
+              {projection.metadata.compareGovernanceDisposition ? (
+                <p style={styles.supportingText}>
+                  disposition reason:{" "}
+                  {projection.metadata.compareGovernanceDisposition.dispositionReason} / source:{" "}
+                  {projection.metadata.compareGovernanceDisposition.dispositionSource} / signals:{" "}
+                  {readableSignals(
+                    projection.metadata.compareGovernanceDisposition.dispositionSignals,
+                  )}
                 </p>
               ) : null}
               {projection.metadata.compareGovernancePosture ? (

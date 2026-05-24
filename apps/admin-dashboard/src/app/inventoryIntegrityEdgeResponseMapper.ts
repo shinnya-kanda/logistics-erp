@@ -173,6 +173,14 @@ export function mapEdgeProjectionMetadata(
           postureSignals: [...metadata.compareGovernancePosture.postureSignals],
         }
       : undefined,
+    compareGovernanceDisposition: metadata.compareGovernanceDisposition
+      ? {
+          ...metadata.compareGovernanceDisposition,
+          dispositionSignals: [
+            ...metadata.compareGovernanceDisposition.dispositionSignals,
+          ],
+        }
+      : undefined,
     responseContractVersion: metadata.payloadVersion,
     readability: metadata.readability,
     adapterInputBoundary: metadata.adapterInputBoundary,
