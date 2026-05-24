@@ -159,6 +159,14 @@ export function mapEdgeProjectionMetadata(
           impactSignals: [...metadata.compareOperationalImpact.impactSignals],
         }
       : undefined,
+    compareOperationalAttention: metadata.compareOperationalAttention
+      ? {
+          ...metadata.compareOperationalAttention,
+          attentionSignals: [
+            ...metadata.compareOperationalAttention.attentionSignals,
+          ],
+        }
+      : undefined,
     responseContractVersion: metadata.payloadVersion,
     readability: metadata.readability,
     adapterInputBoundary: metadata.adapterInputBoundary,

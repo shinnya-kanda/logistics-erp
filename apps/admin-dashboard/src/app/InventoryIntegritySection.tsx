@@ -48,6 +48,7 @@ import type {
   InventoryCompareOperatorMessageMetadata,
   InventoryCompareOperatorSummaryMetadata,
   InventoryCompareOperatorTimelineMetadata,
+  InventoryCompareOperationalAttentionMetadata,
   InventoryCompareOperationalImpactMetadata,
   InventoryCompareProjectionFreshnessMetadata,
   InventoryCompareRiskMetadata,
@@ -508,6 +509,27 @@ function extractCompareOperationalImpact(
     : null;
 }
 
+function extractCompareOperationalAttention(
+  value: unknown,
+): InventoryCompareOperationalAttentionMetadata | null {
+  if (!value || typeof value !== "object") return null;
+
+  const candidate = value as { readonly compareOperationalAttention?: unknown };
+  if (
+    !candidate.compareOperationalAttention ||
+    typeof candidate.compareOperationalAttention !== "object"
+  ) {
+    return null;
+  }
+
+  const attention =
+    candidate.compareOperationalAttention as Partial<InventoryCompareOperationalAttentionMetadata>;
+  return typeof attention.operationalAttention === "string" &&
+    typeof attention.attentionText === "string"
+    ? (attention as InventoryCompareOperationalAttentionMetadata)
+    : null;
+}
+
 function readableSignals(signals: readonly string[], limit = 4): string {
   const visibleSignals = signals.slice(0, limit).join(" / ");
   return signals.length > limit
@@ -660,6 +682,8 @@ export function InventoryIntegritySection() {
     useState<InventoryCompareDecisionReadinessMetadata | null>(null);
   const [compareOperationalImpact, setCompareOperationalImpact] =
     useState<InventoryCompareOperationalImpactMetadata | null>(null);
+  const [compareOperationalAttention, setCompareOperationalAttention] =
+    useState<InventoryCompareOperationalAttentionMetadata | null>(null);
 
   useEffect(() => {
     const token = session?.access_token;
@@ -679,6 +703,7 @@ export function InventoryIntegritySection() {
       setCompareInterpretationStability(null);
       setCompareDecisionReadiness(null);
       setCompareOperationalImpact(null);
+      setCompareOperationalAttention(null);
       return;
     }
 
@@ -716,6 +741,7 @@ export function InventoryIntegritySection() {
           );
           setCompareDecisionReadiness(extractCompareDecisionReadiness(responseBody));
           setCompareOperationalImpact(extractCompareOperationalImpact(responseBody));
+          setCompareOperationalAttention(extractCompareOperationalAttention(responseBody));
           return;
         }
 
@@ -736,6 +762,7 @@ export function InventoryIntegritySection() {
         );
         setCompareDecisionReadiness(extractCompareDecisionReadiness(responseBody));
         setCompareOperationalImpact(extractCompareOperationalImpact(responseBody));
+        setCompareOperationalAttention(extractCompareOperationalAttention(responseBody));
         const readOnlyData = extractInventoryIntegrityReadOnlyData(responseBody);
         if (!readOnlyData) {
           setCompareSourceLabel("static fallback");
@@ -761,6 +788,7 @@ export function InventoryIntegritySection() {
           setCompareInterpretationStability(null);
           setCompareDecisionReadiness(null);
           setCompareOperationalImpact(null);
+          setCompareOperationalAttention(null);
         }
       }
     }
@@ -865,6 +893,22 @@ export function InventoryIntegritySection() {
               <span style={styles.supportingText}>
                 source: {compareOperatorSummary.summarySource} / signals:{" "}
                 {readableSignals(compareOperatorSummary.summarySignals)}
+              </span>
+            </>
+          ) : null}
+          {compareOperationalAttention ? (
+            <>
+              <span style={styles.summaryText}>
+                {compareOperationalAttention.attentionText}
+              </span>
+              <span style={styles.supportingText}>
+                compare operational attention:{" "}
+                {compareOperationalAttention.operationalAttention} /{" "}
+                {compareOperationalAttention.attentionReason}
+              </span>
+              <span style={styles.supportingText}>
+                source: {compareOperationalAttention.attentionSource} / signals:{" "}
+                {readableSignals(compareOperationalAttention.attentionSignals)}
               </span>
             </>
           ) : null}
@@ -1038,6 +1082,9 @@ export function InventoryIntegritySection() {
         {compareOperationalImpact
           ? ` operational impact ${compareOperationalImpact.operationalImpact}.`
           : ""}
+        {compareOperationalAttention
+          ? ` operational attention ${compareOperationalAttention.operationalAttention}.`
+          : ""}
       </div>
 
       <div style={{ ...styles.notice, ...styles.neutralNotice }}>
@@ -1159,6 +1206,12 @@ export function InventoryIntegritySection() {
               {projection.metadata.compareRisk ? (
                 <p style={styles.description}>
                   compare risk: {projection.metadata.compareRisk.riskText}
+                </p>
+              ) : null}
+              {projection.metadata.compareOperationalAttention ? (
+                <p style={styles.description}>
+                  compare operational attention:{" "}
+                  {projection.metadata.compareOperationalAttention.attentionText}
                 </p>
               ) : null}
               {projection.metadata.compareOperationalImpact ? (
@@ -1320,6 +1373,16 @@ export function InventoryIntegritySection() {
                   risk reason: {projection.metadata.compareRisk.riskReason} / source:{" "}
                   {projection.metadata.compareRisk.riskSource} / signals:{" "}
                   {readableSignals(projection.metadata.compareRisk.riskSignals)}
+                </p>
+              ) : null}
+              {projection.metadata.compareOperationalAttention ? (
+                <p style={styles.supportingText}>
+                  attention reason:{" "}
+                  {projection.metadata.compareOperationalAttention.attentionReason} / source:{" "}
+                  {projection.metadata.compareOperationalAttention.attentionSource} / signals:{" "}
+                  {readableSignals(
+                    projection.metadata.compareOperationalAttention.attentionSignals,
+                  )}
                 </p>
               ) : null}
               {projection.metadata.compareOperationalImpact ? (
