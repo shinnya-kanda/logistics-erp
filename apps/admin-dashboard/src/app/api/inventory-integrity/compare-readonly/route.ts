@@ -53,6 +53,8 @@ import type {
   InventoryCompareGovernanceSemanticObservabilityContinuityMetadata,
   InventoryCompareGovernanceSemanticDegradationTolerance,
   InventoryCompareGovernanceSemanticDegradationToleranceMetadata,
+  InventoryCompareGovernanceSemanticSurvivability,
+  InventoryCompareGovernanceSemanticSurvivabilityMetadata,
   InventoryCompareOperationalImpact,
   InventoryCompareOperationalImpactMetadata,
   InventoryCompareOwnership,
@@ -6748,6 +6750,370 @@ function createCompareGovernanceSemanticDegradationToleranceMetadata({
   };
 }
 
+function governanceSemanticSurvivabilityForSemantics({
+  compareHardening,
+  governanceSemanticDegradationTolerance,
+  governanceSemanticObservabilityContinuity,
+  governanceSemanticRecoverability,
+  governanceSemanticIntegrityBoundary,
+  governanceSemanticResilience,
+  governanceSemanticConvergence,
+  governanceSemanticDrift,
+  governanceReasoningCoherence,
+  governanceExplainability,
+  governanceAuditTrail,
+  governanceRetention,
+  governanceDisposition,
+  governancePosture,
+  operationalAttention,
+  operationalImpact,
+  decisionReadiness,
+  interpretationStability,
+  compareRisk,
+  compareEvidence,
+  compareConfidence,
+  projectionFreshness,
+  truthAggregationQuality,
+  severity,
+  operationalPriority,
+  ownerActionability,
+  reviewReadiness,
+  escalationReadiness,
+  operatorSummary,
+  operatorTimeline,
+  operatorMessage,
+  operatorGuidance,
+  classification,
+}: {
+  readonly compareHardening: InventoryCompareHardeningMetadata;
+  readonly governanceSemanticDegradationTolerance: InventoryCompareGovernanceSemanticDegradationTolerance;
+  readonly governanceSemanticObservabilityContinuity: InventoryCompareGovernanceSemanticObservabilityContinuity;
+  readonly governanceSemanticRecoverability: InventoryCompareGovernanceSemanticRecoverability;
+  readonly governanceSemanticIntegrityBoundary: InventoryCompareGovernanceSemanticIntegrityBoundary;
+  readonly governanceSemanticResilience: InventoryCompareGovernanceSemanticResilience;
+  readonly governanceSemanticConvergence: InventoryCompareGovernanceSemanticConvergence;
+  readonly governanceSemanticDrift: InventoryCompareGovernanceSemanticDrift;
+  readonly governanceReasoningCoherence: InventoryCompareGovernanceReasoningCoherence;
+  readonly governanceExplainability: InventoryCompareGovernanceExplainability;
+  readonly governanceAuditTrail: InventoryCompareGovernanceAuditTrail;
+  readonly governanceRetention: InventoryCompareGovernanceRetention;
+  readonly governanceDisposition: InventoryCompareGovernanceDisposition;
+  readonly governancePosture: InventoryCompareGovernancePosture;
+  readonly operationalAttention: InventoryCompareOperationalAttention;
+  readonly operationalImpact: InventoryCompareOperationalImpact;
+  readonly decisionReadiness: InventoryCompareDecisionReadiness;
+  readonly interpretationStability: InventoryCompareInterpretationStability;
+  readonly compareRisk: InventoryCompareRisk;
+  readonly compareEvidence: InventoryCompareEvidenceStrength;
+  readonly compareConfidence: InventoryCompareConfidence;
+  readonly projectionFreshness: InventoryCompareProjectionFreshness;
+  readonly truthAggregationQuality: InventoryCompareTruthAggregationQuality;
+  readonly severity: InventoryCompareSeverity;
+  readonly operationalPriority: InventoryCompareOperationalPriority;
+  readonly ownerActionability?: InventoryCompareOwnerActionability;
+  readonly reviewReadiness: InventoryCompareReviewReadiness;
+  readonly escalationReadiness: InventoryCompareEscalationReadiness;
+  readonly operatorSummary?: InventoryCompareOperatorSummary;
+  readonly operatorTimeline?: InventoryCompareOperatorTimeline;
+  readonly operatorMessage?: InventoryCompareOperatorMessage;
+  readonly operatorGuidance?: InventoryCompareOperatorGuidance;
+  readonly classification: InventoryCompareMismatchClassification;
+}): InventoryCompareGovernanceSemanticSurvivability {
+  if (
+    governanceSemanticDegradationTolerance === "tolerance_unavailable" ||
+    governanceSemanticObservabilityContinuity === "continuity_unavailable" ||
+    governanceSemanticRecoverability === "recovery_unavailable" ||
+    governanceSemanticIntegrityBoundary === "boundary_unavailable" ||
+    governanceSemanticResilience === "resilience_unavailable" ||
+    governanceSemanticConvergence === "convergence_unavailable" ||
+    governanceSemanticDrift === "drift_unavailable" ||
+    governanceReasoningCoherence === "reasoning_unavailable" ||
+    governanceExplainability === "explainability_unavailable" ||
+    governanceAuditTrail === "audit_unavailable" ||
+    compareHardening.sourceStatus === "compare_source_unavailable" ||
+    compareHardening.scopeStatus === "unavailable_scope" ||
+    compareEvidence === "evidence_unavailable" ||
+    compareConfidence === "confidence_blocked" ||
+    projectionFreshness === "freshness_unavailable" ||
+    truthAggregationQuality === "truth_quality_unavailable" ||
+    interpretationStability === "stability_unavailable" ||
+    classification === "unavailable_projection"
+  ) {
+    return "survivability_unavailable";
+  }
+  if (
+    governanceSemanticDegradationTolerance === "intolerable_degradation" ||
+    governanceSemanticObservabilityContinuity === "broken_continuity" ||
+    governanceSemanticRecoverability === "nonrecoverable_semantics" ||
+    governanceSemanticIntegrityBoundary === "outside_integrity_boundary" ||
+    governanceSemanticResilience === "collapsed_resilience" ||
+    governanceSemanticConvergence === "nonconverging_semantics" ||
+    governanceSemanticDrift === "severely_drifting" ||
+    governanceReasoningCoherence === "contradictory_reasoning" ||
+    governanceExplainability === "not_explainable" ||
+    interpretationStability === "stability_unverified" ||
+    interpretationStability === "stability_fragile" ||
+    truthAggregationQuality === "truth_quality_unverified" ||
+    compareRisk === "risk_critical" ||
+    operationalImpact === "impact_critical" ||
+    governancePosture === "posture_escalated" ||
+    governanceDisposition === "disposition_escalated_queue" ||
+    decisionReadiness === "decision_hold_unavailable" ||
+    severity === "critical" ||
+    operationalPriority === "priority_p0"
+  ) {
+    return "nonsurvivable_semantics";
+  }
+  if (
+    governanceSemanticDegradationTolerance === "limited_tolerance" ||
+    governanceSemanticObservabilityContinuity === "interrupted_continuity" ||
+    governanceSemanticRecoverability === "difficult_recovery" ||
+    governanceSemanticIntegrityBoundary === "crossing_integrity_boundary" ||
+    governanceSemanticResilience === "fragile_resilience" ||
+    governanceSemanticConvergence === "slow_convergence" ||
+    governanceSemanticDrift === "drifting_semantics" ||
+    governanceReasoningCoherence === "fragile_reasoning" ||
+    governanceExplainability === "weakly_explainable" ||
+    governanceAuditTrail === "audit_weak" ||
+    compareEvidence === "evidence_weak" ||
+    compareConfidence === "confidence_low" ||
+    projectionFreshness === "freshness_stale" ||
+    truthAggregationQuality === "truth_quality_incomplete" ||
+    interpretationStability === "stability_fluctuating" ||
+    governanceRetention === "retention_review" ||
+    compareHardening.scopeStatus === "degraded_scope" ||
+    classification === "stale_projection" ||
+    classification === "degraded_projection"
+  ) {
+    return "critical_survivability";
+  }
+  if (
+    governanceSemanticDegradationTolerance === "moderate_tolerance" ||
+    governanceSemanticObservabilityContinuity === "partially_continuous" ||
+    governanceSemanticRecoverability === "partially_recoverable" ||
+    governanceSemanticIntegrityBoundary === "near_integrity_boundary" ||
+    governanceSemanticResilience === "partially_resilient" ||
+    governanceSemanticConvergence === "converging_semantics" ||
+    governanceSemanticDrift === "slightly_drifting" ||
+    governanceReasoningCoherence === "partially_coherent" ||
+    governanceExplainability === "partially_explainable" ||
+    governanceAuditTrail === "audit_partial" ||
+    compareEvidence === "evidence_moderate" ||
+    compareConfidence === "confidence_medium" ||
+    projectionFreshness === "freshness_recent" ||
+    truthAggregationQuality === "truth_quality_warning" ||
+    governanceDisposition === "disposition_observe_queue" ||
+    governanceRetention === "retention_observe" ||
+    governancePosture === "posture_observe" ||
+    operationalAttention === "attention_observe" ||
+    reviewReadiness === "review_recommended" ||
+    escalationReadiness === "escalation_recommended"
+  ) {
+    return "degraded_survivability";
+  }
+  if (
+    governanceSemanticDegradationTolerance === "high_tolerance" &&
+    governanceSemanticObservabilityContinuity === "continuous_observability" &&
+    governanceSemanticRecoverability === "recoverable_semantics" &&
+    governanceSemanticIntegrityBoundary === "inside_integrity_boundary" &&
+    governanceSemanticResilience === "resilient_semantics" &&
+    governanceSemanticConvergence === "stable_convergence" &&
+    governanceSemanticDrift === "stable_semantics" &&
+    governanceReasoningCoherence === "coherent_reasoning" &&
+    governanceExplainability === "explainable" &&
+    governanceAuditTrail === "audit_traceable" &&
+    compareEvidence === "evidence_strong" &&
+    compareConfidence === "confidence_high" &&
+    projectionFreshness === "freshness_current" &&
+    truthAggregationQuality === "truth_quality_stable" &&
+    interpretationStability === "stability_stable" &&
+    compareRisk === "risk_low" &&
+    operationalImpact === "impact_minimal" &&
+    operationalAttention === "attention_normal" &&
+    governancePosture === "posture_normal" &&
+    governanceDisposition === "disposition_normal" &&
+    governanceRetention === "retention_transient" &&
+    severity === "info" &&
+    operationalPriority === "priority_p3" &&
+    ownerActionability === "monitor_only" &&
+    reviewReadiness === "review_optional" &&
+    escalationReadiness === "escalation_optional" &&
+    operatorSummary === "summary_all_clear" &&
+    operatorTimeline === "timeline_monitor_difference" &&
+    operatorMessage === "message_monitor_minor_difference" &&
+    operatorGuidance === "guidance_monitor"
+  ) {
+    return "survivable_semantics";
+  }
+  return "critical_survivability";
+}
+
+function semanticSurvivabilityText(
+  survivability: InventoryCompareGovernanceSemanticSurvivability,
+): string {
+  if (survivability === "survivable_semantics") {
+    return "semantic survivability は維持されています";
+  }
+  if (survivability === "degraded_survivability") {
+    return "semantic survivability は低下しています";
+  }
+  if (survivability === "critical_survivability") {
+    return "semantic survivability が危険な可能性があります";
+  }
+  if (survivability === "nonsurvivable_semantics") {
+    return "semantic survivability が崩壊している可能性があります";
+  }
+  return "source / evidence unavailable のため survivability 保留です";
+}
+
+function semanticSurvivabilityReason(
+  survivability: InventoryCompareGovernanceSemanticSurvivability,
+): string {
+  if (survivability === "survivable_semantics") {
+    return "high tolerance、continuous observability、recoverable semantics、inside integrity boundary、resilient semantics、stable convergence、coherent reasoning、explainable、traceable audit、strong evidence が揃い、重大 degradation 下でも governance semantics が生存可能に見えるため、survivable semantics として整理します";
+  }
+  if (survivability === "degraded_survivability") {
+    return "moderate tolerance、partially continuous、partially recoverable、near integrity boundary、converging semantics、moderate evidence、observe retention など caveat を含みつつ governance semantics が部分的に生存可能に見えるため、degraded survivability として整理します";
+  }
+  if (survivability === "critical_survivability") {
+    return "limited tolerance、interrupted continuity、difficult recovery、crossing integrity boundary、fragile resilience、stale freshness、weak evidence、low confidence など governance semantics の生存が危険な可能性がある signal があるため、critical survivability として整理します";
+  }
+  if (survivability === "nonsurvivable_semantics") {
+    return "intolerable degradation、broken continuity、nonrecoverable semantics、outside integrity boundary、collapsed resilience、contradictory reasoning、severe drift、高い risk、escalated posture など governance semantics が生存不能に見えるため、nonsurvivable semantics として整理します";
+  }
+  return "source、scope、evidence、semantic degradation tolerance、semantic observability continuity、semantic recoverability、semantic integrity boundary、semantic resilience、semantic convergence、semantic drift、reasoning coherence、explainability、audit trail のいずれかが利用できないため、semantic survivability unavailable として整理します";
+}
+
+function createCompareGovernanceSemanticSurvivabilityMetadata({
+  governanceSemanticSurvivability,
+  compareHardening,
+  governanceSemanticDegradationTolerance,
+  governanceSemanticObservabilityContinuity,
+  governanceSemanticRecoverability,
+  governanceSemanticIntegrityBoundary,
+  governanceSemanticResilience,
+  governanceSemanticConvergence,
+  governanceSemanticDrift,
+  governanceReasoningCoherence,
+  governanceExplainability,
+  governanceAuditTrail,
+  governanceRetention,
+  governanceDisposition,
+  governancePosture,
+  operationalAttention,
+  operationalImpact,
+  decisionReadiness,
+  interpretationStability,
+  compareRisk,
+  compareEvidence,
+  compareConfidence,
+  projectionFreshness,
+  truthAggregationQuality,
+  severity,
+  operationalPriority,
+  ownerActionability,
+  reviewReadiness,
+  escalationReadiness,
+  operatorSummary,
+  operatorTimeline,
+  operatorMessage,
+  operatorGuidance,
+  classification,
+  semanticSurvivabilitySource,
+  semanticSurvivabilitySignals,
+}: {
+  readonly governanceSemanticSurvivability: InventoryCompareGovernanceSemanticSurvivability;
+  readonly compareHardening: InventoryCompareHardeningMetadata;
+  readonly governanceSemanticDegradationTolerance: InventoryCompareGovernanceSemanticDegradationTolerance;
+  readonly governanceSemanticObservabilityContinuity: InventoryCompareGovernanceSemanticObservabilityContinuity;
+  readonly governanceSemanticRecoverability: InventoryCompareGovernanceSemanticRecoverability;
+  readonly governanceSemanticIntegrityBoundary: InventoryCompareGovernanceSemanticIntegrityBoundary;
+  readonly governanceSemanticResilience: InventoryCompareGovernanceSemanticResilience;
+  readonly governanceSemanticConvergence: InventoryCompareGovernanceSemanticConvergence;
+  readonly governanceSemanticDrift: InventoryCompareGovernanceSemanticDrift;
+  readonly governanceReasoningCoherence: InventoryCompareGovernanceReasoningCoherence;
+  readonly governanceExplainability: InventoryCompareGovernanceExplainability;
+  readonly governanceAuditTrail: InventoryCompareGovernanceAuditTrail;
+  readonly governanceRetention: InventoryCompareGovernanceRetention;
+  readonly governanceDisposition: InventoryCompareGovernanceDisposition;
+  readonly governancePosture: InventoryCompareGovernancePosture;
+  readonly operationalAttention: InventoryCompareOperationalAttention;
+  readonly operationalImpact: InventoryCompareOperationalImpact;
+  readonly decisionReadiness: InventoryCompareDecisionReadiness;
+  readonly interpretationStability: InventoryCompareInterpretationStability;
+  readonly compareRisk: InventoryCompareRisk;
+  readonly compareEvidence: InventoryCompareEvidenceStrength;
+  readonly compareConfidence: InventoryCompareConfidence;
+  readonly projectionFreshness: InventoryCompareProjectionFreshness;
+  readonly truthAggregationQuality: InventoryCompareTruthAggregationQuality;
+  readonly severity: InventoryCompareSeverity;
+  readonly operationalPriority: InventoryCompareOperationalPriority;
+  readonly ownerActionability?: InventoryCompareOwnerActionability;
+  readonly reviewReadiness: InventoryCompareReviewReadiness;
+  readonly escalationReadiness: InventoryCompareEscalationReadiness;
+  readonly operatorSummary?: InventoryCompareOperatorSummary;
+  readonly operatorTimeline?: InventoryCompareOperatorTimeline;
+  readonly operatorMessage?: InventoryCompareOperatorMessage;
+  readonly operatorGuidance?: InventoryCompareOperatorGuidance;
+  readonly classification: InventoryCompareMismatchClassification;
+  readonly semanticSurvivabilitySource: string;
+  readonly semanticSurvivabilitySignals: readonly string[];
+}): InventoryCompareGovernanceSemanticSurvivabilityMetadata {
+  return {
+    semanticSurvivabilityId: `inventory-integrity-compare-readonly-${classification}-${governanceSemanticSurvivability}`,
+    governanceSemanticSurvivability,
+    semanticSurvivabilityText: semanticSurvivabilityText(governanceSemanticSurvivability),
+    semanticSurvivabilityReason: semanticSurvivabilityReason(governanceSemanticSurvivability),
+    semanticSurvivabilitySource,
+    semanticSurvivabilitySignals,
+    label: "read-only compare governance semantic survivability semantics",
+    interpretation:
+      "compare governance semantic survivability は重大 degradation / drift / contradiction / collapse 下でも governance semantics が生存可能かを示す observability metadata です。",
+    noExecutionMeaning:
+      "compare governance semantic survivability は survivability engine、説明生成、監査開始、承認、現場作業、在庫変更を開始しません。",
+    governanceSemanticDegradationTolerance,
+    governanceSemanticObservabilityContinuity,
+    governanceSemanticRecoverability,
+    governanceSemanticIntegrityBoundary,
+    governanceSemanticResilience,
+    governanceSemanticConvergence,
+    governanceSemanticDrift,
+    governanceReasoningCoherence,
+    governanceExplainability,
+    governanceAuditTrail,
+    governanceRetention,
+    governanceDisposition,
+    governancePosture,
+    operationalAttention,
+    operationalImpact,
+    decisionReadiness,
+    interpretationStability,
+    compareRisk,
+    compareEvidence,
+    compareConfidence,
+    projectionFreshness,
+    truthAggregationQuality,
+    severity,
+    operationalPriority,
+    ownerActionability,
+    reviewReadiness,
+    escalationReadiness,
+    operatorSummary,
+    operatorTimeline,
+    operatorMessage,
+    operatorGuidance,
+    classification,
+    sourceStatus: compareHardening.sourceStatus,
+    resultStatus: compareHardening.resultStatus,
+    scopeStatus: compareHardening.scopeStatus,
+    truthSource: "inventory_transactions",
+    cacheCompareTarget: "inventory_current",
+    semanticBoundary: "reasoning_visualization_only",
+    executionBoundary:
+      "InventoryCompareGovernanceSemanticSurvivabilityMetadata は read-only semantic survivability visibility です。操作導線、survivability engine、説明生成、監査開始、承認、在庫変更は実行しません。",
+  };
+}
+
 function createUnavailableReadOnlyResponse({
   status,
   error,
@@ -8035,6 +8401,94 @@ function createUnavailableReadOnlyResponse({
         "read_only_boundary",
       ],
     });
+  const compareGovernanceSemanticSurvivability =
+    createCompareGovernanceSemanticSurvivabilityMetadata({
+      governanceSemanticSurvivability: "survivability_unavailable",
+      compareHardening,
+      governanceSemanticDegradationTolerance:
+        compareGovernanceSemanticDegradationTolerance.governanceSemanticDegradationTolerance,
+      governanceSemanticObservabilityContinuity:
+        compareGovernanceSemanticObservabilityContinuity.governanceSemanticObservabilityContinuity,
+      governanceSemanticRecoverability:
+        compareGovernanceSemanticRecoverability.governanceSemanticRecoverability,
+      governanceSemanticIntegrityBoundary:
+        compareGovernanceSemanticIntegrityBoundary.governanceSemanticIntegrityBoundary,
+      governanceSemanticResilience:
+        compareGovernanceSemanticResilience.governanceSemanticResilience,
+      governanceSemanticConvergence:
+        compareGovernanceSemanticConvergence.governanceSemanticConvergence,
+      governanceSemanticDrift: compareGovernanceSemanticDrift.governanceSemanticDrift,
+      governanceReasoningCoherence:
+        compareGovernanceReasoningCoherence.governanceReasoningCoherence,
+      governanceExplainability:
+        compareGovernanceExplainability.governanceExplainability,
+      governanceAuditTrail: compareGovernanceAuditTrail.governanceAuditTrail,
+      governanceRetention: compareGovernanceRetention.governanceRetention,
+      governanceDisposition: compareGovernanceDisposition.governanceDisposition,
+      governancePosture: compareGovernancePosture.governancePosture,
+      operationalAttention: compareOperationalAttention.operationalAttention,
+      operationalImpact: compareOperationalImpact.operationalImpact,
+      decisionReadiness: compareDecisionReadiness.decisionReadiness,
+      interpretationStability:
+        compareInterpretationStability.interpretationStability,
+      compareRisk: compareRisk.compareRisk,
+      compareEvidence: compareEvidence.compareEvidence,
+      compareConfidence: compareConfidence.compareConfidence,
+      projectionFreshness: compareProjectionFreshness.projectionFreshness,
+      truthAggregationQuality:
+        compareTruthAggregationQuality.truthAggregationQuality,
+      severity: compareSeverity.severity,
+      operationalPriority: compareOperationalPriority.priority,
+      ownerActionability: compareOwnerActionability.ownerActionability,
+      reviewReadiness: compareReviewReadiness.readiness,
+      escalationReadiness: compareEscalationReadiness.readiness,
+      operatorSummary: compareOperatorSummary.operatorSummary,
+      operatorTimeline: compareOperatorTimeline.operatorTimeline,
+      operatorMessage: compareOperatorMessage.operatorMessage,
+      operatorGuidance: compareOperatorGuidance.operatorGuidance,
+      classification: compareClassification.classification,
+      semanticSurvivabilitySource: "compare_source_unavailable",
+      semanticSurvivabilitySignals: [
+        compareGovernanceSemanticDegradationTolerance.governanceSemanticDegradationTolerance,
+        compareGovernanceSemanticObservabilityContinuity.governanceSemanticObservabilityContinuity,
+        compareGovernanceSemanticRecoverability.governanceSemanticRecoverability,
+        compareGovernanceSemanticIntegrityBoundary.governanceSemanticIntegrityBoundary,
+        compareGovernanceSemanticResilience.governanceSemanticResilience,
+        compareGovernanceSemanticConvergence.governanceSemanticConvergence,
+        compareGovernanceSemanticDrift.governanceSemanticDrift,
+        compareGovernanceReasoningCoherence.governanceReasoningCoherence,
+        compareGovernanceExplainability.governanceExplainability,
+        compareGovernanceAuditTrail.governanceAuditTrail,
+        compareGovernanceRetention.governanceRetention,
+        compareGovernanceDisposition.governanceDisposition,
+        compareGovernancePosture.governancePosture,
+        compareOperationalAttention.operationalAttention,
+        compareOperationalImpact.operationalImpact,
+        compareDecisionReadiness.decisionReadiness,
+        compareInterpretationStability.interpretationStability,
+        compareRisk.compareRisk,
+        compareEvidence.compareEvidence,
+        compareTruthAggregationQuality.truthAggregationQuality,
+        compareProjectionFreshness.projectionFreshness,
+        compareConfidence.compareConfidence,
+        compareOperatorTimeline.operatorTimeline,
+        compareOperatorMessage.operatorMessage,
+        compareOperatorGuidance.operatorGuidance,
+        compareOperatorSummary.operatorSummary,
+        compareOwnerActionability.ownerActionability,
+        compareOperationalPriority.priority,
+        compareEscalationReadiness.readiness,
+        compareReviewReadiness.readiness,
+        compareSeverity.severity,
+        compareClassification.classification,
+        compareHardening.sourceStatus,
+        compareHardening.resultStatus,
+        compareHardening.scopeStatus,
+        "truth_source_inventory_transactions",
+        "cache_compare_target_inventory_current",
+        "read_only_boundary",
+      ],
+    });
 
   return NextResponse.json(
     {
@@ -8078,6 +8532,7 @@ function createUnavailableReadOnlyResponse({
       compareGovernanceSemanticRecoverability,
       compareGovernanceSemanticObservabilityContinuity,
       compareGovernanceSemanticDegradationTolerance,
+      compareGovernanceSemanticSurvivability,
       semanticBoundary: "reasoning_visualization_only",
       executionBoundary:
         "compare-readonly endpoint failure は read-only unavailable visibility です。修正、再生成、在庫変更は実行しません。",
@@ -10188,6 +10643,144 @@ function buildCompareProjection(
         "semantic_integrity_boundary_metadata",
       ],
     });
+  const compareGovernanceSemanticSurvivability =
+    createCompareGovernanceSemanticSurvivabilityMetadata({
+      governanceSemanticSurvivability: governanceSemanticSurvivabilityForSemantics({
+        compareHardening,
+        governanceSemanticDegradationTolerance:
+          compareGovernanceSemanticDegradationTolerance.governanceSemanticDegradationTolerance,
+        governanceSemanticObservabilityContinuity:
+          compareGovernanceSemanticObservabilityContinuity.governanceSemanticObservabilityContinuity,
+        governanceSemanticRecoverability:
+          compareGovernanceSemanticRecoverability.governanceSemanticRecoverability,
+        governanceSemanticIntegrityBoundary:
+          compareGovernanceSemanticIntegrityBoundary.governanceSemanticIntegrityBoundary,
+        governanceSemanticResilience:
+          compareGovernanceSemanticResilience.governanceSemanticResilience,
+        governanceSemanticConvergence:
+          compareGovernanceSemanticConvergence.governanceSemanticConvergence,
+        governanceSemanticDrift: compareGovernanceSemanticDrift.governanceSemanticDrift,
+        governanceReasoningCoherence:
+          compareGovernanceReasoningCoherence.governanceReasoningCoherence,
+        governanceExplainability:
+          compareGovernanceExplainability.governanceExplainability,
+        governanceAuditTrail: compareGovernanceAuditTrail.governanceAuditTrail,
+        governanceRetention: compareGovernanceRetention.governanceRetention,
+        governanceDisposition: compareGovernanceDisposition.governanceDisposition,
+        governancePosture: compareGovernancePosture.governancePosture,
+        operationalAttention: compareOperationalAttention.operationalAttention,
+        operationalImpact: compareOperationalImpact.operationalImpact,
+        decisionReadiness: compareDecisionReadiness.decisionReadiness,
+        interpretationStability:
+          compareInterpretationStability.interpretationStability,
+        compareRisk: compareRisk.compareRisk,
+        compareEvidence: compareEvidence.compareEvidence,
+        compareConfidence: compareConfidence.compareConfidence,
+        projectionFreshness: compareProjectionFreshness.projectionFreshness,
+        truthAggregationQuality:
+          compareTruthAggregationQuality.truthAggregationQuality,
+        severity: compareSeverity.severity,
+        operationalPriority: compareOperationalPriority.priority,
+        ownerActionability: compareOwnerActionability.ownerActionability,
+        reviewReadiness: compareReviewReadiness.readiness,
+        escalationReadiness: compareEscalationReadiness.readiness,
+        operatorSummary: compareOperatorTimeline.operatorSummary,
+        operatorTimeline: compareOperatorTimeline.operatorTimeline,
+        operatorMessage: compareOperatorMessage.operatorMessage,
+        operatorGuidance: compareOperatorGuidance.operatorGuidance,
+        classification: mismatchClassification,
+      }),
+      compareHardening,
+      governanceSemanticDegradationTolerance:
+        compareGovernanceSemanticDegradationTolerance.governanceSemanticDegradationTolerance,
+      governanceSemanticObservabilityContinuity:
+        compareGovernanceSemanticObservabilityContinuity.governanceSemanticObservabilityContinuity,
+      governanceSemanticRecoverability:
+        compareGovernanceSemanticRecoverability.governanceSemanticRecoverability,
+      governanceSemanticIntegrityBoundary:
+        compareGovernanceSemanticIntegrityBoundary.governanceSemanticIntegrityBoundary,
+      governanceSemanticResilience:
+        compareGovernanceSemanticResilience.governanceSemanticResilience,
+      governanceSemanticConvergence:
+        compareGovernanceSemanticConvergence.governanceSemanticConvergence,
+      governanceSemanticDrift: compareGovernanceSemanticDrift.governanceSemanticDrift,
+      governanceReasoningCoherence:
+        compareGovernanceReasoningCoherence.governanceReasoningCoherence,
+      governanceExplainability:
+        compareGovernanceExplainability.governanceExplainability,
+      governanceAuditTrail: compareGovernanceAuditTrail.governanceAuditTrail,
+      governanceRetention: compareGovernanceRetention.governanceRetention,
+      governanceDisposition: compareGovernanceDisposition.governanceDisposition,
+      governancePosture: compareGovernancePosture.governancePosture,
+      operationalAttention: compareOperationalAttention.operationalAttention,
+      operationalImpact: compareOperationalImpact.operationalImpact,
+      decisionReadiness: compareDecisionReadiness.decisionReadiness,
+      interpretationStability:
+        compareInterpretationStability.interpretationStability,
+      compareRisk: compareRisk.compareRisk,
+      compareEvidence: compareEvidence.compareEvidence,
+      compareConfidence: compareConfidence.compareConfidence,
+      projectionFreshness: compareProjectionFreshness.projectionFreshness,
+      truthAggregationQuality:
+        compareTruthAggregationQuality.truthAggregationQuality,
+      severity: compareSeverity.severity,
+      operationalPriority: compareOperationalPriority.priority,
+      ownerActionability: compareOwnerActionability.ownerActionability,
+      reviewReadiness: compareReviewReadiness.readiness,
+      escalationReadiness: compareEscalationReadiness.readiness,
+      operatorSummary: compareOperatorTimeline.operatorSummary,
+      operatorTimeline: compareOperatorTimeline.operatorTimeline,
+      operatorMessage: compareOperatorMessage.operatorMessage,
+      operatorGuidance: compareOperatorGuidance.operatorGuidance,
+      classification: mismatchClassification,
+      semanticSurvivabilitySource:
+        "compare_governance_semantic_survivability_semantics_chain",
+      semanticSurvivabilitySignals: [
+        compareGovernanceSemanticDegradationTolerance.governanceSemanticDegradationTolerance,
+        compareGovernanceSemanticObservabilityContinuity.governanceSemanticObservabilityContinuity,
+        compareGovernanceSemanticRecoverability.governanceSemanticRecoverability,
+        compareGovernanceSemanticIntegrityBoundary.governanceSemanticIntegrityBoundary,
+        compareGovernanceSemanticResilience.governanceSemanticResilience,
+        compareGovernanceSemanticConvergence.governanceSemanticConvergence,
+        compareGovernanceSemanticDrift.governanceSemanticDrift,
+        compareGovernanceReasoningCoherence.governanceReasoningCoherence,
+        compareGovernanceExplainability.governanceExplainability,
+        compareGovernanceAuditTrail.governanceAuditTrail,
+        compareGovernanceRetention.governanceRetention,
+        compareGovernanceDisposition.governanceDisposition,
+        compareGovernancePosture.governancePosture,
+        compareOperationalAttention.operationalAttention,
+        compareOperationalImpact.operationalImpact,
+        compareDecisionReadiness.decisionReadiness,
+        compareInterpretationStability.interpretationStability,
+        compareRisk.compareRisk,
+        compareEvidence.compareEvidence,
+        compareTruthAggregationQuality.truthAggregationQuality,
+        compareProjectionFreshness.projectionFreshness,
+        compareConfidence.compareConfidence,
+        compareOperatorTimeline.operatorTimeline,
+        compareOperatorMessage.operatorMessage,
+        compareOperatorGuidance.operatorGuidance,
+        compareOperatorTimeline.operatorSummary ?? "summary_source_unverified",
+        compareOwnerActionability.ownerActionability,
+        compareOperationalPriority.priority,
+        compareEscalationReadiness.readiness,
+        compareReviewReadiness.readiness,
+        compareSeverity.severity,
+        mismatchClassification,
+        compareHardening.sourceStatus,
+        compareHardening.resultStatus,
+        compareHardening.scopeStatus,
+        compareStatus,
+        "truth_source_inventory_transactions",
+        "cache_compare_target_inventory_current",
+        "read_only_boundary",
+        "semantic_degradation_tolerance_metadata",
+        "semantic_observability_continuity_metadata",
+        "semantic_recoverability_metadata",
+        "semantic_integrity_boundary_metadata",
+      ],
+    });
   const projectionId = `real-compare-${row.warehouseCode}-${row.partNo}`;
 
   return {
@@ -10276,6 +10869,7 @@ function buildCompareProjection(
       compareGovernanceSemanticRecoverability,
       compareGovernanceSemanticObservabilityContinuity,
       compareGovernanceSemanticDegradationTolerance,
+      compareGovernanceSemanticSurvivability,
       confidence: {
         level: "medium",
         reason: "real read-only compare rows から作成した visibility です。",
@@ -13448,6 +14042,200 @@ function resolveResponseGovernanceSemanticDegradationTolerance(
   });
 }
 
+function resolveResponseGovernanceSemanticSurvivability(
+  compareHardening: InventoryCompareHardeningMetadata,
+  compareOperatorSummary: InventoryCompareOperatorSummaryMetadata,
+  compareOperatorTimeline: InventoryCompareOperatorTimelineMetadata,
+  compareConfidence: InventoryCompareConfidenceMetadata,
+  compareProjectionFreshness: InventoryCompareProjectionFreshnessMetadata,
+  compareTruthAggregationQuality: InventoryCompareTruthAggregationQualityMetadata,
+  compareEvidence: InventoryCompareEvidenceMetadata,
+  compareRisk: InventoryCompareRiskMetadata,
+  compareInterpretationStability: InventoryCompareInterpretationStabilityMetadata,
+  compareDecisionReadiness: InventoryCompareDecisionReadinessMetadata,
+  compareOperationalImpact: InventoryCompareOperationalImpactMetadata,
+  compareOperationalAttention: InventoryCompareOperationalAttentionMetadata,
+  compareGovernancePosture: InventoryCompareGovernancePostureMetadata,
+  compareGovernanceDisposition: InventoryCompareGovernanceDispositionMetadata,
+  compareGovernanceRetention: InventoryCompareGovernanceRetentionMetadata,
+  compareGovernanceAuditTrail: InventoryCompareGovernanceAuditTrailMetadata,
+  compareGovernanceExplainability: InventoryCompareGovernanceExplainabilityMetadata,
+  compareGovernanceReasoningCoherence: InventoryCompareGovernanceReasoningCoherenceMetadata,
+  compareGovernanceSemanticDrift: InventoryCompareGovernanceSemanticDriftMetadata,
+  compareGovernanceSemanticConvergence: InventoryCompareGovernanceSemanticConvergenceMetadata,
+  compareGovernanceSemanticResilience: InventoryCompareGovernanceSemanticResilienceMetadata,
+  compareGovernanceSemanticIntegrityBoundary: InventoryCompareGovernanceSemanticIntegrityBoundaryMetadata,
+  compareGovernanceSemanticRecoverability: InventoryCompareGovernanceSemanticRecoverabilityMetadata,
+  compareGovernanceSemanticObservabilityContinuity: InventoryCompareGovernanceSemanticObservabilityContinuityMetadata,
+  compareGovernanceSemanticDegradationTolerance: InventoryCompareGovernanceSemanticDegradationToleranceMetadata,
+  compareProjections: readonly InventoryCompareProjection[],
+): InventoryCompareGovernanceSemanticSurvivabilityMetadata {
+  const firstUnavailableSurvivability = compareProjections.find(
+    (projection) =>
+      projection.metadata.compareGovernanceSemanticSurvivability
+        ?.governanceSemanticSurvivability === "survivability_unavailable",
+  )?.metadata.compareGovernanceSemanticSurvivability;
+  if (firstUnavailableSurvivability) return firstUnavailableSurvivability;
+
+  const firstNonsurvivableSemantics = compareProjections.find(
+    (projection) =>
+      projection.metadata.compareGovernanceSemanticSurvivability
+        ?.governanceSemanticSurvivability === "nonsurvivable_semantics",
+  )?.metadata.compareGovernanceSemanticSurvivability;
+  if (firstNonsurvivableSemantics) return firstNonsurvivableSemantics;
+
+  const firstCriticalSurvivability = compareProjections.find(
+    (projection) =>
+      projection.metadata.compareGovernanceSemanticSurvivability
+        ?.governanceSemanticSurvivability === "critical_survivability",
+  )?.metadata.compareGovernanceSemanticSurvivability;
+  if (firstCriticalSurvivability) return firstCriticalSurvivability;
+
+  const firstDegradedSurvivability = compareProjections.find(
+    (projection) =>
+      projection.metadata.compareGovernanceSemanticSurvivability
+        ?.governanceSemanticSurvivability === "degraded_survivability",
+  )?.metadata.compareGovernanceSemanticSurvivability;
+  if (firstDegradedSurvivability) return firstDegradedSurvivability;
+
+  return createCompareGovernanceSemanticSurvivabilityMetadata({
+    governanceSemanticSurvivability: governanceSemanticSurvivabilityForSemantics({
+      compareHardening,
+      governanceSemanticDegradationTolerance:
+        compareGovernanceSemanticDegradationTolerance.governanceSemanticDegradationTolerance,
+      governanceSemanticObservabilityContinuity:
+        compareGovernanceSemanticObservabilityContinuity.governanceSemanticObservabilityContinuity,
+      governanceSemanticRecoverability:
+        compareGovernanceSemanticRecoverability.governanceSemanticRecoverability,
+      governanceSemanticIntegrityBoundary:
+        compareGovernanceSemanticIntegrityBoundary.governanceSemanticIntegrityBoundary,
+      governanceSemanticResilience:
+        compareGovernanceSemanticResilience.governanceSemanticResilience,
+      governanceSemanticConvergence:
+        compareGovernanceSemanticConvergence.governanceSemanticConvergence,
+      governanceSemanticDrift: compareGovernanceSemanticDrift.governanceSemanticDrift,
+      governanceReasoningCoherence:
+        compareGovernanceReasoningCoherence.governanceReasoningCoherence,
+      governanceExplainability:
+        compareGovernanceExplainability.governanceExplainability,
+      governanceAuditTrail: compareGovernanceAuditTrail.governanceAuditTrail,
+      governanceRetention: compareGovernanceRetention.governanceRetention,
+      governanceDisposition: compareGovernanceDisposition.governanceDisposition,
+      governancePosture: compareGovernancePosture.governancePosture,
+      operationalAttention: compareOperationalAttention.operationalAttention,
+      operationalImpact: compareOperationalImpact.operationalImpact,
+      decisionReadiness: compareDecisionReadiness.decisionReadiness,
+      interpretationStability:
+        compareInterpretationStability.interpretationStability,
+      compareRisk: compareRisk.compareRisk,
+      compareEvidence: compareEvidence.compareEvidence,
+      compareConfidence: compareConfidence.compareConfidence,
+      projectionFreshness: compareProjectionFreshness.projectionFreshness,
+      truthAggregationQuality:
+        compareTruthAggregationQuality.truthAggregationQuality,
+      severity: compareOperatorTimeline.severity,
+      operationalPriority: compareOperatorTimeline.operationalPriority,
+      ownerActionability: compareOperatorTimeline.ownerActionability,
+      reviewReadiness: compareOperatorTimeline.reviewReadiness,
+      escalationReadiness: compareOperatorTimeline.escalationReadiness,
+      operatorSummary: compareOperatorSummary.operatorSummary,
+      operatorTimeline: compareOperatorTimeline.operatorTimeline,
+      operatorMessage: compareOperatorTimeline.operatorMessage,
+      operatorGuidance: compareOperatorTimeline.operatorGuidance,
+      classification: compareOperatorTimeline.classification,
+    }),
+    compareHardening,
+    governanceSemanticDegradationTolerance:
+      compareGovernanceSemanticDegradationTolerance.governanceSemanticDegradationTolerance,
+    governanceSemanticObservabilityContinuity:
+      compareGovernanceSemanticObservabilityContinuity.governanceSemanticObservabilityContinuity,
+    governanceSemanticRecoverability:
+      compareGovernanceSemanticRecoverability.governanceSemanticRecoverability,
+    governanceSemanticIntegrityBoundary:
+      compareGovernanceSemanticIntegrityBoundary.governanceSemanticIntegrityBoundary,
+    governanceSemanticResilience:
+      compareGovernanceSemanticResilience.governanceSemanticResilience,
+    governanceSemanticConvergence:
+      compareGovernanceSemanticConvergence.governanceSemanticConvergence,
+    governanceSemanticDrift: compareGovernanceSemanticDrift.governanceSemanticDrift,
+    governanceReasoningCoherence:
+      compareGovernanceReasoningCoherence.governanceReasoningCoherence,
+    governanceExplainability:
+      compareGovernanceExplainability.governanceExplainability,
+    governanceAuditTrail: compareGovernanceAuditTrail.governanceAuditTrail,
+    governanceRetention: compareGovernanceRetention.governanceRetention,
+    governanceDisposition: compareGovernanceDisposition.governanceDisposition,
+    governancePosture: compareGovernancePosture.governancePosture,
+    operationalAttention: compareOperationalAttention.operationalAttention,
+    operationalImpact: compareOperationalImpact.operationalImpact,
+    decisionReadiness: compareDecisionReadiness.decisionReadiness,
+    interpretationStability:
+      compareInterpretationStability.interpretationStability,
+    compareRisk: compareRisk.compareRisk,
+    compareEvidence: compareEvidence.compareEvidence,
+    compareConfidence: compareConfidence.compareConfidence,
+    projectionFreshness: compareProjectionFreshness.projectionFreshness,
+    truthAggregationQuality:
+      compareTruthAggregationQuality.truthAggregationQuality,
+    severity: compareOperatorTimeline.severity,
+    operationalPriority: compareOperatorTimeline.operationalPriority,
+    ownerActionability: compareOperatorTimeline.ownerActionability,
+    reviewReadiness: compareOperatorTimeline.reviewReadiness,
+    escalationReadiness: compareOperatorTimeline.escalationReadiness,
+    operatorSummary: compareOperatorSummary.operatorSummary,
+    operatorTimeline: compareOperatorTimeline.operatorTimeline,
+    operatorMessage: compareOperatorTimeline.operatorMessage,
+    operatorGuidance: compareOperatorTimeline.operatorGuidance,
+    classification: compareOperatorTimeline.classification,
+    semanticSurvivabilitySource:
+      "response_level_governance_semantic_survivability_semantics_chain",
+    semanticSurvivabilitySignals: [
+      compareGovernanceSemanticDegradationTolerance.governanceSemanticDegradationTolerance,
+      compareGovernanceSemanticObservabilityContinuity.governanceSemanticObservabilityContinuity,
+      compareGovernanceSemanticRecoverability.governanceSemanticRecoverability,
+      compareGovernanceSemanticIntegrityBoundary.governanceSemanticIntegrityBoundary,
+      compareGovernanceSemanticResilience.governanceSemanticResilience,
+      compareGovernanceSemanticConvergence.governanceSemanticConvergence,
+      compareGovernanceSemanticDrift.governanceSemanticDrift,
+      compareGovernanceReasoningCoherence.governanceReasoningCoherence,
+      compareGovernanceExplainability.governanceExplainability,
+      compareGovernanceAuditTrail.governanceAuditTrail,
+      compareGovernanceRetention.governanceRetention,
+      compareGovernanceDisposition.governanceDisposition,
+      compareGovernancePosture.governancePosture,
+      compareOperationalAttention.operationalAttention,
+      compareOperationalImpact.operationalImpact,
+      compareDecisionReadiness.decisionReadiness,
+      compareInterpretationStability.interpretationStability,
+      compareRisk.compareRisk,
+      compareEvidence.compareEvidence,
+      compareTruthAggregationQuality.truthAggregationQuality,
+      compareProjectionFreshness.projectionFreshness,
+      compareConfidence.compareConfidence,
+      compareOperatorSummary.operatorSummary,
+      compareOperatorTimeline.operatorTimeline,
+      compareOperatorTimeline.operatorMessage,
+      compareOperatorTimeline.operatorGuidance,
+      compareOperatorTimeline.ownerActionability,
+      compareOperatorTimeline.operationalPriority,
+      compareOperatorTimeline.escalationReadiness,
+      compareOperatorTimeline.reviewReadiness,
+      compareOperatorTimeline.severity,
+      compareOperatorTimeline.classification,
+      compareHardening.sourceStatus,
+      compareHardening.resultStatus,
+      compareHardening.scopeStatus,
+      "truth_source_inventory_transactions",
+      "cache_compare_target_inventory_current",
+      "read_only_boundary",
+      "semantic_degradation_tolerance_metadata",
+      "semantic_observability_continuity_metadata",
+      "semantic_recoverability_metadata",
+      "semantic_integrity_boundary_metadata",
+    ],
+  });
+}
+
 export async function GET(req: NextRequest) {
   const guard = await requireAdminDashboardRole(req);
   if (!guard.ok) {
@@ -13959,6 +14747,35 @@ export async function GET(req: NextRequest) {
       compareGovernanceSemanticObservabilityContinuity,
       readOnlyData.compareProjections,
     );
+  const compareGovernanceSemanticSurvivability =
+    resolveResponseGovernanceSemanticSurvivability(
+      compareHardening,
+      compareOperatorSummary,
+      compareOperatorTimeline,
+      compareConfidence,
+      compareProjectionFreshness,
+      compareTruthAggregationQuality,
+      compareEvidence,
+      compareRisk,
+      compareInterpretationStability,
+      compareDecisionReadiness,
+      compareOperationalImpact,
+      compareOperationalAttention,
+      compareGovernancePosture,
+      compareGovernanceDisposition,
+      compareGovernanceRetention,
+      compareGovernanceAuditTrail,
+      compareGovernanceExplainability,
+      compareGovernanceReasoningCoherence,
+      compareGovernanceSemanticDrift,
+      compareGovernanceSemanticConvergence,
+      compareGovernanceSemanticResilience,
+      compareGovernanceSemanticIntegrityBoundary,
+      compareGovernanceSemanticRecoverability,
+      compareGovernanceSemanticObservabilityContinuity,
+      compareGovernanceSemanticDegradationTolerance,
+      readOnlyData.compareProjections,
+    );
   const endpointContract = createInventoryIntegrityReadOnlyEndpointContract(endpointPath);
   const request = createInventoryIntegrityReadOnlyEdgeRequest(endpointContract);
   const fetchResult = createInventoryIntegrityFetchResult(
@@ -14001,6 +14818,7 @@ export async function GET(req: NextRequest) {
     compareGovernanceSemanticRecoverability,
     compareGovernanceSemanticObservabilityContinuity,
     compareGovernanceSemanticDegradationTolerance,
+    compareGovernanceSemanticSurvivability,
   );
   const payload = adaptFetchResponseToPayload(fetchResult);
   const mappedResponse = mapEdgeProjectionResponse({
@@ -14050,6 +14868,7 @@ export async function GET(req: NextRequest) {
     compareGovernanceSemanticRecoverability,
     compareGovernanceSemanticObservabilityContinuity,
     compareGovernanceSemanticDegradationTolerance,
+    compareGovernanceSemanticSurvivability,
     normalizedData: mappedResponse.normalizedData,
     metadata: mappedResponse.metadata,
     statusSemantics: mappedResponse.statusSemantics,
