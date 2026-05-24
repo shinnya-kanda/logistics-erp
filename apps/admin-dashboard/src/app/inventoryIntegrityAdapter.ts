@@ -320,6 +320,16 @@ function normalizeProjectionMetadata(
             ],
           }
         : undefined,
+    compareGovernanceSemanticDegradationTolerance:
+      metadata.compareGovernanceSemanticDegradationTolerance
+        ? {
+            ...metadata.compareGovernanceSemanticDegradationTolerance,
+            semanticDegradationToleranceSignals: [
+              ...metadata.compareGovernanceSemanticDegradationTolerance
+                .semanticDegradationToleranceSignals,
+            ],
+          }
+        : undefined,
     confidence: normalizeConfidence(metadata.confidence),
     freshness: normalizeFreshness(metadata.freshness),
     completeness: normalizeCompleteness(metadata.completeness),
