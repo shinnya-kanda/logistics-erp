@@ -147,6 +147,12 @@ export function mapEdgeProjectionMetadata(
           ],
         }
       : undefined,
+    compareDecisionReadiness: metadata.compareDecisionReadiness
+      ? {
+          ...metadata.compareDecisionReadiness,
+          decisionSignals: [...metadata.compareDecisionReadiness.decisionSignals],
+        }
+      : undefined,
     responseContractVersion: metadata.payloadVersion,
     readability: metadata.readability,
     adapterInputBoundary: metadata.adapterInputBoundary,

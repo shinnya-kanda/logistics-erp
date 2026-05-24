@@ -199,6 +199,12 @@ function normalizeProjectionMetadata(
           ],
         }
       : undefined,
+    compareDecisionReadiness: metadata.compareDecisionReadiness
+      ? {
+          ...metadata.compareDecisionReadiness,
+          decisionSignals: [...metadata.compareDecisionReadiness.decisionSignals],
+        }
+      : undefined,
     confidence: normalizeConfidence(metadata.confidence),
     freshness: normalizeFreshness(metadata.freshness),
     completeness: normalizeCompleteness(metadata.completeness),
