@@ -249,6 +249,15 @@ export function mapEdgeProjectionMetadata(
             ],
           }
         : undefined,
+    compareGovernanceSemanticRecoverability: metadata.compareGovernanceSemanticRecoverability
+      ? {
+          ...metadata.compareGovernanceSemanticRecoverability,
+          semanticRecoverabilitySignals: [
+            ...metadata.compareGovernanceSemanticRecoverability
+              .semanticRecoverabilitySignals,
+          ],
+        }
+      : undefined,
     responseContractVersion: metadata.payloadVersion,
     readability: metadata.readability,
     adapterInputBoundary: metadata.adapterInputBoundary,

@@ -301,6 +301,15 @@ function normalizeProjectionMetadata(
             ],
           }
         : undefined,
+    compareGovernanceSemanticRecoverability: metadata.compareGovernanceSemanticRecoverability
+      ? {
+          ...metadata.compareGovernanceSemanticRecoverability,
+          semanticRecoverabilitySignals: [
+            ...metadata.compareGovernanceSemanticRecoverability
+              .semanticRecoverabilitySignals,
+          ],
+        }
+      : undefined,
     confidence: normalizeConfidence(metadata.confidence),
     freshness: normalizeFreshness(metadata.freshness),
     completeness: normalizeCompleteness(metadata.completeness),
