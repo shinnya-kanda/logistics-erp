@@ -189,6 +189,14 @@ export function mapEdgeProjectionMetadata(
           ],
         }
       : undefined,
+    compareGovernanceAuditTrail: metadata.compareGovernanceAuditTrail
+      ? {
+          ...metadata.compareGovernanceAuditTrail,
+          auditTrailSignals: [
+            ...metadata.compareGovernanceAuditTrail.auditTrailSignals,
+          ],
+        }
+      : undefined,
     responseContractVersion: metadata.payloadVersion,
     readability: metadata.readability,
     adapterInputBoundary: metadata.adapterInputBoundary,

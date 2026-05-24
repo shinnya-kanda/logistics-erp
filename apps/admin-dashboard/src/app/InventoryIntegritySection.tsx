@@ -46,6 +46,7 @@ import type {
   InventoryCompareMismatchClassification,
   InventoryCompareGovernanceDispositionMetadata,
   InventoryCompareGovernanceRetentionMetadata,
+  InventoryCompareGovernanceAuditTrailMetadata,
   InventoryCompareGovernancePostureMetadata,
   InventoryCompareOperatorGuidanceMetadata,
   InventoryCompareOperatorMessageMetadata,
@@ -596,6 +597,27 @@ function extractCompareGovernanceRetention(
     : null;
 }
 
+function extractCompareGovernanceAuditTrail(
+  value: unknown,
+): InventoryCompareGovernanceAuditTrailMetadata | null {
+  if (!value || typeof value !== "object") return null;
+
+  const candidate = value as { readonly compareGovernanceAuditTrail?: unknown };
+  if (
+    !candidate.compareGovernanceAuditTrail ||
+    typeof candidate.compareGovernanceAuditTrail !== "object"
+  ) {
+    return null;
+  }
+
+  const auditTrail =
+    candidate.compareGovernanceAuditTrail as Partial<InventoryCompareGovernanceAuditTrailMetadata>;
+  return typeof auditTrail.governanceAuditTrail === "string" &&
+    typeof auditTrail.auditTrailText === "string"
+    ? (auditTrail as InventoryCompareGovernanceAuditTrailMetadata)
+    : null;
+}
+
 function readableSignals(signals: readonly string[], limit = 4): string {
   const visibleSignals = signals.slice(0, limit).join(" / ");
   return signals.length > limit
@@ -756,6 +778,8 @@ export function InventoryIntegritySection() {
     useState<InventoryCompareGovernanceDispositionMetadata | null>(null);
   const [compareGovernanceRetention, setCompareGovernanceRetention] =
     useState<InventoryCompareGovernanceRetentionMetadata | null>(null);
+  const [compareGovernanceAuditTrail, setCompareGovernanceAuditTrail] =
+    useState<InventoryCompareGovernanceAuditTrailMetadata | null>(null);
 
   useEffect(() => {
     const token = session?.access_token;
@@ -779,6 +803,7 @@ export function InventoryIntegritySection() {
       setCompareGovernancePosture(null);
       setCompareGovernanceDisposition(null);
       setCompareGovernanceRetention(null);
+      setCompareGovernanceAuditTrail(null);
       return;
     }
 
@@ -824,6 +849,9 @@ export function InventoryIntegritySection() {
           setCompareGovernanceRetention(
             extractCompareGovernanceRetention(responseBody),
           );
+          setCompareGovernanceAuditTrail(
+            extractCompareGovernanceAuditTrail(responseBody),
+          );
           return;
         }
 
@@ -850,6 +878,9 @@ export function InventoryIntegritySection() {
           extractCompareGovernanceDisposition(responseBody),
         );
         setCompareGovernanceRetention(extractCompareGovernanceRetention(responseBody));
+        setCompareGovernanceAuditTrail(
+          extractCompareGovernanceAuditTrail(responseBody),
+        );
         const readOnlyData = extractInventoryIntegrityReadOnlyData(responseBody);
         if (!readOnlyData) {
           setCompareSourceLabel("static fallback");
@@ -879,6 +910,7 @@ export function InventoryIntegritySection() {
           setCompareGovernancePosture(null);
           setCompareGovernanceDisposition(null);
           setCompareGovernanceRetention(null);
+          setCompareGovernanceAuditTrail(null);
         }
       }
     }
@@ -983,6 +1015,22 @@ export function InventoryIntegritySection() {
               <span style={styles.supportingText}>
                 source: {compareOperatorSummary.summarySource} / signals:{" "}
                 {readableSignals(compareOperatorSummary.summarySignals)}
+              </span>
+            </>
+          ) : null}
+          {compareGovernanceAuditTrail ? (
+            <>
+              <span style={styles.summaryText}>
+                {compareGovernanceAuditTrail.auditTrailText}
+              </span>
+              <span style={styles.supportingText}>
+                compare governance audit trail:{" "}
+                {compareGovernanceAuditTrail.governanceAuditTrail} /{" "}
+                {compareGovernanceAuditTrail.auditTrailReason}
+              </span>
+              <span style={styles.supportingText}>
+                source: {compareGovernanceAuditTrail.auditTrailSource} / signals:{" "}
+                {readableSignals(compareGovernanceAuditTrail.auditTrailSignals)}
               </span>
             </>
           ) : null}
@@ -1232,6 +1280,9 @@ export function InventoryIntegritySection() {
         {compareGovernanceRetention
           ? ` governance retention ${compareGovernanceRetention.governanceRetention}.`
           : ""}
+        {compareGovernanceAuditTrail
+          ? ` governance audit trail ${compareGovernanceAuditTrail.governanceAuditTrail}.`
+          : ""}
       </div>
 
       <div style={{ ...styles.notice, ...styles.neutralNotice }}>
@@ -1359,6 +1410,12 @@ export function InventoryIntegritySection() {
                 <p style={styles.description}>
                   compare governance retention:{" "}
                   {projection.metadata.compareGovernanceRetention.retentionText}
+                </p>
+              ) : null}
+              {projection.metadata.compareGovernanceAuditTrail ? (
+                <p style={styles.description}>
+                  compare governance audit trail:{" "}
+                  {projection.metadata.compareGovernanceAuditTrail.auditTrailText}
                 </p>
               ) : null}
               {projection.metadata.compareGovernanceDisposition ? (
@@ -1547,6 +1604,16 @@ export function InventoryIntegritySection() {
                   {projection.metadata.compareGovernanceRetention.retentionSource} / signals:{" "}
                   {readableSignals(
                     projection.metadata.compareGovernanceRetention.retentionSignals,
+                  )}
+                </p>
+              ) : null}
+              {projection.metadata.compareGovernanceAuditTrail ? (
+                <p style={styles.supportingText}>
+                  audit trail reason:{" "}
+                  {projection.metadata.compareGovernanceAuditTrail.auditTrailReason} / source:{" "}
+                  {projection.metadata.compareGovernanceAuditTrail.auditTrailSource} / signals:{" "}
+                  {readableSignals(
+                    projection.metadata.compareGovernanceAuditTrail.auditTrailSignals,
                   )}
                 </p>
               ) : null}
