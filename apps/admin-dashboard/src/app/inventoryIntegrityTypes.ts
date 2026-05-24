@@ -2221,6 +2221,61 @@ export type InventoryCompareGovernanceSemanticIntegrityBoundary =
   | "near_integrity_boundary"
   | "inside_integrity_boundary";
 
+export type InventoryCompareGovernanceSemanticRecoverability =
+  | "recovery_unavailable"
+  | "nonrecoverable_semantics"
+  | "difficult_recovery"
+  | "partially_recoverable"
+  | "recoverable_semantics";
+
+export type InventoryCompareGovernanceSemanticRecoverabilityMetadata = {
+  readonly semanticRecoverabilityId: string;
+  readonly governanceSemanticRecoverability: InventoryCompareGovernanceSemanticRecoverability;
+  readonly semanticRecoverabilityText: string;
+  readonly semanticRecoverabilityReason: string;
+  readonly semanticRecoverabilitySource: string;
+  readonly semanticRecoverabilitySignals: readonly string[];
+  readonly label: string;
+  readonly interpretation: string;
+  readonly noExecutionMeaning: string;
+  readonly governanceSemanticIntegrityBoundary: InventoryCompareGovernanceSemanticIntegrityBoundary;
+  readonly governanceSemanticResilience: InventoryCompareGovernanceSemanticResilience;
+  readonly governanceSemanticConvergence: InventoryCompareGovernanceSemanticConvergence;
+  readonly governanceSemanticDrift: InventoryCompareGovernanceSemanticDrift;
+  readonly governanceReasoningCoherence: InventoryCompareGovernanceReasoningCoherence;
+  readonly governanceExplainability: InventoryCompareGovernanceExplainability;
+  readonly governanceAuditTrail: InventoryCompareGovernanceAuditTrail;
+  readonly governanceRetention: InventoryCompareGovernanceRetention;
+  readonly governanceDisposition: InventoryCompareGovernanceDisposition;
+  readonly governancePosture: InventoryCompareGovernancePosture;
+  readonly operationalAttention: InventoryCompareOperationalAttention;
+  readonly operationalImpact: InventoryCompareOperationalImpact;
+  readonly decisionReadiness: InventoryCompareDecisionReadiness;
+  readonly interpretationStability: InventoryCompareInterpretationStability;
+  readonly compareRisk: InventoryCompareRisk;
+  readonly compareEvidence: InventoryCompareEvidenceStrength;
+  readonly compareConfidence: InventoryCompareConfidence;
+  readonly projectionFreshness: InventoryCompareProjectionFreshness;
+  readonly truthAggregationQuality: InventoryCompareTruthAggregationQuality;
+  readonly severity: InventoryCompareSeverity;
+  readonly operationalPriority: InventoryCompareOperationalPriority;
+  readonly ownerActionability?: InventoryCompareOwnerActionability;
+  readonly reviewReadiness: InventoryCompareReviewReadiness;
+  readonly escalationReadiness: InventoryCompareEscalationReadiness;
+  readonly operatorSummary?: InventoryCompareOperatorSummary;
+  readonly operatorTimeline?: InventoryCompareOperatorTimeline;
+  readonly operatorMessage?: InventoryCompareOperatorMessage;
+  readonly operatorGuidance?: InventoryCompareOperatorGuidance;
+  readonly classification: InventoryCompareMismatchClassification;
+  readonly sourceStatus: InventoryCompareSourceStatus;
+  readonly resultStatus: InventoryCompareResultVisibilityStatus;
+  readonly scopeStatus: InventoryCompareScopeValidationStatus;
+  readonly truthSource: InventoryIntegrityTruthSource;
+  readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
 export type InventoryCompareGovernanceSemanticIntegrityBoundaryMetadata = {
   readonly semanticIntegrityBoundaryId: string;
   readonly governanceSemanticIntegrityBoundary: InventoryCompareGovernanceSemanticIntegrityBoundary;
@@ -2491,6 +2546,7 @@ export type InventoryIntegrityProjectionMetadata = {
   readonly compareGovernanceSemanticConvergence?: InventoryCompareGovernanceSemanticConvergenceMetadata;
   readonly compareGovernanceSemanticResilience?: InventoryCompareGovernanceSemanticResilienceMetadata;
   readonly compareGovernanceSemanticIntegrityBoundary?: InventoryCompareGovernanceSemanticIntegrityBoundaryMetadata;
+  readonly compareGovernanceSemanticRecoverability?: InventoryCompareGovernanceSemanticRecoverabilityMetadata;
   readonly confidence: InventoryIntegrityConfidenceMetadata;
   readonly freshness: InventoryIntegrityFreshnessMetadata;
   readonly completeness: InventoryIntegrityCompletenessMetadata;
@@ -2777,6 +2833,7 @@ export type ProjectionResponseMetadata = {
   readonly compareGovernanceSemanticConvergence?: InventoryCompareGovernanceSemanticConvergenceMetadata;
   readonly compareGovernanceSemanticResilience?: InventoryCompareGovernanceSemanticResilienceMetadata;
   readonly compareGovernanceSemanticIntegrityBoundary?: InventoryCompareGovernanceSemanticIntegrityBoundaryMetadata;
+  readonly compareGovernanceSemanticRecoverability?: InventoryCompareGovernanceSemanticRecoverabilityMetadata;
   readonly responseContractVersion: string;
   readonly readability: string;
   readonly adapterInputBoundary: string;
@@ -2853,6 +2910,7 @@ export type RawProjectionMetadataPayload = {
   readonly compareGovernanceSemanticConvergence?: InventoryCompareGovernanceSemanticConvergenceMetadata;
   readonly compareGovernanceSemanticResilience?: InventoryCompareGovernanceSemanticResilienceMetadata;
   readonly compareGovernanceSemanticIntegrityBoundary?: InventoryCompareGovernanceSemanticIntegrityBoundaryMetadata;
+  readonly compareGovernanceSemanticRecoverability?: InventoryCompareGovernanceSemanticRecoverabilityMetadata;
   readonly payloadVersion: string;
   readonly readability: string;
   readonly adapterInputBoundary: string;
@@ -2953,6 +3011,7 @@ export type InventoryIntegrityFetchResultMetadata = {
   readonly compareGovernanceSemanticConvergence?: InventoryCompareGovernanceSemanticConvergenceMetadata;
   readonly compareGovernanceSemanticResilience?: InventoryCompareGovernanceSemanticResilienceMetadata;
   readonly compareGovernanceSemanticIntegrityBoundary?: InventoryCompareGovernanceSemanticIntegrityBoundaryMetadata;
+  readonly compareGovernanceSemanticRecoverability?: InventoryCompareGovernanceSemanticRecoverabilityMetadata;
   readonly responseStatus: ProjectionResponseStatusSemantics;
   readonly resultVersion: string;
   readonly readability: string;
