@@ -191,6 +191,14 @@ function normalizeProjectionMetadata(
           riskSignals: [...metadata.compareRisk.riskSignals],
         }
       : undefined,
+    compareInterpretationStability: metadata.compareInterpretationStability
+      ? {
+          ...metadata.compareInterpretationStability,
+          stabilitySignals: [
+            ...metadata.compareInterpretationStability.stabilitySignals,
+          ],
+        }
+      : undefined,
     confidence: normalizeConfidence(metadata.confidence),
     freshness: normalizeFreshness(metadata.freshness),
     completeness: normalizeCompleteness(metadata.completeness),

@@ -1250,6 +1250,7 @@ export function createInventoryIntegrityFetchResult(
   compareTruthAggregationQuality?: InventoryIntegrityFetchResult["metadata"]["compareTruthAggregationQuality"],
   compareEvidence?: InventoryIntegrityFetchResult["metadata"]["compareEvidence"],
   compareRisk?: InventoryIntegrityFetchResult["metadata"]["compareRisk"],
+  compareInterpretationStability?: InventoryIntegrityFetchResult["metadata"]["compareInterpretationStability"],
 ): InventoryIntegrityFetchResult {
   return {
     metadata: {
@@ -1311,6 +1312,7 @@ export function createInventoryIntegrityFetchResult(
       compareTruthAggregationQuality,
       compareEvidence,
       compareRisk,
+      compareInterpretationStability,
       responseStatus,
       resultVersion: "inventory-integrity-static-fetch-result-v1",
       readability:

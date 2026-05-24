@@ -41,6 +41,7 @@ import type {
   InventoryCompareConfidenceMetadata,
   InventoryCompareEvidenceMetadata,
   InventoryCompareHardeningMetadata,
+  InventoryCompareInterpretationStabilityMetadata,
   InventoryCompareMismatchClassification,
   InventoryCompareOperatorGuidanceMetadata,
   InventoryCompareOperatorMessageMetadata,
@@ -442,6 +443,27 @@ function extractCompareRisk(value: unknown): InventoryCompareRiskMetadata | null
     : null;
 }
 
+function extractCompareInterpretationStability(
+  value: unknown,
+): InventoryCompareInterpretationStabilityMetadata | null {
+  if (!value || typeof value !== "object") return null;
+
+  const candidate = value as { readonly compareInterpretationStability?: unknown };
+  if (
+    !candidate.compareInterpretationStability ||
+    typeof candidate.compareInterpretationStability !== "object"
+  ) {
+    return null;
+  }
+
+  const stability =
+    candidate.compareInterpretationStability as Partial<InventoryCompareInterpretationStabilityMetadata>;
+  return typeof stability.interpretationStability === "string" &&
+    typeof stability.stabilityText === "string"
+    ? (stability as InventoryCompareInterpretationStabilityMetadata)
+    : null;
+}
+
 function readableSignals(signals: readonly string[], limit = 4): string {
   const visibleSignals = signals.slice(0, limit).join(" / ");
   return signals.length > limit
@@ -588,6 +610,8 @@ export function InventoryIntegritySection() {
     useState<InventoryCompareEvidenceMetadata | null>(null);
   const [compareRisk, setCompareRisk] =
     useState<InventoryCompareRiskMetadata | null>(null);
+  const [compareInterpretationStability, setCompareInterpretationStability] =
+    useState<InventoryCompareInterpretationStabilityMetadata | null>(null);
 
   useEffect(() => {
     const token = session?.access_token;
@@ -604,6 +628,7 @@ export function InventoryIntegritySection() {
       setCompareTruthAggregationQuality(null);
       setCompareEvidence(null);
       setCompareRisk(null);
+      setCompareInterpretationStability(null);
       return;
     }
 
@@ -636,6 +661,9 @@ export function InventoryIntegritySection() {
           );
           setCompareEvidence(extractCompareEvidence(responseBody));
           setCompareRisk(extractCompareRisk(responseBody));
+          setCompareInterpretationStability(
+            extractCompareInterpretationStability(responseBody),
+          );
           return;
         }
 
@@ -651,6 +679,9 @@ export function InventoryIntegritySection() {
         setCompareTruthAggregationQuality(extractCompareTruthAggregationQuality(responseBody));
         setCompareEvidence(extractCompareEvidence(responseBody));
         setCompareRisk(extractCompareRisk(responseBody));
+        setCompareInterpretationStability(
+          extractCompareInterpretationStability(responseBody),
+        );
         const readOnlyData = extractInventoryIntegrityReadOnlyData(responseBody);
         if (!readOnlyData) {
           setCompareSourceLabel("static fallback");
@@ -673,6 +704,7 @@ export function InventoryIntegritySection() {
           setCompareTruthAggregationQuality(null);
           setCompareEvidence(null);
           setCompareRisk(null);
+          setCompareInterpretationStability(null);
         }
       }
     }
@@ -777,6 +809,22 @@ export function InventoryIntegritySection() {
               <span style={styles.supportingText}>
                 source: {compareOperatorSummary.summarySource} / signals:{" "}
                 {readableSignals(compareOperatorSummary.summarySignals)}
+              </span>
+            </>
+          ) : null}
+          {compareInterpretationStability ? (
+            <>
+              <span style={styles.summaryText}>
+                {compareInterpretationStability.stabilityText}
+              </span>
+              <span style={styles.supportingText}>
+                compare interpretation stability:{" "}
+                {compareInterpretationStability.interpretationStability} /{" "}
+                {compareInterpretationStability.stabilityReason}
+              </span>
+              <span style={styles.supportingText}>
+                source: {compareInterpretationStability.stabilitySource} / signals:{" "}
+                {readableSignals(compareInterpretationStability.stabilitySignals)}
               </span>
             </>
           ) : null}
@@ -893,6 +941,9 @@ export function InventoryIntegritySection() {
           : ""}
         {compareEvidence ? ` compare evidence ${compareEvidence.compareEvidence}.` : ""}
         {compareRisk ? ` compare risk ${compareRisk.compareRisk}.` : ""}
+        {compareInterpretationStability
+          ? ` interpretation stability ${compareInterpretationStability.interpretationStability}.`
+          : ""}
       </div>
 
       <div style={{ ...styles.notice, ...styles.neutralNotice }}>
@@ -1014,6 +1065,12 @@ export function InventoryIntegritySection() {
               {projection.metadata.compareRisk ? (
                 <p style={styles.description}>
                   compare risk: {projection.metadata.compareRisk.riskText}
+                </p>
+              ) : null}
+              {projection.metadata.compareInterpretationStability ? (
+                <p style={styles.description}>
+                  compare interpretation stability:{" "}
+                  {projection.metadata.compareInterpretationStability.stabilityText}
                 </p>
               ) : null}
               {projection.metadata.compareConfidence ? (
@@ -1157,6 +1214,16 @@ export function InventoryIntegritySection() {
                   risk reason: {projection.metadata.compareRisk.riskReason} / source:{" "}
                   {projection.metadata.compareRisk.riskSource} / signals:{" "}
                   {readableSignals(projection.metadata.compareRisk.riskSignals)}
+                </p>
+              ) : null}
+              {projection.metadata.compareInterpretationStability ? (
+                <p style={styles.supportingText}>
+                  stability reason:{" "}
+                  {projection.metadata.compareInterpretationStability.stabilityReason} / source:{" "}
+                  {projection.metadata.compareInterpretationStability.stabilitySource} / signals:{" "}
+                  {readableSignals(
+                    projection.metadata.compareInterpretationStability.stabilitySignals,
+                  )}
                 </p>
               ) : null}
               {projection.metadata.compareOwnerActionability ? (
