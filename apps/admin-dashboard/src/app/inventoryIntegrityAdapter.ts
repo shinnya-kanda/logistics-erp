@@ -233,6 +233,14 @@ function normalizeProjectionMetadata(
           ],
         }
       : undefined,
+    compareGovernanceRetention: metadata.compareGovernanceRetention
+      ? {
+          ...metadata.compareGovernanceRetention,
+          retentionSignals: [
+            ...metadata.compareGovernanceRetention.retentionSignals,
+          ],
+        }
+      : undefined,
     confidence: normalizeConfidence(metadata.confidence),
     freshness: normalizeFreshness(metadata.freshness),
     completeness: normalizeCompleteness(metadata.completeness),

@@ -45,6 +45,7 @@ import type {
   InventoryCompareInterpretationStabilityMetadata,
   InventoryCompareMismatchClassification,
   InventoryCompareGovernanceDispositionMetadata,
+  InventoryCompareGovernanceRetentionMetadata,
   InventoryCompareGovernancePostureMetadata,
   InventoryCompareOperatorGuidanceMetadata,
   InventoryCompareOperatorMessageMetadata,
@@ -574,6 +575,27 @@ function extractCompareGovernanceDisposition(
     : null;
 }
 
+function extractCompareGovernanceRetention(
+  value: unknown,
+): InventoryCompareGovernanceRetentionMetadata | null {
+  if (!value || typeof value !== "object") return null;
+
+  const candidate = value as { readonly compareGovernanceRetention?: unknown };
+  if (
+    !candidate.compareGovernanceRetention ||
+    typeof candidate.compareGovernanceRetention !== "object"
+  ) {
+    return null;
+  }
+
+  const retention =
+    candidate.compareGovernanceRetention as Partial<InventoryCompareGovernanceRetentionMetadata>;
+  return typeof retention.governanceRetention === "string" &&
+    typeof retention.retentionText === "string"
+    ? (retention as InventoryCompareGovernanceRetentionMetadata)
+    : null;
+}
+
 function readableSignals(signals: readonly string[], limit = 4): string {
   const visibleSignals = signals.slice(0, limit).join(" / ");
   return signals.length > limit
@@ -732,6 +754,8 @@ export function InventoryIntegritySection() {
     useState<InventoryCompareGovernancePostureMetadata | null>(null);
   const [compareGovernanceDisposition, setCompareGovernanceDisposition] =
     useState<InventoryCompareGovernanceDispositionMetadata | null>(null);
+  const [compareGovernanceRetention, setCompareGovernanceRetention] =
+    useState<InventoryCompareGovernanceRetentionMetadata | null>(null);
 
   useEffect(() => {
     const token = session?.access_token;
@@ -754,6 +778,7 @@ export function InventoryIntegritySection() {
       setCompareOperationalAttention(null);
       setCompareGovernancePosture(null);
       setCompareGovernanceDisposition(null);
+      setCompareGovernanceRetention(null);
       return;
     }
 
@@ -796,6 +821,9 @@ export function InventoryIntegritySection() {
           setCompareGovernanceDisposition(
             extractCompareGovernanceDisposition(responseBody),
           );
+          setCompareGovernanceRetention(
+            extractCompareGovernanceRetention(responseBody),
+          );
           return;
         }
 
@@ -821,6 +849,7 @@ export function InventoryIntegritySection() {
         setCompareGovernanceDisposition(
           extractCompareGovernanceDisposition(responseBody),
         );
+        setCompareGovernanceRetention(extractCompareGovernanceRetention(responseBody));
         const readOnlyData = extractInventoryIntegrityReadOnlyData(responseBody);
         if (!readOnlyData) {
           setCompareSourceLabel("static fallback");
@@ -849,6 +878,7 @@ export function InventoryIntegritySection() {
           setCompareOperationalAttention(null);
           setCompareGovernancePosture(null);
           setCompareGovernanceDisposition(null);
+          setCompareGovernanceRetention(null);
         }
       }
     }
@@ -953,6 +983,22 @@ export function InventoryIntegritySection() {
               <span style={styles.supportingText}>
                 source: {compareOperatorSummary.summarySource} / signals:{" "}
                 {readableSignals(compareOperatorSummary.summarySignals)}
+              </span>
+            </>
+          ) : null}
+          {compareGovernanceRetention ? (
+            <>
+              <span style={styles.summaryText}>
+                {compareGovernanceRetention.retentionText}
+              </span>
+              <span style={styles.supportingText}>
+                compare governance retention:{" "}
+                {compareGovernanceRetention.governanceRetention} /{" "}
+                {compareGovernanceRetention.retentionReason}
+              </span>
+              <span style={styles.supportingText}>
+                source: {compareGovernanceRetention.retentionSource} / signals:{" "}
+                {readableSignals(compareGovernanceRetention.retentionSignals)}
               </span>
             </>
           ) : null}
@@ -1183,6 +1229,9 @@ export function InventoryIntegritySection() {
         {compareGovernanceDisposition
           ? ` governance disposition ${compareGovernanceDisposition.governanceDisposition}.`
           : ""}
+        {compareGovernanceRetention
+          ? ` governance retention ${compareGovernanceRetention.governanceRetention}.`
+          : ""}
       </div>
 
       <div style={{ ...styles.notice, ...styles.neutralNotice }}>
@@ -1304,6 +1353,12 @@ export function InventoryIntegritySection() {
               {projection.metadata.compareRisk ? (
                 <p style={styles.description}>
                   compare risk: {projection.metadata.compareRisk.riskText}
+                </p>
+              ) : null}
+              {projection.metadata.compareGovernanceRetention ? (
+                <p style={styles.description}>
+                  compare governance retention:{" "}
+                  {projection.metadata.compareGovernanceRetention.retentionText}
                 </p>
               ) : null}
               {projection.metadata.compareGovernanceDisposition ? (
@@ -1483,6 +1538,16 @@ export function InventoryIntegritySection() {
                   risk reason: {projection.metadata.compareRisk.riskReason} / source:{" "}
                   {projection.metadata.compareRisk.riskSource} / signals:{" "}
                   {readableSignals(projection.metadata.compareRisk.riskSignals)}
+                </p>
+              ) : null}
+              {projection.metadata.compareGovernanceRetention ? (
+                <p style={styles.supportingText}>
+                  retention reason:{" "}
+                  {projection.metadata.compareGovernanceRetention.retentionReason} / source:{" "}
+                  {projection.metadata.compareGovernanceRetention.retentionSource} / signals:{" "}
+                  {readableSignals(
+                    projection.metadata.compareGovernanceRetention.retentionSignals,
+                  )}
                 </p>
               ) : null}
               {projection.metadata.compareGovernanceDisposition ? (
