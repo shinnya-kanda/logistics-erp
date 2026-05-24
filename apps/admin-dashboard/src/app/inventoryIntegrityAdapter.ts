@@ -291,6 +291,16 @@ function normalizeProjectionMetadata(
           ],
         }
       : undefined,
+    compareGovernanceSemanticIntegrityBoundary:
+      metadata.compareGovernanceSemanticIntegrityBoundary
+        ? {
+            ...metadata.compareGovernanceSemanticIntegrityBoundary,
+            semanticIntegrityBoundarySignals: [
+              ...metadata.compareGovernanceSemanticIntegrityBoundary
+                .semanticIntegrityBoundarySignals,
+            ],
+          }
+        : undefined,
     confidence: normalizeConfidence(metadata.confidence),
     freshness: normalizeFreshness(metadata.freshness),
     completeness: normalizeCompleteness(metadata.completeness),
