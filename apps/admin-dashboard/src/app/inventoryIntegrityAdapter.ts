@@ -283,6 +283,14 @@ function normalizeProjectionMetadata(
           ],
         }
       : undefined,
+    compareGovernanceSemanticResilience: metadata.compareGovernanceSemanticResilience
+      ? {
+          ...metadata.compareGovernanceSemanticResilience,
+          semanticResilienceSignals: [
+            ...metadata.compareGovernanceSemanticResilience.semanticResilienceSignals,
+          ],
+        }
+      : undefined,
     confidence: normalizeConfidence(metadata.confidence),
     freshness: normalizeFreshness(metadata.freshness),
     completeness: normalizeCompleteness(metadata.completeness),
