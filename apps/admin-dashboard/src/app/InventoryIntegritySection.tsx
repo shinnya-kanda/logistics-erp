@@ -50,6 +50,7 @@ import type {
   InventoryCompareGovernanceExplainabilityMetadata,
   InventoryCompareGovernanceReasoningCoherenceMetadata,
   InventoryCompareGovernanceSemanticDriftMetadata,
+  InventoryCompareGovernanceSemanticConvergenceMetadata,
   InventoryCompareGovernancePostureMetadata,
   InventoryCompareOperatorGuidanceMetadata,
   InventoryCompareOperatorMessageMetadata,
@@ -686,6 +687,29 @@ function extractCompareGovernanceSemanticDrift(
     : null;
 }
 
+function extractCompareGovernanceSemanticConvergence(
+  value: unknown,
+): InventoryCompareGovernanceSemanticConvergenceMetadata | null {
+  if (!value || typeof value !== "object") return null;
+
+  const candidate = value as {
+    readonly compareGovernanceSemanticConvergence?: unknown;
+  };
+  if (
+    !candidate.compareGovernanceSemanticConvergence ||
+    typeof candidate.compareGovernanceSemanticConvergence !== "object"
+  ) {
+    return null;
+  }
+
+  const semanticConvergence =
+    candidate.compareGovernanceSemanticConvergence as Partial<InventoryCompareGovernanceSemanticConvergenceMetadata>;
+  return typeof semanticConvergence.governanceSemanticConvergence === "string" &&
+    typeof semanticConvergence.semanticConvergenceText === "string"
+    ? (semanticConvergence as InventoryCompareGovernanceSemanticConvergenceMetadata)
+    : null;
+}
+
 function readableSignals(signals: readonly string[], limit = 4): string {
   const visibleSignals = signals.slice(0, limit).join(" / ");
   return signals.length > limit
@@ -856,6 +880,10 @@ export function InventoryIntegritySection() {
   ] = useState<InventoryCompareGovernanceReasoningCoherenceMetadata | null>(null);
   const [compareGovernanceSemanticDrift, setCompareGovernanceSemanticDrift] =
     useState<InventoryCompareGovernanceSemanticDriftMetadata | null>(null);
+  const [
+    compareGovernanceSemanticConvergence,
+    setCompareGovernanceSemanticConvergence,
+  ] = useState<InventoryCompareGovernanceSemanticConvergenceMetadata | null>(null);
 
   useEffect(() => {
     const token = session?.access_token;
@@ -883,6 +911,7 @@ export function InventoryIntegritySection() {
       setCompareGovernanceExplainability(null);
       setCompareGovernanceReasoningCoherence(null);
       setCompareGovernanceSemanticDrift(null);
+      setCompareGovernanceSemanticConvergence(null);
       return;
     }
 
@@ -940,6 +969,9 @@ export function InventoryIntegritySection() {
           setCompareGovernanceSemanticDrift(
             extractCompareGovernanceSemanticDrift(responseBody),
           );
+          setCompareGovernanceSemanticConvergence(
+            extractCompareGovernanceSemanticConvergence(responseBody),
+          );
           return;
         }
 
@@ -978,6 +1010,9 @@ export function InventoryIntegritySection() {
         setCompareGovernanceSemanticDrift(
           extractCompareGovernanceSemanticDrift(responseBody),
         );
+        setCompareGovernanceSemanticConvergence(
+          extractCompareGovernanceSemanticConvergence(responseBody),
+        );
         const readOnlyData = extractInventoryIntegrityReadOnlyData(responseBody);
         if (!readOnlyData) {
           setCompareSourceLabel("static fallback");
@@ -1011,6 +1046,7 @@ export function InventoryIntegritySection() {
           setCompareGovernanceExplainability(null);
           setCompareGovernanceReasoningCoherence(null);
           setCompareGovernanceSemanticDrift(null);
+          setCompareGovernanceSemanticConvergence(null);
         }
       }
     }
@@ -1115,6 +1151,26 @@ export function InventoryIntegritySection() {
               <span style={styles.supportingText}>
                 source: {compareOperatorSummary.summarySource} / signals:{" "}
                 {readableSignals(compareOperatorSummary.summarySignals)}
+              </span>
+            </>
+          ) : null}
+          {compareGovernanceSemanticConvergence ? (
+            <>
+              <span style={styles.summaryText}>
+                {compareGovernanceSemanticConvergence.semanticConvergenceText}
+              </span>
+              <span style={styles.supportingText}>
+                compare governance semantic convergence:{" "}
+                {
+                  compareGovernanceSemanticConvergence.governanceSemanticConvergence
+                } / {compareGovernanceSemanticConvergence.semanticConvergenceReason}
+              </span>
+              <span style={styles.supportingText}>
+                source:{" "}
+                {compareGovernanceSemanticConvergence.semanticConvergenceSource} / signals:{" "}
+                {readableSignals(
+                  compareGovernanceSemanticConvergence.semanticConvergenceSignals,
+                )}
               </span>
             </>
           ) : null}
@@ -1446,6 +1502,9 @@ export function InventoryIntegritySection() {
         {compareGovernanceSemanticDrift
           ? ` governance semantic drift ${compareGovernanceSemanticDrift.governanceSemanticDrift}.`
           : ""}
+        {compareGovernanceSemanticConvergence
+          ? ` governance semantic convergence ${compareGovernanceSemanticConvergence.governanceSemanticConvergence}.`
+          : ""}
       </div>
 
       <div style={{ ...styles.notice, ...styles.neutralNotice }}>
@@ -1600,6 +1659,15 @@ export function InventoryIntegritySection() {
                 <p style={styles.description}>
                   compare governance semantic drift:{" "}
                   {projection.metadata.compareGovernanceSemanticDrift.semanticDriftText}
+                </p>
+              ) : null}
+              {projection.metadata.compareGovernanceSemanticConvergence ? (
+                <p style={styles.description}>
+                  compare governance semantic convergence:{" "}
+                  {
+                    projection.metadata.compareGovernanceSemanticConvergence
+                      .semanticConvergenceText
+                  }
                 </p>
               ) : null}
               {projection.metadata.compareGovernanceDisposition ? (
@@ -1847,6 +1915,25 @@ export function InventoryIntegritySection() {
                   {readableSignals(
                     projection.metadata.compareGovernanceSemanticDrift
                       .semanticDriftSignals,
+                  )}
+                </p>
+              ) : null}
+              {projection.metadata.compareGovernanceSemanticConvergence ? (
+                <p style={styles.supportingText}>
+                  semantic convergence reason:{" "}
+                  {
+                    projection.metadata.compareGovernanceSemanticConvergence
+                      .semanticConvergenceReason
+                  }{" "}
+                  / source:{" "}
+                  {
+                    projection.metadata.compareGovernanceSemanticConvergence
+                      .semanticConvergenceSource
+                  }{" "}
+                  / signals:{" "}
+                  {readableSignals(
+                    projection.metadata.compareGovernanceSemanticConvergence
+                      .semanticConvergenceSignals,
                   )}
                 </p>
               ) : null}

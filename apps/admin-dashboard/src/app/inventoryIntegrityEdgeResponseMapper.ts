@@ -222,6 +222,15 @@ export function mapEdgeProjectionMetadata(
           ],
         }
       : undefined,
+    compareGovernanceSemanticConvergence: metadata.compareGovernanceSemanticConvergence
+      ? {
+          ...metadata.compareGovernanceSemanticConvergence,
+          semanticConvergenceSignals: [
+            ...metadata.compareGovernanceSemanticConvergence
+              .semanticConvergenceSignals,
+          ],
+        }
+      : undefined,
     responseContractVersion: metadata.payloadVersion,
     readability: metadata.readability,
     adapterInputBoundary: metadata.adapterInputBoundary,
