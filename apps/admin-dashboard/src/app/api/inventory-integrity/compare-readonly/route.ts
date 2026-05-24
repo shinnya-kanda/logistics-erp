@@ -27,6 +27,8 @@ import type {
   InventoryCompareOperationalPriorityMetadata,
   InventoryCompareOperationalAttention,
   InventoryCompareOperationalAttentionMetadata,
+  InventoryCompareGovernancePosture,
+  InventoryCompareGovernancePostureMetadata,
   InventoryCompareOperationalImpact,
   InventoryCompareOperationalImpactMetadata,
   InventoryCompareOwnership,
@@ -2890,6 +2892,243 @@ function createCompareOperationalAttentionMetadata({
   };
 }
 
+function governancePostureForSemantics({
+  compareHardening,
+  operationalAttention,
+  operationalImpact,
+  decisionReadiness,
+  interpretationStability,
+  compareRisk,
+  compareEvidence,
+  compareConfidence,
+  projectionFreshness,
+  truthAggregationQuality,
+  severity,
+  operationalPriority,
+  ownerActionability,
+  reviewReadiness,
+  escalationReadiness,
+  operatorSummary,
+  classification,
+  compareStatus,
+}: {
+  readonly compareHardening: InventoryCompareHardeningMetadata;
+  readonly operationalAttention: InventoryCompareOperationalAttention;
+  readonly operationalImpact: InventoryCompareOperationalImpact;
+  readonly decisionReadiness: InventoryCompareDecisionReadiness;
+  readonly interpretationStability: InventoryCompareInterpretationStability;
+  readonly compareRisk: InventoryCompareRisk;
+  readonly compareEvidence: InventoryCompareEvidenceStrength;
+  readonly compareConfidence: InventoryCompareConfidence;
+  readonly projectionFreshness: InventoryCompareProjectionFreshness;
+  readonly truthAggregationQuality: InventoryCompareTruthAggregationQuality;
+  readonly severity: InventoryCompareSeverity;
+  readonly operationalPriority: InventoryCompareOperationalPriority;
+  readonly ownerActionability?: InventoryCompareOwnerActionability;
+  readonly reviewReadiness: InventoryCompareReviewReadiness;
+  readonly escalationReadiness: InventoryCompareEscalationReadiness;
+  readonly operatorSummary?: InventoryCompareOperatorSummary;
+  readonly classification: InventoryCompareMismatchClassification;
+  readonly compareStatus?: InventoryCompareStatus;
+}): InventoryCompareGovernancePosture {
+  if (
+    operationalAttention === "attention_unassessable" ||
+    operationalImpact === "impact_unassessable" ||
+    compareRisk === "risk_unassessable" ||
+    decisionReadiness === "decision_hold_unavailable" ||
+    decisionReadiness === "decision_hold_unverified" ||
+    compareConfidence === "confidence_blocked" ||
+    compareConfidence === "confidence_unverified" ||
+    compareEvidence === "evidence_missing" ||
+    compareEvidence === "evidence_unavailable" ||
+    compareHardening.sourceStatus === "compare_source_unavailable" ||
+    compareHardening.scopeStatus === "unavailable_scope" ||
+    compareHardening.resultStatus === "compare_result_unverified" ||
+    classification === "compare_unverified" ||
+    classification === "unavailable_projection"
+  ) {
+    return "posture_unassessable";
+  }
+  if (
+    operationalAttention === "attention_immediate" ||
+    operationalImpact === "impact_critical" ||
+    compareRisk === "risk_critical" ||
+    severity === "critical" ||
+    operationalPriority === "priority_p0" ||
+    ownerActionability === "action_required" ||
+    escalationReadiness === "escalation_required" ||
+    operatorSummary === "summary_action_required" ||
+    (interpretationStability === "stability_fragile" &&
+      (severity === "high" || compareRisk === "risk_high"))
+  ) {
+    return "posture_escalated";
+  }
+  if (
+    operationalAttention === "attention_required" ||
+    operationalImpact === "impact_operational" ||
+    compareRisk === "risk_high" ||
+    severity === "high" ||
+    operationalPriority === "priority_p1" ||
+    operationalPriority === "priority_p2" ||
+    ownerActionability === "action_recommended" ||
+    reviewReadiness === "review_required" ||
+    reviewReadiness === "review_recommended" ||
+    projectionFreshness === "freshness_stale" ||
+    compareHardening.scopeStatus === "degraded_scope" ||
+    compareHardening.resultStatus === "compare_result_partial" ||
+    classification === "compare_partial" ||
+    classification === "degraded_projection" ||
+    classification === "stale_projection"
+  ) {
+    return "posture_review";
+  }
+  if (
+    operationalAttention === "attention_observe" ||
+    operationalImpact === "impact_observable" ||
+    compareRisk === "risk_medium" ||
+    severity === "warning" ||
+    projectionFreshness === "freshness_recent" ||
+    compareConfidence === "confidence_medium" ||
+    compareEvidence === "evidence_moderate"
+  ) {
+    return "posture_observe";
+  }
+  if (
+    operationalAttention === "attention_normal" &&
+    operationalImpact === "impact_minimal" &&
+    compareRisk === "risk_low" &&
+    compareStatus === "matched" &&
+    severity === "info" &&
+    compareConfidence === "confidence_high" &&
+    projectionFreshness === "freshness_current" &&
+    truthAggregationQuality === "truth_quality_stable" &&
+    compareEvidence === "evidence_strong" &&
+    decisionReadiness === "decision_not_required" &&
+    reviewReadiness === "review_optional" &&
+    ownerActionability === "monitor_only"
+  ) {
+    return "posture_normal";
+  }
+  return "posture_observe";
+}
+
+function postureText(posture: InventoryCompareGovernancePosture): string {
+  if (posture === "posture_normal") {
+    return "通常 governance 範囲に見えます";
+  }
+  if (posture === "posture_observe") {
+    return "継続観測 governance 対象です";
+  }
+  if (posture === "posture_review") {
+    return "review governance 対象です";
+  }
+  if (posture === "posture_escalated") {
+    return "escalation governance 対象です";
+  }
+  return "source / evidence 未確定のため posture 評価保留です";
+}
+
+function postureReason(posture: InventoryCompareGovernancePosture): string {
+  if (posture === "posture_normal") {
+    return "normal attention / minimal impact / low risk / matched / stable evidence がそろって見えるため、通常 governance 範囲として整理します";
+  }
+  if (posture === "posture_observe") {
+    return "observe attention、observable impact、medium risk、warning など継続観測する governance signal が見えるため、観測対象として整理します";
+  }
+  if (posture === "posture_review") {
+    return "required attention、operational impact、high risk、stale、partial、review signal など governance review で読む条件があるため、review 対象として整理します";
+  }
+  if (posture === "posture_escalated") {
+    return "immediate attention、critical impact、critical risk、p0、escalation required など強い governance signal が見えるため、escalation 対象として整理します";
+  }
+  return "source、scope、confidence、evidence のいずれかが未確定または利用できないため、governance posture 評価保留として整理します";
+}
+
+function createCompareGovernancePostureMetadata({
+  governancePosture,
+  compareHardening,
+  operationalAttention,
+  operationalImpact,
+  decisionReadiness,
+  interpretationStability,
+  compareRisk,
+  compareEvidence,
+  compareConfidence,
+  projectionFreshness,
+  truthAggregationQuality,
+  severity,
+  operationalPriority,
+  ownerActionability,
+  reviewReadiness,
+  escalationReadiness,
+  operatorSummary,
+  operatorTimeline,
+  classification,
+  postureSource,
+  postureSignals,
+}: {
+  readonly governancePosture: InventoryCompareGovernancePosture;
+  readonly compareHardening: InventoryCompareHardeningMetadata;
+  readonly operationalAttention: InventoryCompareOperationalAttention;
+  readonly operationalImpact: InventoryCompareOperationalImpact;
+  readonly decisionReadiness: InventoryCompareDecisionReadiness;
+  readonly interpretationStability: InventoryCompareInterpretationStability;
+  readonly compareRisk: InventoryCompareRisk;
+  readonly compareEvidence: InventoryCompareEvidenceStrength;
+  readonly compareConfidence: InventoryCompareConfidence;
+  readonly projectionFreshness: InventoryCompareProjectionFreshness;
+  readonly truthAggregationQuality: InventoryCompareTruthAggregationQuality;
+  readonly severity: InventoryCompareSeverity;
+  readonly operationalPriority: InventoryCompareOperationalPriority;
+  readonly ownerActionability?: InventoryCompareOwnerActionability;
+  readonly reviewReadiness: InventoryCompareReviewReadiness;
+  readonly escalationReadiness: InventoryCompareEscalationReadiness;
+  readonly operatorSummary?: InventoryCompareOperatorSummary;
+  readonly operatorTimeline?: InventoryCompareOperatorTimeline;
+  readonly classification: InventoryCompareMismatchClassification;
+  readonly postureSource: string;
+  readonly postureSignals: readonly string[];
+}): InventoryCompareGovernancePostureMetadata {
+  return {
+    postureId: `inventory-integrity-compare-readonly-${classification}-${governancePosture}`,
+    governancePosture,
+    postureText: postureText(governancePosture),
+    postureReason: postureReason(governancePosture),
+    postureSource,
+    postureSignals,
+    label: "read-only compare governance posture semantics",
+    interpretation:
+      "compare governance posture は compare 状態を governance 的にどう扱うかを示す review / observability metadata です。",
+    noExecutionMeaning:
+      "compare governance posture は承認、監査開始、現場作業、担当設定の変更、在庫変更を開始しません。",
+    operationalAttention,
+    operationalImpact,
+    decisionReadiness,
+    interpretationStability,
+    compareRisk,
+    compareEvidence,
+    compareConfidence,
+    projectionFreshness,
+    truthAggregationQuality,
+    severity,
+    operationalPriority,
+    ownerActionability,
+    reviewReadiness,
+    escalationReadiness,
+    operatorSummary,
+    operatorTimeline,
+    classification,
+    sourceStatus: compareHardening.sourceStatus,
+    resultStatus: compareHardening.resultStatus,
+    scopeStatus: compareHardening.scopeStatus,
+    truthSource: "inventory_transactions",
+    cacheCompareTarget: "inventory_current",
+    semanticBoundary: "reasoning_visualization_only",
+    executionBoundary:
+      "InventoryCompareGovernancePostureMetadata は read-only governance posture visibility です。操作導線、承認、監査開始、在庫変更は実行しません。",
+  };
+}
+
 function createUnavailableReadOnlyResponse({
   status,
   error,
@@ -3318,6 +3557,52 @@ function createUnavailableReadOnlyResponse({
       compareHardening.scopeStatus,
     ],
   });
+  const compareGovernancePosture = createCompareGovernancePostureMetadata({
+    governancePosture: "posture_unassessable",
+    compareHardening,
+    operationalAttention: compareOperationalAttention.operationalAttention,
+    operationalImpact: compareOperationalImpact.operationalImpact,
+    decisionReadiness: compareDecisionReadiness.decisionReadiness,
+    interpretationStability:
+      compareInterpretationStability.interpretationStability,
+    compareRisk: compareRisk.compareRisk,
+    compareEvidence: compareEvidence.compareEvidence,
+    compareConfidence: compareConfidence.compareConfidence,
+    projectionFreshness: compareProjectionFreshness.projectionFreshness,
+    truthAggregationQuality:
+      compareTruthAggregationQuality.truthAggregationQuality,
+    severity: compareSeverity.severity,
+    operationalPriority: compareOperationalPriority.priority,
+    ownerActionability: compareOwnerActionability.ownerActionability,
+    reviewReadiness: compareReviewReadiness.readiness,
+    escalationReadiness: compareEscalationReadiness.readiness,
+    operatorSummary: compareOperatorSummary.operatorSummary,
+    operatorTimeline: compareOperatorTimeline.operatorTimeline,
+    classification: compareClassification.classification,
+    postureSource: "compare_source_unavailable",
+    postureSignals: [
+      compareOperationalAttention.operationalAttention,
+      compareOperationalImpact.operationalImpact,
+      compareDecisionReadiness.decisionReadiness,
+      compareInterpretationStability.interpretationStability,
+      compareRisk.compareRisk,
+      compareEvidence.compareEvidence,
+      compareTruthAggregationQuality.truthAggregationQuality,
+      compareProjectionFreshness.projectionFreshness,
+      compareConfidence.compareConfidence,
+      compareOperatorTimeline.operatorTimeline,
+      compareOperatorSummary.operatorSummary,
+      compareOwnerActionability.ownerActionability,
+      compareOperationalPriority.priority,
+      compareEscalationReadiness.readiness,
+      compareReviewReadiness.readiness,
+      compareSeverity.severity,
+      compareClassification.classification,
+      compareHardening.sourceStatus,
+      compareHardening.resultStatus,
+      compareHardening.scopeStatus,
+    ],
+  });
 
   return NextResponse.json(
     {
@@ -3348,6 +3633,7 @@ function createUnavailableReadOnlyResponse({
       compareDecisionReadiness,
       compareOperationalImpact,
       compareOperationalAttention,
+      compareGovernancePosture,
       semanticBoundary: "reasoning_visualization_only",
       executionBoundary:
         "compare-readonly endpoint failure は read-only unavailable visibility です。修正、再生成、在庫変更は実行しません。",
@@ -4148,6 +4434,75 @@ function buildCompareProjection(
       compareStatus,
     ],
   });
+  const compareGovernancePosture = createCompareGovernancePostureMetadata({
+    governancePosture: governancePostureForSemantics({
+      compareHardening,
+      operationalAttention: compareOperationalAttention.operationalAttention,
+      operationalImpact: compareOperationalImpact.operationalImpact,
+      decisionReadiness: compareDecisionReadiness.decisionReadiness,
+      interpretationStability:
+        compareInterpretationStability.interpretationStability,
+      compareRisk: compareRisk.compareRisk,
+      compareEvidence: compareEvidence.compareEvidence,
+      compareConfidence: compareConfidence.compareConfidence,
+      projectionFreshness: compareProjectionFreshness.projectionFreshness,
+      truthAggregationQuality:
+        compareTruthAggregationQuality.truthAggregationQuality,
+      severity: compareSeverity.severity,
+      operationalPriority: compareOperationalPriority.priority,
+      ownerActionability: compareOwnerActionability.ownerActionability,
+      reviewReadiness: compareReviewReadiness.readiness,
+      escalationReadiness: compareEscalationReadiness.readiness,
+      operatorSummary: compareOperatorTimeline.operatorSummary,
+      classification: mismatchClassification,
+      compareStatus,
+    }),
+    compareHardening,
+    operationalAttention: compareOperationalAttention.operationalAttention,
+    operationalImpact: compareOperationalImpact.operationalImpact,
+    decisionReadiness: compareDecisionReadiness.decisionReadiness,
+    interpretationStability:
+      compareInterpretationStability.interpretationStability,
+    compareRisk: compareRisk.compareRisk,
+    compareEvidence: compareEvidence.compareEvidence,
+    compareConfidence: compareConfidence.compareConfidence,
+    projectionFreshness: compareProjectionFreshness.projectionFreshness,
+    truthAggregationQuality:
+      compareTruthAggregationQuality.truthAggregationQuality,
+    severity: compareSeverity.severity,
+    operationalPriority: compareOperationalPriority.priority,
+    ownerActionability: compareOwnerActionability.ownerActionability,
+    reviewReadiness: compareReviewReadiness.readiness,
+    escalationReadiness: compareEscalationReadiness.readiness,
+    operatorSummary: compareOperatorTimeline.operatorSummary,
+    operatorTimeline: compareOperatorTimeline.operatorTimeline,
+    classification: mismatchClassification,
+    postureSource: "compare_governance_posture_semantics_chain",
+    postureSignals: [
+      compareOperationalAttention.operationalAttention,
+      compareOperationalImpact.operationalImpact,
+      compareDecisionReadiness.decisionReadiness,
+      compareInterpretationStability.interpretationStability,
+      compareRisk.compareRisk,
+      compareEvidence.compareEvidence,
+      compareTruthAggregationQuality.truthAggregationQuality,
+      compareProjectionFreshness.projectionFreshness,
+      compareConfidence.compareConfidence,
+      compareOperatorTimeline.operatorTimeline,
+      compareOperatorMessage.operatorMessage,
+      compareOperatorGuidance.operatorGuidance,
+      compareOwnerActionability.ownerActionability,
+      compareOperationalPriority.priority,
+      compareEscalationReadiness.readiness,
+      compareReviewReadiness.readiness,
+      compareSeverity.severity,
+      mismatchClassification,
+      compareHardening.sourceStatus,
+      compareHardening.resultStatus,
+      compareHardening.scopeStatus,
+      compareStatus,
+    ],
+  });
   const projectionId = `real-compare-${row.warehouseCode}-${row.partNo}`;
 
   return {
@@ -4223,6 +4578,7 @@ function buildCompareProjection(
       compareDecisionReadiness,
       compareOperationalImpact,
       compareOperationalAttention,
+      compareGovernancePosture,
       confidence: {
         level: "medium",
         reason: "real read-only compare rows から作成した visibility です。",
@@ -5463,6 +5819,118 @@ function resolveResponseOperationalAttention(
   });
 }
 
+function resolveResponseGovernancePosture(
+  compareHardening: InventoryCompareHardeningMetadata,
+  compareOperatorSummary: InventoryCompareOperatorSummaryMetadata,
+  compareOperatorTimeline: InventoryCompareOperatorTimelineMetadata,
+  compareConfidence: InventoryCompareConfidenceMetadata,
+  compareProjectionFreshness: InventoryCompareProjectionFreshnessMetadata,
+  compareTruthAggregationQuality: InventoryCompareTruthAggregationQualityMetadata,
+  compareEvidence: InventoryCompareEvidenceMetadata,
+  compareRisk: InventoryCompareRiskMetadata,
+  compareInterpretationStability: InventoryCompareInterpretationStabilityMetadata,
+  compareDecisionReadiness: InventoryCompareDecisionReadinessMetadata,
+  compareOperationalImpact: InventoryCompareOperationalImpactMetadata,
+  compareOperationalAttention: InventoryCompareOperationalAttentionMetadata,
+  compareProjections: readonly InventoryCompareProjection[],
+): InventoryCompareGovernancePostureMetadata {
+  const firstUnassessablePosture = compareProjections.find(
+    (projection) =>
+      projection.metadata.compareGovernancePosture?.governancePosture ===
+      "posture_unassessable",
+  )?.metadata.compareGovernancePosture;
+  if (firstUnassessablePosture) return firstUnassessablePosture;
+
+  const firstEscalatedPosture = compareProjections.find(
+    (projection) =>
+      projection.metadata.compareGovernancePosture?.governancePosture ===
+      "posture_escalated",
+  )?.metadata.compareGovernancePosture;
+  if (firstEscalatedPosture) return firstEscalatedPosture;
+
+  const firstReviewPosture = compareProjections.find(
+    (projection) =>
+      projection.metadata.compareGovernancePosture?.governancePosture ===
+      "posture_review",
+  )?.metadata.compareGovernancePosture;
+  if (firstReviewPosture) return firstReviewPosture;
+
+  const firstObservePosture = compareProjections.find(
+    (projection) =>
+      projection.metadata.compareGovernancePosture?.governancePosture ===
+      "posture_observe",
+  )?.metadata.compareGovernancePosture;
+  if (firstObservePosture) return firstObservePosture;
+
+  return createCompareGovernancePostureMetadata({
+    governancePosture: governancePostureForSemantics({
+      compareHardening,
+      operationalAttention: compareOperationalAttention.operationalAttention,
+      operationalImpact: compareOperationalImpact.operationalImpact,
+      decisionReadiness: compareDecisionReadiness.decisionReadiness,
+      interpretationStability:
+        compareInterpretationStability.interpretationStability,
+      compareRisk: compareRisk.compareRisk,
+      compareEvidence: compareEvidence.compareEvidence,
+      compareConfidence: compareConfidence.compareConfidence,
+      projectionFreshness: compareProjectionFreshness.projectionFreshness,
+      truthAggregationQuality:
+        compareTruthAggregationQuality.truthAggregationQuality,
+      severity: compareOperatorTimeline.severity,
+      operationalPriority: compareOperatorTimeline.operationalPriority,
+      ownerActionability: compareOperatorTimeline.ownerActionability,
+      reviewReadiness: compareOperatorTimeline.reviewReadiness,
+      escalationReadiness: compareOperatorTimeline.escalationReadiness,
+      operatorSummary: compareOperatorSummary.operatorSummary,
+      classification: compareOperatorTimeline.classification,
+    }),
+    compareHardening,
+    operationalAttention: compareOperationalAttention.operationalAttention,
+    operationalImpact: compareOperationalImpact.operationalImpact,
+    decisionReadiness: compareDecisionReadiness.decisionReadiness,
+    interpretationStability:
+      compareInterpretationStability.interpretationStability,
+    compareRisk: compareRisk.compareRisk,
+    compareEvidence: compareEvidence.compareEvidence,
+    compareConfidence: compareConfidence.compareConfidence,
+    projectionFreshness: compareProjectionFreshness.projectionFreshness,
+    truthAggregationQuality:
+      compareTruthAggregationQuality.truthAggregationQuality,
+    severity: compareOperatorTimeline.severity,
+    operationalPriority: compareOperatorTimeline.operationalPriority,
+    ownerActionability: compareOperatorTimeline.ownerActionability,
+    reviewReadiness: compareOperatorTimeline.reviewReadiness,
+    escalationReadiness: compareOperatorTimeline.escalationReadiness,
+    operatorSummary: compareOperatorSummary.operatorSummary,
+    operatorTimeline: compareOperatorTimeline.operatorTimeline,
+    classification: compareOperatorTimeline.classification,
+    postureSource: "response_level_governance_posture_semantics_chain",
+    postureSignals: [
+      compareOperationalAttention.operationalAttention,
+      compareOperationalImpact.operationalImpact,
+      compareDecisionReadiness.decisionReadiness,
+      compareInterpretationStability.interpretationStability,
+      compareRisk.compareRisk,
+      compareEvidence.compareEvidence,
+      compareTruthAggregationQuality.truthAggregationQuality,
+      compareProjectionFreshness.projectionFreshness,
+      compareConfidence.compareConfidence,
+      compareOperatorSummary.operatorSummary,
+      compareOperatorTimeline.operatorTimeline,
+      compareOperatorTimeline.operatorMessage,
+      compareOperatorTimeline.ownerActionability,
+      compareOperatorTimeline.operationalPriority,
+      compareOperatorTimeline.escalationReadiness,
+      compareOperatorTimeline.reviewReadiness,
+      compareOperatorTimeline.severity,
+      compareOperatorTimeline.classification,
+      compareHardening.sourceStatus,
+      compareHardening.resultStatus,
+      compareHardening.scopeStatus,
+    ],
+  });
+}
+
 export async function GET(req: NextRequest) {
   const guard = await requireAdminDashboardRole(req);
   if (!guard.ok) {
@@ -5694,6 +6162,21 @@ export async function GET(req: NextRequest) {
     compareOperationalImpact,
     readOnlyData.compareProjections,
   );
+  const compareGovernancePosture = resolveResponseGovernancePosture(
+    compareHardening,
+    compareOperatorSummary,
+    compareOperatorTimeline,
+    compareConfidence,
+    compareProjectionFreshness,
+    compareTruthAggregationQuality,
+    compareEvidence,
+    compareRisk,
+    compareInterpretationStability,
+    compareDecisionReadiness,
+    compareOperationalImpact,
+    compareOperationalAttention,
+    readOnlyData.compareProjections,
+  );
   const endpointContract = createInventoryIntegrityReadOnlyEndpointContract(endpointPath);
   const request = createInventoryIntegrityReadOnlyEdgeRequest(endpointContract);
   const fetchResult = createInventoryIntegrityFetchResult(
@@ -5723,6 +6206,7 @@ export async function GET(req: NextRequest) {
     compareDecisionReadiness,
     compareOperationalImpact,
     compareOperationalAttention,
+    compareGovernancePosture,
   );
   const payload = adaptFetchResponseToPayload(fetchResult);
   const mappedResponse = mapEdgeProjectionResponse({
@@ -5759,6 +6243,7 @@ export async function GET(req: NextRequest) {
     compareDecisionReadiness,
     compareOperationalImpact,
     compareOperationalAttention,
+    compareGovernancePosture,
     normalizedData: mappedResponse.normalizedData,
     metadata: mappedResponse.metadata,
     statusSemantics: mappedResponse.statusSemantics,

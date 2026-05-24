@@ -219,6 +219,12 @@ function normalizeProjectionMetadata(
           ],
         }
       : undefined,
+    compareGovernancePosture: metadata.compareGovernancePosture
+      ? {
+          ...metadata.compareGovernancePosture,
+          postureSignals: [...metadata.compareGovernancePosture.postureSignals],
+        }
+      : undefined,
     confidence: normalizeConfidence(metadata.confidence),
     freshness: normalizeFreshness(metadata.freshness),
     completeness: normalizeCompleteness(metadata.completeness),
