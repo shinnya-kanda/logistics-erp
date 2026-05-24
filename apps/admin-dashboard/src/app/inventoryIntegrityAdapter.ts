@@ -225,6 +225,14 @@ function normalizeProjectionMetadata(
           postureSignals: [...metadata.compareGovernancePosture.postureSignals],
         }
       : undefined,
+    compareGovernanceDisposition: metadata.compareGovernanceDisposition
+      ? {
+          ...metadata.compareGovernanceDisposition,
+          dispositionSignals: [
+            ...metadata.compareGovernanceDisposition.dispositionSignals,
+          ],
+        }
+      : undefined,
     confidence: normalizeConfidence(metadata.confidence),
     freshness: normalizeFreshness(metadata.freshness),
     completeness: normalizeCompleteness(metadata.completeness),
