@@ -205,6 +205,15 @@ export function mapEdgeProjectionMetadata(
           ],
         }
       : undefined,
+    compareGovernanceReasoningCoherence: metadata.compareGovernanceReasoningCoherence
+      ? {
+          ...metadata.compareGovernanceReasoningCoherence,
+          reasoningCoherenceSignals: [
+            ...metadata.compareGovernanceReasoningCoherence
+              .reasoningCoherenceSignals,
+          ],
+        }
+      : undefined,
     responseContractVersion: metadata.payloadVersion,
     readability: metadata.readability,
     adapterInputBoundary: metadata.adapterInputBoundary,
