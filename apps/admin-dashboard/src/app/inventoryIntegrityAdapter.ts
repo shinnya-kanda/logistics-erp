@@ -266,6 +266,14 @@ function normalizeProjectionMetadata(
           ],
         }
       : undefined,
+    compareGovernanceSemanticDrift: metadata.compareGovernanceSemanticDrift
+      ? {
+          ...metadata.compareGovernanceSemanticDrift,
+          semanticDriftSignals: [
+            ...metadata.compareGovernanceSemanticDrift.semanticDriftSignals,
+          ],
+        }
+      : undefined,
     confidence: normalizeConfidence(metadata.confidence),
     freshness: normalizeFreshness(metadata.freshness),
     completeness: normalizeCompleteness(metadata.completeness),

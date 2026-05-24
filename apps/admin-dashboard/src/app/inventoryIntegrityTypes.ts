@@ -2149,6 +2149,57 @@ export type InventoryCompareGovernanceReasoningCoherenceMetadata = {
   readonly executionBoundary: InventoryIntegrityExecutionBoundary;
 };
 
+export type InventoryCompareGovernanceSemanticDrift =
+  | "stable_semantics"
+  | "slightly_drifting"
+  | "drifting_semantics"
+  | "severely_drifting"
+  | "drift_unavailable";
+
+export type InventoryCompareGovernanceSemanticDriftMetadata = {
+  readonly semanticDriftId: string;
+  readonly governanceSemanticDrift: InventoryCompareGovernanceSemanticDrift;
+  readonly semanticDriftText: string;
+  readonly semanticDriftReason: string;
+  readonly semanticDriftSource: string;
+  readonly semanticDriftSignals: readonly string[];
+  readonly label: string;
+  readonly interpretation: string;
+  readonly noExecutionMeaning: string;
+  readonly governanceReasoningCoherence: InventoryCompareGovernanceReasoningCoherence;
+  readonly governanceExplainability: InventoryCompareGovernanceExplainability;
+  readonly governanceAuditTrail: InventoryCompareGovernanceAuditTrail;
+  readonly governanceRetention: InventoryCompareGovernanceRetention;
+  readonly governanceDisposition: InventoryCompareGovernanceDisposition;
+  readonly governancePosture: InventoryCompareGovernancePosture;
+  readonly operationalAttention: InventoryCompareOperationalAttention;
+  readonly operationalImpact: InventoryCompareOperationalImpact;
+  readonly decisionReadiness: InventoryCompareDecisionReadiness;
+  readonly interpretationStability: InventoryCompareInterpretationStability;
+  readonly compareRisk: InventoryCompareRisk;
+  readonly compareEvidence: InventoryCompareEvidenceStrength;
+  readonly compareConfidence: InventoryCompareConfidence;
+  readonly projectionFreshness: InventoryCompareProjectionFreshness;
+  readonly truthAggregationQuality: InventoryCompareTruthAggregationQuality;
+  readonly severity: InventoryCompareSeverity;
+  readonly operationalPriority: InventoryCompareOperationalPriority;
+  readonly ownerActionability?: InventoryCompareOwnerActionability;
+  readonly reviewReadiness: InventoryCompareReviewReadiness;
+  readonly escalationReadiness: InventoryCompareEscalationReadiness;
+  readonly operatorSummary?: InventoryCompareOperatorSummary;
+  readonly operatorTimeline?: InventoryCompareOperatorTimeline;
+  readonly operatorMessage?: InventoryCompareOperatorMessage;
+  readonly operatorGuidance?: InventoryCompareOperatorGuidance;
+  readonly classification: InventoryCompareMismatchClassification;
+  readonly sourceStatus: InventoryCompareSourceStatus;
+  readonly resultStatus: InventoryCompareResultVisibilityStatus;
+  readonly scopeStatus: InventoryCompareScopeValidationStatus;
+  readonly truthSource: InventoryIntegrityTruthSource;
+  readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
 export type InventoryCompareHardeningMetadata = {
   readonly hardeningId: string;
   readonly sourceStatus: InventoryCompareSourceStatus;
@@ -2277,6 +2328,7 @@ export type InventoryIntegrityProjectionMetadata = {
   readonly compareGovernanceAuditTrail?: InventoryCompareGovernanceAuditTrailMetadata;
   readonly compareGovernanceExplainability?: InventoryCompareGovernanceExplainabilityMetadata;
   readonly compareGovernanceReasoningCoherence?: InventoryCompareGovernanceReasoningCoherenceMetadata;
+  readonly compareGovernanceSemanticDrift?: InventoryCompareGovernanceSemanticDriftMetadata;
   readonly confidence: InventoryIntegrityConfidenceMetadata;
   readonly freshness: InventoryIntegrityFreshnessMetadata;
   readonly completeness: InventoryIntegrityCompletenessMetadata;
@@ -2559,6 +2611,7 @@ export type ProjectionResponseMetadata = {
   readonly compareGovernanceAuditTrail?: InventoryCompareGovernanceAuditTrailMetadata;
   readonly compareGovernanceExplainability?: InventoryCompareGovernanceExplainabilityMetadata;
   readonly compareGovernanceReasoningCoherence?: InventoryCompareGovernanceReasoningCoherenceMetadata;
+  readonly compareGovernanceSemanticDrift?: InventoryCompareGovernanceSemanticDriftMetadata;
   readonly responseContractVersion: string;
   readonly readability: string;
   readonly adapterInputBoundary: string;
@@ -2631,6 +2684,7 @@ export type RawProjectionMetadataPayload = {
   readonly compareGovernanceAuditTrail?: InventoryCompareGovernanceAuditTrailMetadata;
   readonly compareGovernanceExplainability?: InventoryCompareGovernanceExplainabilityMetadata;
   readonly compareGovernanceReasoningCoherence?: InventoryCompareGovernanceReasoningCoherenceMetadata;
+  readonly compareGovernanceSemanticDrift?: InventoryCompareGovernanceSemanticDriftMetadata;
   readonly payloadVersion: string;
   readonly readability: string;
   readonly adapterInputBoundary: string;
@@ -2727,6 +2781,7 @@ export type InventoryIntegrityFetchResultMetadata = {
   readonly compareGovernanceAuditTrail?: InventoryCompareGovernanceAuditTrailMetadata;
   readonly compareGovernanceExplainability?: InventoryCompareGovernanceExplainabilityMetadata;
   readonly compareGovernanceReasoningCoherence?: InventoryCompareGovernanceReasoningCoherenceMetadata;
+  readonly compareGovernanceSemanticDrift?: InventoryCompareGovernanceSemanticDriftMetadata;
   readonly responseStatus: ProjectionResponseStatusSemantics;
   readonly resultVersion: string;
   readonly readability: string;
