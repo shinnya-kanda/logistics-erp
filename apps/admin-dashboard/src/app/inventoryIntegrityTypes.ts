@@ -2399,6 +2399,65 @@ export type InventoryCompareGovernanceSemanticSurvivabilityMetadata = {
   readonly executionBoundary: InventoryIntegrityExecutionBoundary;
 };
 
+export type InventoryCompareGovernanceSemanticSustainability =
+  | "sustainability_unavailable"
+  | "unsustainable_semantics"
+  | "fragile_sustainability"
+  | "conditionally_sustainable"
+  | "sustainable_semantics";
+
+export type InventoryCompareGovernanceSemanticSustainabilityMetadata = {
+  readonly semanticSustainabilityId: string;
+  readonly governanceSemanticSustainability: InventoryCompareGovernanceSemanticSustainability;
+  readonly semanticSustainabilityText: string;
+  readonly semanticSustainabilityReason: string;
+  readonly semanticSustainabilitySource: string;
+  readonly semanticSustainabilitySignals: readonly string[];
+  readonly label: string;
+  readonly interpretation: string;
+  readonly noExecutionMeaning: string;
+  readonly governanceSemanticSurvivability: InventoryCompareGovernanceSemanticSurvivability;
+  readonly governanceSemanticDegradationTolerance: InventoryCompareGovernanceSemanticDegradationTolerance;
+  readonly governanceSemanticObservabilityContinuity: InventoryCompareGovernanceSemanticObservabilityContinuity;
+  readonly governanceSemanticRecoverability: InventoryCompareGovernanceSemanticRecoverability;
+  readonly governanceSemanticIntegrityBoundary: InventoryCompareGovernanceSemanticIntegrityBoundary;
+  readonly governanceSemanticResilience: InventoryCompareGovernanceSemanticResilience;
+  readonly governanceSemanticConvergence: InventoryCompareGovernanceSemanticConvergence;
+  readonly governanceSemanticDrift: InventoryCompareGovernanceSemanticDrift;
+  readonly governanceReasoningCoherence: InventoryCompareGovernanceReasoningCoherence;
+  readonly governanceExplainability: InventoryCompareGovernanceExplainability;
+  readonly governanceAuditTrail: InventoryCompareGovernanceAuditTrail;
+  readonly governanceRetention: InventoryCompareGovernanceRetention;
+  readonly governanceDisposition: InventoryCompareGovernanceDisposition;
+  readonly governancePosture: InventoryCompareGovernancePosture;
+  readonly operationalAttention: InventoryCompareOperationalAttention;
+  readonly operationalImpact: InventoryCompareOperationalImpact;
+  readonly decisionReadiness: InventoryCompareDecisionReadiness;
+  readonly interpretationStability: InventoryCompareInterpretationStability;
+  readonly compareRisk: InventoryCompareRisk;
+  readonly compareEvidence: InventoryCompareEvidenceStrength;
+  readonly compareConfidence: InventoryCompareConfidence;
+  readonly projectionFreshness: InventoryCompareProjectionFreshness;
+  readonly truthAggregationQuality: InventoryCompareTruthAggregationQuality;
+  readonly severity: InventoryCompareSeverity;
+  readonly operationalPriority: InventoryCompareOperationalPriority;
+  readonly ownerActionability?: InventoryCompareOwnerActionability;
+  readonly reviewReadiness: InventoryCompareReviewReadiness;
+  readonly escalationReadiness: InventoryCompareEscalationReadiness;
+  readonly operatorSummary?: InventoryCompareOperatorSummary;
+  readonly operatorTimeline?: InventoryCompareOperatorTimeline;
+  readonly operatorMessage?: InventoryCompareOperatorMessage;
+  readonly operatorGuidance?: InventoryCompareOperatorGuidance;
+  readonly classification: InventoryCompareMismatchClassification;
+  readonly sourceStatus: InventoryCompareSourceStatus;
+  readonly resultStatus: InventoryCompareResultVisibilityStatus;
+  readonly scopeStatus: InventoryCompareScopeValidationStatus;
+  readonly truthSource: InventoryIntegrityTruthSource;
+  readonly cacheCompareTarget: InventoryIntegrityCacheCompareTarget;
+  readonly semanticBoundary: InventoryIntegritySemanticBoundary;
+  readonly executionBoundary: InventoryIntegrityExecutionBoundary;
+};
+
 export type InventoryCompareGovernanceSemanticRecoverabilityMetadata = {
   readonly semanticRecoverabilityId: string;
   readonly governanceSemanticRecoverability: InventoryCompareGovernanceSemanticRecoverability;
@@ -2721,6 +2780,7 @@ export type InventoryIntegrityProjectionMetadata = {
   readonly compareGovernanceSemanticObservabilityContinuity?: InventoryCompareGovernanceSemanticObservabilityContinuityMetadata;
   readonly compareGovernanceSemanticDegradationTolerance?: InventoryCompareGovernanceSemanticDegradationToleranceMetadata;
   readonly compareGovernanceSemanticSurvivability?: InventoryCompareGovernanceSemanticSurvivabilityMetadata;
+  readonly compareGovernanceSemanticSustainability?: InventoryCompareGovernanceSemanticSustainabilityMetadata;
   readonly confidence: InventoryIntegrityConfidenceMetadata;
   readonly freshness: InventoryIntegrityFreshnessMetadata;
   readonly completeness: InventoryIntegrityCompletenessMetadata;
@@ -3011,6 +3071,7 @@ export type ProjectionResponseMetadata = {
   readonly compareGovernanceSemanticObservabilityContinuity?: InventoryCompareGovernanceSemanticObservabilityContinuityMetadata;
   readonly compareGovernanceSemanticDegradationTolerance?: InventoryCompareGovernanceSemanticDegradationToleranceMetadata;
   readonly compareGovernanceSemanticSurvivability?: InventoryCompareGovernanceSemanticSurvivabilityMetadata;
+  readonly compareGovernanceSemanticSustainability?: InventoryCompareGovernanceSemanticSustainabilityMetadata;
   readonly responseContractVersion: string;
   readonly readability: string;
   readonly adapterInputBoundary: string;
@@ -3091,6 +3152,7 @@ export type RawProjectionMetadataPayload = {
   readonly compareGovernanceSemanticObservabilityContinuity?: InventoryCompareGovernanceSemanticObservabilityContinuityMetadata;
   readonly compareGovernanceSemanticDegradationTolerance?: InventoryCompareGovernanceSemanticDegradationToleranceMetadata;
   readonly compareGovernanceSemanticSurvivability?: InventoryCompareGovernanceSemanticSurvivabilityMetadata;
+  readonly compareGovernanceSemanticSustainability?: InventoryCompareGovernanceSemanticSustainabilityMetadata;
   readonly payloadVersion: string;
   readonly readability: string;
   readonly adapterInputBoundary: string;
@@ -3195,6 +3257,7 @@ export type InventoryIntegrityFetchResultMetadata = {
   readonly compareGovernanceSemanticObservabilityContinuity?: InventoryCompareGovernanceSemanticObservabilityContinuityMetadata;
   readonly compareGovernanceSemanticDegradationTolerance?: InventoryCompareGovernanceSemanticDegradationToleranceMetadata;
   readonly compareGovernanceSemanticSurvivability?: InventoryCompareGovernanceSemanticSurvivabilityMetadata;
+  readonly compareGovernanceSemanticSustainability?: InventoryCompareGovernanceSemanticSustainabilityMetadata;
   readonly responseStatus: ProjectionResponseStatusSemantics;
   readonly resultVersion: string;
   readonly readability: string;
