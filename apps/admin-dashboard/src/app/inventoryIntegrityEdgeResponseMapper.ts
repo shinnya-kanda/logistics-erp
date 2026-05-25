@@ -288,6 +288,16 @@ export function mapEdgeProjectionMetadata(
             ],
           }
         : undefined,
+    compareGovernanceSemanticSustainability:
+      metadata.compareGovernanceSemanticSustainability
+        ? {
+            ...metadata.compareGovernanceSemanticSustainability,
+            semanticSustainabilitySignals: [
+              ...metadata.compareGovernanceSemanticSustainability
+                .semanticSustainabilitySignals,
+            ],
+          }
+        : undefined,
     responseContractVersion: metadata.payloadVersion,
     readability: metadata.readability,
     adapterInputBoundary: metadata.adapterInputBoundary,

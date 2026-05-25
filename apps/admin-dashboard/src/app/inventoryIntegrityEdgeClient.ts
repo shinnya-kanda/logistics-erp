@@ -1268,6 +1268,7 @@ export function createInventoryIntegrityFetchResult(
   compareGovernanceSemanticObservabilityContinuity?: InventoryIntegrityFetchResult["metadata"]["compareGovernanceSemanticObservabilityContinuity"],
   compareGovernanceSemanticDegradationTolerance?: InventoryIntegrityFetchResult["metadata"]["compareGovernanceSemanticDegradationTolerance"],
   compareGovernanceSemanticSurvivability?: InventoryIntegrityFetchResult["metadata"]["compareGovernanceSemanticSurvivability"],
+  compareGovernanceSemanticSustainability?: InventoryIntegrityFetchResult["metadata"]["compareGovernanceSemanticSustainability"],
 ): InventoryIntegrityFetchResult {
   return {
     metadata: {
@@ -1347,6 +1348,7 @@ export function createInventoryIntegrityFetchResult(
       compareGovernanceSemanticObservabilityContinuity,
       compareGovernanceSemanticDegradationTolerance,
       compareGovernanceSemanticSurvivability,
+      compareGovernanceSemanticSustainability,
       responseStatus,
       resultVersion: "inventory-integrity-static-fetch-result-v1",
       readability:
