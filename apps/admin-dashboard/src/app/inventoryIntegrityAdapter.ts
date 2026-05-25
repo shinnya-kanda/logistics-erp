@@ -350,6 +350,16 @@ function normalizeProjectionMetadata(
             ],
           }
         : undefined,
+    compareGovernanceSemanticMaintainability:
+      metadata.compareGovernanceSemanticMaintainability
+        ? {
+            ...metadata.compareGovernanceSemanticMaintainability,
+            semanticMaintainabilitySignals: [
+              ...metadata.compareGovernanceSemanticMaintainability
+                .semanticMaintainabilitySignals,
+            ],
+          }
+        : undefined,
     confidence: normalizeConfidence(metadata.confidence),
     freshness: normalizeFreshness(metadata.freshness),
     completeness: normalizeCompleteness(metadata.completeness),
