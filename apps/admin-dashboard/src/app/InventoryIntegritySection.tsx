@@ -58,6 +58,7 @@ import type {
   InventoryCompareGovernanceSemanticDegradationToleranceMetadata,
   InventoryCompareGovernanceSemanticSurvivabilityMetadata,
   InventoryCompareGovernanceSemanticSustainabilityMetadata,
+  InventoryCompareGovernanceSemanticMaintainabilityMetadata,
   InventoryCompareGovernancePostureMetadata,
   InventoryCompareOperatorGuidanceMetadata,
   InventoryCompareOperatorMessageMetadata,
@@ -882,6 +883,29 @@ function extractCompareGovernanceSemanticSustainability(
     : null;
 }
 
+function extractCompareGovernanceSemanticMaintainability(
+  value: unknown,
+): InventoryCompareGovernanceSemanticMaintainabilityMetadata | null {
+  if (!value || typeof value !== "object") return null;
+
+  const candidate = value as {
+    readonly compareGovernanceSemanticMaintainability?: unknown;
+  };
+  if (
+    !candidate.compareGovernanceSemanticMaintainability ||
+    typeof candidate.compareGovernanceSemanticMaintainability !== "object"
+  ) {
+    return null;
+  }
+
+  const semanticMaintainability =
+    candidate.compareGovernanceSemanticMaintainability as Partial<InventoryCompareGovernanceSemanticMaintainabilityMetadata>;
+  return typeof semanticMaintainability.governanceSemanticMaintainability ===
+    "string" && typeof semanticMaintainability.semanticMaintainabilityText === "string"
+    ? (semanticMaintainability as InventoryCompareGovernanceSemanticMaintainabilityMetadata)
+    : null;
+}
+
 function readableSignals(signals: readonly string[], limit = 4): string {
   const visibleSignals = signals.slice(0, limit).join(" / ");
   return signals.length > limit
@@ -1084,6 +1108,10 @@ export function InventoryIntegritySection() {
     compareGovernanceSemanticSustainability,
     setCompareGovernanceSemanticSustainability,
   ] = useState<InventoryCompareGovernanceSemanticSustainabilityMetadata | null>(null);
+  const [
+    compareGovernanceSemanticMaintainability,
+    setCompareGovernanceSemanticMaintainability,
+  ] = useState<InventoryCompareGovernanceSemanticMaintainabilityMetadata | null>(null);
 
   useEffect(() => {
     const token = session?.access_token;
@@ -1119,6 +1147,7 @@ export function InventoryIntegritySection() {
       setCompareGovernanceSemanticDegradationTolerance(null);
       setCompareGovernanceSemanticSurvivability(null);
       setCompareGovernanceSemanticSustainability(null);
+      setCompareGovernanceSemanticMaintainability(null);
       return;
     }
 
@@ -1200,6 +1229,9 @@ export function InventoryIntegritySection() {
           setCompareGovernanceSemanticSustainability(
             extractCompareGovernanceSemanticSustainability(responseBody),
           );
+          setCompareGovernanceSemanticMaintainability(
+            extractCompareGovernanceSemanticMaintainability(responseBody),
+          );
           return;
         }
 
@@ -1262,6 +1294,9 @@ export function InventoryIntegritySection() {
         setCompareGovernanceSemanticSustainability(
           extractCompareGovernanceSemanticSustainability(responseBody),
         );
+        setCompareGovernanceSemanticMaintainability(
+          extractCompareGovernanceSemanticMaintainability(responseBody),
+        );
         const readOnlyData = extractInventoryIntegrityReadOnlyData(responseBody);
         if (!readOnlyData) {
           setCompareSourceLabel("static fallback");
@@ -1303,6 +1338,7 @@ export function InventoryIntegritySection() {
           setCompareGovernanceSemanticDegradationTolerance(null);
           setCompareGovernanceSemanticSurvivability(null);
           setCompareGovernanceSemanticSustainability(null);
+          setCompareGovernanceSemanticMaintainability(null);
         }
       }
     }
@@ -1407,6 +1443,26 @@ export function InventoryIntegritySection() {
               <span style={styles.supportingText}>
                 source: {compareOperatorSummary.summarySource} / signals:{" "}
                 {readableSignals(compareOperatorSummary.summarySignals)}
+              </span>
+            </>
+          ) : null}
+          {compareGovernanceSemanticMaintainability ? (
+            <>
+              <span style={styles.summaryText}>
+                {compareGovernanceSemanticMaintainability.semanticMaintainabilityText}
+              </span>
+              <span style={styles.supportingText}>
+                compare governance semantic maintainability:{" "}
+                {
+                  compareGovernanceSemanticMaintainability.governanceSemanticMaintainability
+                } / {compareGovernanceSemanticMaintainability.semanticMaintainabilityReason}
+              </span>
+              <span style={styles.supportingText}>
+                source: {compareGovernanceSemanticMaintainability.semanticMaintainabilitySource} /
+                signals:{" "}
+                {readableSignals(
+                  compareGovernanceSemanticMaintainability.semanticMaintainabilitySignals,
+                )}
               </span>
             </>
           ) : null}
@@ -1940,6 +1996,9 @@ export function InventoryIntegritySection() {
         {compareGovernanceSemanticSustainability
           ? ` governance semantic sustainability ${compareGovernanceSemanticSustainability.governanceSemanticSustainability}.`
           : ""}
+        {compareGovernanceSemanticMaintainability
+          ? ` governance semantic maintainability ${compareGovernanceSemanticMaintainability.governanceSemanticMaintainability}.`
+          : ""}
       </div>
 
       <div style={{ ...styles.notice, ...styles.neutralNotice }}>
@@ -2094,6 +2153,15 @@ export function InventoryIntegritySection() {
                 <p style={styles.description}>
                   compare governance semantic drift:{" "}
                   {projection.metadata.compareGovernanceSemanticDrift.semanticDriftText}
+                </p>
+              ) : null}
+              {projection.metadata.compareGovernanceSemanticMaintainability ? (
+                <p style={styles.description}>
+                  compare governance semantic maintainability:{" "}
+                  {
+                    projection.metadata.compareGovernanceSemanticMaintainability
+                      .semanticMaintainabilityText
+                  }
                 </p>
               ) : null}
               {projection.metadata.compareGovernanceSemanticSustainability ? (
@@ -2413,6 +2481,25 @@ export function InventoryIntegritySection() {
                   {readableSignals(
                     projection.metadata.compareGovernanceSemanticDrift
                       .semanticDriftSignals,
+                  )}
+                </p>
+              ) : null}
+              {projection.metadata.compareGovernanceSemanticMaintainability ? (
+                <p style={styles.supportingText}>
+                  semantic maintainability reason:{" "}
+                  {
+                    projection.metadata.compareGovernanceSemanticMaintainability
+                      .semanticMaintainabilityReason
+                  }{" "}
+                  / source:{" "}
+                  {
+                    projection.metadata.compareGovernanceSemanticMaintainability
+                      .semanticMaintainabilitySource
+                  }{" "}
+                  / signals:{" "}
+                  {readableSignals(
+                    projection.metadata.compareGovernanceSemanticMaintainability
+                      .semanticMaintainabilitySignals,
                   )}
                 </p>
               ) : null}
