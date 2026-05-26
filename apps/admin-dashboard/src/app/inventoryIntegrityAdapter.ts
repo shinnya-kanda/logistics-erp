@@ -360,6 +360,16 @@ function normalizeProjectionMetadata(
             ],
           }
         : undefined,
+    compareGovernanceSemanticEvolvability:
+      metadata.compareGovernanceSemanticEvolvability
+        ? {
+            ...metadata.compareGovernanceSemanticEvolvability,
+            semanticEvolvabilitySignals: [
+              ...metadata.compareGovernanceSemanticEvolvability
+                .semanticEvolvabilitySignals,
+            ],
+          }
+        : undefined,
     confidence: normalizeConfidence(metadata.confidence),
     freshness: normalizeFreshness(metadata.freshness),
     completeness: normalizeCompleteness(metadata.completeness),
