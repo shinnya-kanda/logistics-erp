@@ -184,19 +184,19 @@ function GraphNodeCard({
       }}
       onClick={onSelect}
       aria-pressed={selected}
-      aria-label={`Show node detail for ${node.label}`}
+      aria-label={`ノード詳細を表示 / Show node detail: ${node.label}`}
     >
       <p style={styles.nodeTitle}>{node.label}</p>
       <div style={styles.nodeMeta}>
-        <span style={styles.badge}>type: {node.type}</span>
+        <span style={styles.badge}>種別 / type: {node.type}</span>
         <span style={{ ...styles.badge, ...severityStyle(node.severity) }}>
           severity: {node.severity}
         </span>
-        {selected ? <span style={styles.badge}>selected</span> : null}
-        {relatedToPath ? <span style={styles.badge}>path related</span> : null}
+        {selected ? <span style={styles.badge}>選択中 / selected</span> : null}
+        {relatedToPath ? <span style={styles.badge}>関連パス / path related</span> : null}
       </div>
-      <p style={styles.nodeText}>Reason: {node.reason}</p>
-      <p style={styles.nodeText}>Source: {node.source}</p>
+      <p style={styles.nodeText}>理由 / Reason: {node.reason}</p>
+      <p style={styles.nodeText}>根拠 / Source: {node.source}</p>
     </button>
   );
 }
@@ -230,15 +230,15 @@ function GraphRelationChip({
       }}
       onClick={onSelect}
       aria-pressed={selected}
-      aria-label={`Show relation detail for ${edge.label}`}
+      aria-label={`関係詳細を表示 / Show relation detail: ${edge.label}`}
     >
       <strong>{edge.type}</strong>
       <span>
         {fromLabel} -&gt; {toLabel}
       </span>
       <span>{edge.description}</span>
-      {selected ? <span>selected relation</span> : null}
-      {highlighted ? <span>highlighted path relation</span> : null}
+      {selected ? <span>選択中の関係 / selected relation</span> : null}
+      {highlighted ? <span>強調パスの関係 / highlighted path relation</span> : null}
     </button>
   );
 }
@@ -264,34 +264,39 @@ export function StaticGraphPrototype({
     <div style={styles.wrapper} aria-label="Static graph prototype">
       <div style={styles.headerCard}>
         <div style={styles.badgeRow} aria-label="Static graph boundary">
-          <span style={{ ...styles.badge, ...styles.readOnlyBadge }}>Read Only</span>
-          <span style={{ ...styles.badge, ...styles.noControlsBadge }}>
-            Observability Only
+          <span style={{ ...styles.badge, ...styles.readOnlyBadge }}>
+            Read Only / 読み取り専用
           </span>
           <span style={{ ...styles.badge, ...styles.noControlsBadge }}>
-            No Execution Controls
+            Observability Only / 観測専用
           </span>
-          <span style={styles.badge}>Mock Data</span>
-          <span style={styles.badge}>No Graph Engine</span>
+          <span style={{ ...styles.badge, ...styles.noControlsBadge }}>
+            No Execution Controls / 実行操作なし
+          </span>
+          <span style={styles.badge}>Mock Data / モックデータ</span>
+          <span style={styles.badge}>No API / API 接続なし</span>
+          <span style={styles.badge}>No DB / DB 接続なし</span>
+          <span style={styles.badge}>No Mutation / データ変更なし</span>
+          <span style={styles.badge}>No Graph Engine / グラフエンジンなし</span>
         </div>
         <p style={styles.lead}>
-          HTML/CSS static graph prototype. Node cards and relation chips update
-          local selection state only.
+          HTML/CSS の静的グラフ試作です。ノードカードと関係チップは
+          local selection state の表示だけを切り替えます。
         </p>
         <div style={styles.badgeRow} aria-label="Static graph statistics">
-          <span style={styles.badge}>View: {activeViewMode}</span>
-          <span style={styles.badge}>Nodes: {nodes.length}</span>
-          <span style={styles.badge}>Edges: {edges.length}</span>
-          <span style={styles.badge}>Path: {highlightedPathId}</span>
+          <span style={styles.badge}>表示モード / View: {activeViewMode}</span>
+          <span style={styles.badge}>ノード / Nodes: {nodes.length}</span>
+          <span style={styles.badge}>エッジ / Edges: {edges.length}</span>
+          <span style={styles.badge}>観測パス / Path: {highlightedPathId}</span>
         </div>
       </div>
 
       <section style={styles.relationPanel} aria-labelledby="graph-relations-heading">
         <h4 id="graph-relations-heading" style={{ margin: 0 }}>
-          Relation Chips
+          関係チップ / Relation Chips
         </h4>
         <p style={styles.connectorText}>
-          Relations are semantic references for display, not operational routes.
+          関係は表示上の semantic reference であり、作業経路ではありません。
         </p>
         <div style={styles.relationGrid}>
           {edges.map((edge) => (
@@ -310,7 +315,7 @@ export function StaticGraphPrototype({
 
       <section style={styles.graphLane} aria-labelledby="graph-nodes-heading">
         <h4 id="graph-nodes-heading" style={{ margin: 0 }}>
-          Node Cards
+          ノードカード / Node Cards
         </h4>
         <div style={styles.nodeGrid}>
           {nodes.map((node) => (

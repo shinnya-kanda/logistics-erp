@@ -219,14 +219,19 @@ function SummaryCard({
 function BoundaryBadges() {
   return (
     <div style={styles.badgeRow} aria-label="Graph UI boundary">
-      <span style={{ ...styles.badge, ...styles.readOnlyBadge }}>Read Only</span>
-      <span style={{ ...styles.badge, ...styles.noExecutionBadge }}>
-        Observability Only
+      <span style={{ ...styles.badge, ...styles.readOnlyBadge }}>
+        Read Only / 読み取り専用
       </span>
       <span style={{ ...styles.badge, ...styles.noExecutionBadge }}>
-        No Execution Controls
+        Observability Only / 観測専用
       </span>
-      <span style={styles.badge}>Mock Data</span>
+      <span style={{ ...styles.badge, ...styles.noExecutionBadge }}>
+        No Execution Controls / 実行操作なし
+      </span>
+      <span style={styles.badge}>Mock Data / モックデータ</span>
+      <span style={styles.badge}>No API / API 接続なし</span>
+      <span style={styles.badge}>No DB / DB 接続なし</span>
+      <span style={styles.badge}>No Mutation / データ変更なし</span>
     </div>
   );
 }
@@ -262,35 +267,35 @@ export function InventoryIntegrityGraphSection() {
   const inspectorRows = useMemo(() => {
     if (activeInspectorTab === "summary") {
       return [
-        ["Selected Summary", selectedSummary.title],
-        ["Value", selectedSummary.value],
-        ["Reason", selectedSummary.description],
+        ["選択中要約 / Selected Summary", selectedSummary.title],
+        ["値 / Value", selectedSummary.value],
+        ["理由 / Reason", selectedSummary.description],
         ["Severity", selectedSummary.severity],
-        ["Source", "mock model"],
-        ["Boundary", graphData.metadata.readOnlyBoundary],
+        ["根拠 / Source", "mock model / モックモデル"],
+        ["境界 / Boundary", graphData.metadata.readOnlyBoundary],
       ];
     }
 
     if (activeInspectorTab === "edge") {
       return [
-        ["Selected Edge", selectedEdge.label],
-        ["Type", selectedEdge.type],
+        ["選択中エッジ / Selected Edge", selectedEdge.label],
+        ["種別 / Type", selectedEdge.type],
         ["From", selectedEdgeFromLabel],
         ["To", selectedEdgeToLabel],
-        ["Reason", selectedEdge.description],
+        ["理由 / Reason", selectedEdge.description],
         ["Severity", selectedEdge.severity],
-        ["Source", "mock model"],
+        ["根拠 / Source", "mock model / モックモデル"],
       ];
     }
 
     return [
-      ["Selected Node", selectedNode.label],
-      ["Type", selectedNode.type],
-      ["Value", selectedNode.value],
+      ["選択中ノード / Selected Node", selectedNode.label],
+      ["種別 / Type", selectedNode.type],
+      ["Semantic Value", selectedNode.value],
       ["Severity", selectedNode.severity],
-      ["Reason", selectedNode.reason],
-      ["Source", selectedNode.source],
-      ["Signals", selectedNode.signals.join(", ")],
+      ["理由 / Reason", selectedNode.reason],
+      ["根拠 / Source", selectedNode.source],
+      ["シグナル / Signals", selectedNode.signals.join(", ")],
     ];
   }, [
     activeInspectorTab,
@@ -331,18 +336,18 @@ export function InventoryIntegrityGraphSection() {
         <div>
           <h2 id="inventory-integrity-graph-heading">{graphData.metadata.title}</h2>
           <p style={styles.lead}>
-            Inventory Integrity Governance Semantic Graph の read-only UI skeleton
-            です。Graph Engine、API、DB は接続していません。
+            Inventory Integrity Governance Semantic Graph の読み取り専用 UI です。
+            Graph Engine、API、DB、Mutation は接続していません。
           </p>
         </div>
         <BoundaryBadges />
       </div>
 
       <div style={styles.badgeRow} aria-label="Current graph context">
-        <span style={styles.badge}>Overview View</span>
+        <span style={styles.badge}>概要表示 / Overview View</span>
         <span style={styles.badge}>{activeLayer}</span>
-        <span style={styles.badge}>Active View: {activeViewMode}</span>
-        <span style={styles.badge}>Highlighted Path: {highlightedPathId}</span>
+        <span style={styles.badge}>表示モード / Active View: {activeViewMode}</span>
+        <span style={styles.badge}>強調パス / Highlighted Path: {highlightedPathId}</span>
         <span style={styles.badge}>
           Compare Endpoint: {graphData.metadata.compareEndpointMethod} only
         </span>
@@ -354,7 +359,7 @@ export function InventoryIntegrityGraphSection() {
           style={styles.breadcrumbButton}
           onClick={() => selectBreadcrumb("summary")}
         >
-          Graph Summary
+          グラフ要約 / Graph Summary
         </button>
         <span aria-hidden="true">&gt;</span>
         <button
@@ -362,7 +367,7 @@ export function InventoryIntegrityGraphSection() {
           style={styles.breadcrumbButton}
           onClick={() => selectSummary("collapse")}
         >
-          Collapse Summary
+          崩壊傾向 / Collapse Summary
         </button>
         <span aria-hidden="true">&gt;</span>
         <button
@@ -370,15 +375,15 @@ export function InventoryIntegrityGraphSection() {
           style={styles.breadcrumbButton}
           onClick={() => selectBreadcrumb("node")}
         >
-          Node Detail
+          ノード詳細 / Node Detail
         </button>
       </nav>
 
       <div style={styles.layoutGrid}>
         <section style={styles.sectionBox} aria-labelledby="graph-summary-panel-heading">
-          <h3 id="graph-summary-panel-heading">Summary Panel</h3>
+          <h3 id="graph-summary-panel-heading">要約パネル / Summary Panel</h3>
           <p style={styles.lead}>
-            Static mock summary cards. Summary click updates local state only.
+            静的 mock summary を表示します。クリックは local state の表示切替のみです。
           </p>
           <div style={styles.cardGrid}>
             {graphData.summaries.map((card) => (
@@ -393,7 +398,9 @@ export function InventoryIntegrityGraphSection() {
         </section>
 
         <section style={styles.canvas} aria-labelledby="static-graph-prototype-heading">
-          <h3 id="static-graph-prototype-heading">Static Graph Prototype</h3>
+          <h3 id="static-graph-prototype-heading">
+            静的グラフ試作 / Static Graph Prototype
+          </h3>
           <StaticGraphPrototype
             nodes={graphData.nodes}
             edges={graphData.edges}
@@ -409,8 +416,10 @@ export function InventoryIntegrityGraphSection() {
 
       <div style={styles.bottomGrid}>
         <aside style={styles.sectionBox} aria-labelledby="graph-filter-panel-heading">
-          <h3 id="graph-filter-panel-heading">Filter Panel</h3>
-          <p style={styles.lead}>Static mock UI. Filter click updates local state only.</p>
+          <h3 id="graph-filter-panel-heading">表示フィルター / Filter Panel</h3>
+          <p style={styles.lead}>
+            静的 mock UI です。フィルター操作は local state の表示切替のみです。
+          </p>
           {graphData.viewModes.map((view) => (
             <button
               key={view.id}
@@ -427,17 +436,26 @@ export function InventoryIntegrityGraphSection() {
           ))}
 
           <section style={{ marginTop: "1rem" }} aria-labelledby="graph-legend-heading">
-            <h3 id="graph-legend-heading">Legend</h3>
+            <h3 id="graph-legend-heading">凡例 / Legend</h3>
             <div style={styles.legendGrid}>
-              <span style={{ ...styles.badge, ...cardToneStyle("critical") }}>Critical</span>
-              <span style={{ ...styles.badge, ...cardToneStyle("warning") }}>Warning</span>
-              <span style={{ ...styles.badge, ...cardToneStyle("stable") }}>Stable</span>
-              <span style={{ ...styles.badge, ...styles.readOnlyBadge }}>Read Only</span>
-              <span style={{ ...styles.badge, ...styles.noExecutionBadge }}>
-                Observability Only
+              <span style={{ ...styles.badge, ...cardToneStyle("critical") }}>
+                重大 / Critical
               </span>
-              <span style={styles.badge}>No Execution</span>
-              <span style={styles.badge}>Local State</span>
+              <span style={{ ...styles.badge, ...cardToneStyle("warning") }}>
+                注意 / Warning
+              </span>
+              <span style={{ ...styles.badge, ...cardToneStyle("stable") }}>
+                安定 / Stable
+              </span>
+              <span style={{ ...styles.badge, ...styles.readOnlyBadge }}>
+                Read Only / 読み取り専用
+              </span>
+              <span style={{ ...styles.badge, ...styles.noExecutionBadge }}>
+                Observability Only / 観測専用
+              </span>
+              <span style={styles.badge}>No Execution Controls / 実行操作なし</span>
+              <span style={styles.badge}>No Mutation / データ変更なし</span>
+              <span style={styles.badge}>Local State / 画面内状態</span>
             </div>
           </section>
         </aside>
@@ -445,9 +463,9 @@ export function InventoryIntegrityGraphSection() {
         <section style={styles.sectionBox} aria-labelledby="graph-inspector-panel-heading">
           <div style={styles.header}>
             <div>
-              <h3 id="graph-inspector-panel-heading">Inspector Panel</h3>
+              <h3 id="graph-inspector-panel-heading">詳細確認 / Inspector Panel</h3>
               <p style={styles.lead}>
-                Static mock metadata. Inspector changes do not start any workflow.
+                静的 mock metadata を確認します。Inspector の切替は表示変更のみです。
               </p>
             </div>
             <BoundaryBadges />
