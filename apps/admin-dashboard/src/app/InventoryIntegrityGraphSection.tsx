@@ -2,6 +2,7 @@
 
 import { useMemo, useState, type CSSProperties } from "react";
 import { inventoryIntegrityGraphMockData } from "./inventoryIntegrityGraphMockData";
+import { StaticGraphPrototype } from "./StaticGraphPrototype";
 import type {
   InventoryIntegrityGraphInspectorTab,
   InventoryIntegrityGraphSeverity,
@@ -136,28 +137,6 @@ const styles: Record<string, CSSProperties> = {
     border: "1px dashed #90a4ae",
     borderRadius: "12px",
     background: "#f5f7fb",
-  },
-  placeholderCenter: {
-    display: "grid",
-    gap: "0.35rem",
-    placeItems: "center",
-    padding: "1.25rem",
-    border: "1px solid #cfd8dc",
-    borderRadius: "12px",
-    background: "#fff",
-    textAlign: "center",
-  },
-  mockGraphList: {
-    display: "grid",
-    gap: "0.5rem",
-  },
-  mockNodeButton: {
-    border: "1px solid #cfd8dc",
-    borderRadius: "12px",
-    padding: "0.75rem",
-    background: "#fff",
-    cursor: "pointer",
-    textAlign: "left",
   },
   filterButton: {
     width: "100%",
@@ -413,68 +392,18 @@ export function InventoryIntegrityGraphSection() {
           </div>
         </section>
 
-        <section style={styles.canvas} aria-labelledby="graph-canvas-placeholder-heading">
-          <div style={styles.placeholderCenter}>
-            <h3 id="graph-canvas-placeholder-heading">Graph Canvas Placeholder</h3>
-            <strong>Read-only Graph Visualization</strong>
-            <span>Implementation Phase Pending</span>
-            <span>No Graph Engine</span>
-            <span>No API</span>
-            <span>No DB</span>
-            <span>
-              Nodes: {graphData.nodes.length} / Edges: {graphData.edges.length}
-            </span>
-          </div>
-
-          <div style={styles.mockGraphList} aria-label="Mock graph nodes">
-            {graphData.nodes.map((node) => (
-              <button
-                key={node.id}
-                type="button"
-                style={{
-                  ...styles.mockNodeButton,
-                  outline: selectedNodeId === node.id ? "3px solid #1976d2" : undefined,
-                }}
-                onClick={() => selectNode(node.id)}
-                aria-pressed={selectedNodeId === node.id}
-              >
-                <strong>{node.label}</strong>
-                <br />
-                <span>
-                  {node.type} / {node.value} / {node.severity}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          <div style={styles.mockGraphList} aria-label="Mock graph edges">
-            {graphData.edges.map((edge) => {
-              const fromLabel =
-                graphData.nodes.find((node) => node.id === edge.from)?.label ??
-                edge.from;
-              const toLabel =
-                graphData.nodes.find((node) => node.id === edge.to)?.label ?? edge.to;
-
-              return (
-              <button
-                key={edge.id}
-                type="button"
-                style={{
-                  ...styles.mockNodeButton,
-                  outline: selectedEdgeId === edge.id ? "3px solid #2e7d32" : undefined,
-                }}
-                onClick={() => selectEdge(edge.id)}
-                aria-pressed={selectedEdgeId === edge.id}
-              >
-                <strong>{edge.label}</strong>
-                <br />
-                <span>
-                  {fromLabel} -&gt; {toLabel}
-                </span>
-              </button>
-              );
-            })}
-          </div>
+        <section style={styles.canvas} aria-labelledby="static-graph-prototype-heading">
+          <h3 id="static-graph-prototype-heading">Static Graph Prototype</h3>
+          <StaticGraphPrototype
+            nodes={graphData.nodes}
+            edges={graphData.edges}
+            selectedNodeId={selectedNodeId}
+            selectedEdgeId={selectedEdgeId}
+            highlightedPathId={highlightedPathId}
+            activeViewMode={activeViewMode}
+            onSelectNode={selectNode}
+            onSelectEdge={selectEdge}
+          />
         </section>
       </div>
 
