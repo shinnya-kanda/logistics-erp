@@ -1,159 +1,15 @@
 "use client";
 
 import { useMemo, useState, type CSSProperties } from "react";
+import { inventoryIntegrityGraphMockData } from "./inventoryIntegrityGraphMockData";
+import type {
+  InventoryIntegrityGraphInspectorTab,
+  InventoryIntegrityGraphSeverity,
+  InventoryIntegrityGraphSummary,
+  InventoryIntegrityGraphViewMode,
+} from "./inventoryIntegrityGraphTypes";
 
-type ViewMode =
-  | "overview"
-  | "collapse"
-  | "convergence"
-  | "survivability"
-  | "sustainability"
-  | "maintainability"
-  | "evolvability";
-
-type InspectorTab = "summary" | "node" | "edge";
-
-type SummaryCardData = {
-  readonly id: string;
-  readonly title: string;
-  readonly value: string;
-  readonly description: string;
-  readonly tone: "critical" | "warning" | "stable" | "neutral";
-};
-
-type MockNode = {
-  readonly id: string;
-  readonly label: string;
-  readonly type: string;
-  readonly value: string;
-  readonly reason: string;
-  readonly source: string;
-  readonly signals: readonly string[];
-};
-
-type MockEdge = {
-  readonly id: string;
-  readonly label: string;
-  readonly from: string;
-  readonly to: string;
-  readonly reason: string;
-};
-
-const viewModes: ReadonlyArray<{ id: ViewMode; label: string }> = [
-  { id: "overview", label: "Overview" },
-  { id: "collapse", label: "Collapse" },
-  { id: "convergence", label: "Convergence" },
-  { id: "survivability", label: "Survivability" },
-  { id: "sustainability", label: "Sustainability" },
-  { id: "maintainability", label: "Maintainability" },
-  { id: "evolvability", label: "Evolvability" },
-];
-
-const summaryCards: readonly SummaryCardData[] = [
-  {
-    id: "graph-health",
-    title: "Graph Health",
-    value: "Degraded",
-    description: "Mock overview shows limited continuity signals.",
-    tone: "warning",
-  },
-  {
-    id: "graph-risk",
-    title: "Graph Risk",
-    value: "Elevated Risk",
-    description: "Risk is shown as observability metadata only.",
-    tone: "warning",
-  },
-  {
-    id: "collapse",
-    title: "Collapse",
-    value: "Broken Continuity",
-    description: "Collapse summary is prioritized before positive signals.",
-    tone: "critical",
-  },
-  {
-    id: "convergence",
-    title: "Convergence",
-    value: "Partially Converged",
-    description: "Positive direction remains subdued and contextual.",
-    tone: "neutral",
-  },
-  {
-    id: "survivability",
-    title: "Survivability",
-    value: "Fragile",
-    description: "Long-term viability is readable with caveats.",
-    tone: "warning",
-  },
-  {
-    id: "sustainability",
-    title: "Sustainability",
-    value: "Conditional",
-    description: "Persistence depends on support context.",
-    tone: "neutral",
-  },
-  {
-    id: "maintainability",
-    title: "Maintainability",
-    value: "Conditional",
-    description: "Maintenance capacity is not a maintenance workflow.",
-    tone: "neutral",
-  },
-  {
-    id: "evolvability",
-    title: "Evolvability",
-    value: "Limited",
-    description: "Future extension safety is not implementation permission.",
-    tone: "neutral",
-  },
-];
-
-const mockNodes: readonly MockNode[] = [
-  {
-    id: "node-collapse-continuity",
-    label: "Broken Continuity",
-    type: "collapse",
-    value: "broken_continuity",
-    reason: "continuity degraded",
-    source: "mock data",
-    signals: ["continuity", "recoverability", "boundary"],
-  },
-  {
-    id: "node-convergence-partial",
-    label: "Partial Convergence",
-    type: "convergence",
-    value: "partially_converged",
-    reason: "support signals remain limited",
-    source: "mock data",
-    signals: ["confidence", "freshness", "evidence"],
-  },
-  {
-    id: "node-evolvability-limited",
-    label: "Limited Evolvability",
-    type: "evolvability",
-    value: "limited",
-    reason: "maintainability context is conditional",
-    source: "mock data",
-    signals: ["maintainability", "support", "future extension"],
-  },
-];
-
-const mockEdges: readonly MockEdge[] = [
-  {
-    id: "edge-collapse-convergence",
-    label: "Collapse caveat to convergence",
-    from: "Broken Continuity",
-    to: "Partial Convergence",
-    reason: "collapse context limits positive interpretation",
-  },
-  {
-    id: "edge-maintainability-evolvability",
-    label: "Maintainability context to evolvability",
-    from: "Conditional Maintainability",
-    to: "Limited Evolvability",
-    reason: "future extension remains bounded by support context",
-  },
-];
+const graphData = inventoryIntegrityGraphMockData;
 
 const styles: Record<string, CSSProperties> = {
   panel: {
@@ -338,16 +194,16 @@ const styles: Record<string, CSSProperties> = {
   },
 };
 
-function cardToneStyle(tone: SummaryCardData["tone"]): CSSProperties {
-  if (tone === "critical") {
+function cardToneStyle(severity: InventoryIntegrityGraphSeverity): CSSProperties {
+  if (severity === "critical") {
     return { borderColor: "#c62828", background: "#ffebee", color: "#7f0000" };
   }
 
-  if (tone === "warning") {
+  if (severity === "warning") {
     return { borderColor: "#ef6c00", background: "#fff3e0", color: "#5d3900" };
   }
 
-  if (tone === "stable") {
+  if (severity === "stable") {
     return { borderColor: "#2e7d32", background: "#e8f5e9", color: "#1b5e20" };
   }
 
@@ -359,7 +215,7 @@ function SummaryCard({
   selected,
   onSelect,
 }: {
-  readonly card: SummaryCardData;
+  readonly card: InventoryIntegrityGraphSummary;
   readonly selected: boolean;
   readonly onSelect: () => void;
 }) {
@@ -368,7 +224,7 @@ function SummaryCard({
       type="button"
       style={{
         ...styles.card,
-        ...cardToneStyle(card.tone),
+        ...cardToneStyle(card.severity),
         outline: selected ? "3px solid #263238" : undefined,
       }}
       onClick={onSelect}
@@ -397,19 +253,32 @@ function BoundaryBadges() {
 }
 
 export function InventoryIntegrityGraphSection() {
-  const [activeViewMode, setActiveViewMode] = useState<ViewMode>("overview");
-  const [activeLayer] = useState("Governance Layer");
-  const [selectedSummaryId, setSelectedSummaryId] = useState("collapse");
-  const [selectedNodeId, setSelectedNodeId] = useState("node-collapse-continuity");
-  const [selectedEdgeId, setSelectedEdgeId] = useState("edge-collapse-convergence");
-  const [activeInspectorTab, setActiveInspectorTab] = useState<InspectorTab>("node");
-  const [highlightedPathId, setHighlightedPathId] = useState("path-collapse");
+  const [activeViewMode, setActiveViewMode] =
+    useState<InventoryIntegrityGraphViewMode>("overview");
+  const [activeLayer] = useState(graphData.metadata.activeLayer);
+  const [selectedSummaryId, setSelectedSummaryId] = useState(
+    graphData.defaultSummaryId,
+  );
+  const [selectedNodeId, setSelectedNodeId] = useState(graphData.defaultNodeId);
+  const [selectedEdgeId, setSelectedEdgeId] = useState(graphData.defaultEdgeId);
+  const [activeInspectorTab, setActiveInspectorTab] =
+    useState<InventoryIntegrityGraphInspectorTab>("node");
+  const [highlightedPathId, setHighlightedPathId] = useState(
+    graphData.defaultHighlightedPathId,
+  );
   const selectedSummary =
-    summaryCards.find((card) => card.id === selectedSummaryId) ?? summaryCards[0];
+    graphData.summaries.find((card) => card.id === selectedSummaryId) ??
+    graphData.summaries[0];
   const selectedNode =
-    mockNodes.find((node) => node.id === selectedNodeId) ?? mockNodes[0];
+    graphData.nodes.find((node) => node.id === selectedNodeId) ?? graphData.nodes[0];
   const selectedEdge =
-    mockEdges.find((edge) => edge.id === selectedEdgeId) ?? mockEdges[0];
+    graphData.edges.find((edge) => edge.id === selectedEdgeId) ?? graphData.edges[0];
+  const selectedEdgeFromLabel =
+    graphData.nodes.find((node) => node.id === selectedEdge.from)?.label ??
+    selectedEdge.from;
+  const selectedEdgeToLabel =
+    graphData.nodes.find((node) => node.id === selectedEdge.to)?.label ??
+    selectedEdge.to;
 
   const inspectorRows = useMemo(() => {
     if (activeInspectorTab === "summary") {
@@ -417,18 +286,21 @@ export function InventoryIntegrityGraphSection() {
         ["Selected Summary", selectedSummary.title],
         ["Value", selectedSummary.value],
         ["Reason", selectedSummary.description],
-        ["Source", "mock data"],
-        ["Boundary", "Read Only / Observability Only"],
+        ["Severity", selectedSummary.severity],
+        ["Source", "mock model"],
+        ["Boundary", graphData.metadata.readOnlyBoundary],
       ];
     }
 
     if (activeInspectorTab === "edge") {
       return [
         ["Selected Edge", selectedEdge.label],
-        ["From", selectedEdge.from],
-        ["To", selectedEdge.to],
-        ["Reason", selectedEdge.reason],
-        ["Source", "mock data"],
+        ["Type", selectedEdge.type],
+        ["From", selectedEdgeFromLabel],
+        ["To", selectedEdgeToLabel],
+        ["Reason", selectedEdge.description],
+        ["Severity", selectedEdge.severity],
+        ["Source", "mock model"],
       ];
     }
 
@@ -436,16 +308,28 @@ export function InventoryIntegrityGraphSection() {
       ["Selected Node", selectedNode.label],
       ["Type", selectedNode.type],
       ["Value", selectedNode.value],
+      ["Severity", selectedNode.severity],
       ["Reason", selectedNode.reason],
       ["Source", selectedNode.source],
       ["Signals", selectedNode.signals.join(", ")],
     ];
-  }, [activeInspectorTab, selectedEdge, selectedNode, selectedSummary]);
+  }, [
+    activeInspectorTab,
+    selectedEdge,
+    selectedEdgeFromLabel,
+    selectedEdgeToLabel,
+    selectedNode,
+    selectedSummary,
+  ]);
 
   function selectSummary(summaryId: string) {
+    const summary = graphData.summaries.find((item) => item.id === summaryId);
     setSelectedSummaryId(summaryId);
+    if (summary?.relatedNodeId) {
+      setSelectedNodeId(summary.relatedNodeId);
+    }
     setActiveInspectorTab("summary");
-    setHighlightedPathId(summaryId === "collapse" ? "path-collapse" : "path-summary");
+    setHighlightedPathId(summary?.relatedPathId ?? graphData.defaultHighlightedPathId);
   }
 
   function selectNode(nodeId: string) {
@@ -458,7 +342,7 @@ export function InventoryIntegrityGraphSection() {
     setActiveInspectorTab("edge");
   }
 
-  function selectBreadcrumb(target: InspectorTab) {
+  function selectBreadcrumb(target: InventoryIntegrityGraphInspectorTab) {
     setActiveInspectorTab(target);
   }
 
@@ -466,10 +350,10 @@ export function InventoryIntegrityGraphSection() {
     <section style={styles.panel} aria-labelledby="inventory-integrity-graph-heading">
       <div style={styles.header}>
         <div>
-          <h2 id="inventory-integrity-graph-heading">Inventory Integrity Graph</h2>
+          <h2 id="inventory-integrity-graph-heading">{graphData.metadata.title}</h2>
           <p style={styles.lead}>
             Inventory Integrity Governance Semantic Graph の read-only UI skeleton
-            です。Graph Engine、API、DB、Mutation は接続していません。
+            です。Graph Engine、API、DB は接続していません。
           </p>
         </div>
         <BoundaryBadges />
@@ -480,6 +364,9 @@ export function InventoryIntegrityGraphSection() {
         <span style={styles.badge}>{activeLayer}</span>
         <span style={styles.badge}>Active View: {activeViewMode}</span>
         <span style={styles.badge}>Highlighted Path: {highlightedPathId}</span>
+        <span style={styles.badge}>
+          Compare Endpoint: {graphData.metadata.compareEndpointMethod} only
+        </span>
       </div>
 
       <nav style={styles.breadcrumb} aria-label="Graph breadcrumb">
@@ -515,7 +402,7 @@ export function InventoryIntegrityGraphSection() {
             Static mock summary cards. Summary click updates local state only.
           </p>
           <div style={styles.cardGrid}>
-            {summaryCards.map((card) => (
+            {graphData.summaries.map((card) => (
               <SummaryCard
                 key={card.id}
                 card={card}
@@ -534,11 +421,13 @@ export function InventoryIntegrityGraphSection() {
             <span>No Graph Engine</span>
             <span>No API</span>
             <span>No DB</span>
-            <span>No Mutation</span>
+            <span>
+              Nodes: {graphData.nodes.length} / Edges: {graphData.edges.length}
+            </span>
           </div>
 
           <div style={styles.mockGraphList} aria-label="Mock graph nodes">
-            {mockNodes.map((node) => (
+            {graphData.nodes.map((node) => (
               <button
                 key={node.id}
                 type="button"
@@ -552,14 +441,21 @@ export function InventoryIntegrityGraphSection() {
                 <strong>{node.label}</strong>
                 <br />
                 <span>
-                  {node.type} / {node.value}
+                  {node.type} / {node.value} / {node.severity}
                 </span>
               </button>
             ))}
           </div>
 
           <div style={styles.mockGraphList} aria-label="Mock graph edges">
-            {mockEdges.map((edge) => (
+            {graphData.edges.map((edge) => {
+              const fromLabel =
+                graphData.nodes.find((node) => node.id === edge.from)?.label ??
+                edge.from;
+              const toLabel =
+                graphData.nodes.find((node) => node.id === edge.to)?.label ?? edge.to;
+
+              return (
               <button
                 key={edge.id}
                 type="button"
@@ -573,10 +469,11 @@ export function InventoryIntegrityGraphSection() {
                 <strong>{edge.label}</strong>
                 <br />
                 <span>
-                  {edge.from} -&gt; {edge.to}
+                  {fromLabel} -&gt; {toLabel}
                 </span>
               </button>
-            ))}
+              );
+            })}
           </div>
         </section>
       </div>
@@ -585,7 +482,7 @@ export function InventoryIntegrityGraphSection() {
         <aside style={styles.sectionBox} aria-labelledby="graph-filter-panel-heading">
           <h3 id="graph-filter-panel-heading">Filter Panel</h3>
           <p style={styles.lead}>Static mock UI. Filter click updates local state only.</p>
-          {viewModes.map((view) => (
+          {graphData.viewModes.map((view) => (
             <button
               key={view.id}
               type="button"
