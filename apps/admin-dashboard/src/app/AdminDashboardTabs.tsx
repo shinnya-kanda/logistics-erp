@@ -8,6 +8,7 @@ import { EmptyPalletSearchSection } from "./EmptyPalletSearchSection";
 import { GovernanceDashboardSection } from "./GovernanceDashboardSection";
 import { InboundLabelPrintSection } from "./InboundLabelPrintSection";
 import { InventoryCurrentSection } from "./InventoryCurrentSection";
+import { InventoryIntegrityGraphSection } from "./InventoryIntegrityGraphSection";
 import { InventoryIntegritySection } from "./InventoryIntegritySection";
 import { InventoryLedgerSection } from "./InventoryLedgerSection";
 import { PalletSearchSection } from "./PalletSearchSection";
@@ -25,6 +26,7 @@ type AdminTab =
   | "current-warehouse-view"
   | "inventory-current"
   | "inventory-integrity"
+  | "inventory-integrity-graph"
   | "inventory-ledger"
   | "trace-search"
   | "trace-timeline"
@@ -41,6 +43,7 @@ const tabs: Array<{ id: AdminTab; label: string }> = [
   { id: "current-warehouse-view", label: "現在保管状態" },
   { id: "inventory-current", label: "部品現在庫" },
   { id: "inventory-integrity", label: "在庫整合性" },
+  { id: "inventory-integrity-graph", label: "Integrity Graph" },
   { id: "inventory-ledger", label: "パレット在庫台帳" },
   { id: "trace-search", label: "trace検索" },
   { id: "trace-timeline", label: "trace timeline" },
@@ -109,6 +112,9 @@ export function AdminDashboardTabs() {
       {activeTab === "current-warehouse-view" ? <CurrentWarehouseViewSection /> : null}
       {activeTab === "inventory-current" ? <InventoryCurrentSection /> : null}
       {activeTab === "inventory-integrity" ? <InventoryIntegritySection /> : null}
+      {activeTab === "inventory-integrity-graph" ? (
+        <InventoryIntegrityGraphSection />
+      ) : null}
       {activeTab === "inventory-ledger" ? <InventoryLedgerSection /> : null}
       {activeTab === "trace-search" ? <TraceSearchSection /> : null}
       {activeTab === "trace-timeline" ? <TraceTimelineSection /> : null}
