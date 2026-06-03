@@ -15,6 +15,13 @@ export type InventoryIntegrityGraphViewMode =
 
 export type InventoryIntegrityGraphInspectorTab = "summary" | "node" | "edge";
 
+export type InventoryIntegrityGraphEdgeSemanticCategory =
+  | "collapse_path"
+  | "convergence_path"
+  | "support_relation"
+  | "lifecycle_propagation"
+  | "boundary_relation";
+
 export type InventoryIntegrityGraphSummary = {
   readonly id: string;
   readonly title: string;
@@ -42,8 +49,13 @@ export type InventoryIntegrityGraphEdge = {
   readonly to: string;
   readonly type: string;
   readonly label: string;
+  readonly displayLabel: string;
+  readonly semanticCategory: InventoryIntegrityGraphEdgeSemanticCategory;
+  readonly pathMeaning: string;
+  readonly readOnlyMeaning: string;
   readonly description: string;
   readonly severity: InventoryIntegrityGraphSeverity;
+  readonly source?: string;
 };
 
 export type InventoryIntegrityGraphMetadata = {
@@ -60,11 +72,18 @@ export type InventoryIntegrityGraphViewModeOption = {
   readonly label: string;
 };
 
+export type InventoryIntegrityGraphEdgeSemanticLegendItem = {
+  readonly semanticCategory: InventoryIntegrityGraphEdgeSemanticCategory;
+  readonly label: string;
+  readonly description: string;
+};
+
 export type InventoryIntegrityGraphData = {
   readonly metadata: InventoryIntegrityGraphMetadata;
   readonly summaries: readonly InventoryIntegrityGraphSummary[];
   readonly nodes: readonly InventoryIntegrityGraphNode[];
   readonly edges: readonly InventoryIntegrityGraphEdge[];
+  readonly edgeSemanticsLegend: readonly InventoryIntegrityGraphEdgeSemanticLegendItem[];
   readonly viewModes: readonly InventoryIntegrityGraphViewModeOption[];
   readonly defaultSummaryId: string;
   readonly defaultNodeId: string;

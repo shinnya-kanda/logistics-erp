@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import type {
   InventoryIntegrityGraphEdge,
+  InventoryIntegrityGraphEdgeSemanticLegendItem,
   InventoryIntegrityGraphNode,
   InventoryIntegrityGraphSeverity,
   InventoryIntegrityGraphViewMode,
@@ -9,6 +10,7 @@ import type {
 type StaticGraphPrototypeProps = {
   readonly nodes: readonly InventoryIntegrityGraphNode[];
   readonly edges: readonly InventoryIntegrityGraphEdge[];
+  readonly edgeSemanticsLegend: readonly InventoryIntegrityGraphEdgeSemanticLegendItem[];
   readonly selectedNodeId: string;
   readonly selectedEdgeId: string;
   readonly highlightedPathId: string;
@@ -139,6 +141,28 @@ const styles: Record<string, CSSProperties> = {
     alignItems: "center",
     fontSize: "0.78rem",
     color: "#555",
+  },
+  edgeSemanticsPanel: {
+    display: "grid",
+    gap: "0.55rem",
+    padding: "0.85rem",
+    border: "1px solid #cfd8dc",
+    borderRadius: "12px",
+    background: "#fff",
+  },
+  edgeSemanticsGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(13rem, 1fr))",
+    gap: "0.5rem",
+  },
+  edgeSemanticsCard: {
+    display: "grid",
+    gap: "0.25rem",
+    padding: "0.7rem",
+    border: "1px solid #e0e0e0",
+    borderRadius: "10px",
+    background: "#fafafa",
+    color: "#37474f",
   },
   nodeCard: {
     display: "grid",
@@ -351,10 +375,15 @@ function GraphRelationChip({
       aria-pressed={selected}
       aria-label={`関係詳細を表示 / Show relation detail: ${edge.label}`}
     >
-      <strong>{edge.type}</strong>
+      <strong>{edge.displayLabel}</strong>
+      <span>semantic category: {edge.semanticCategory}</span>
+      <span>path meaning: {edge.pathMeaning}</span>
+      <span>{edge.readOnlyMeaning}</span>
       <span>
         {fromLabel} -&gt; {toLabel}
       </span>
+      <span>edge type: {edge.type}</span>
+      <span>severity: {edge.severity}</span>
       <span>{edge.description}</span>
       {selected ? <span>選択中の関係 / selected relation</span> : null}
       {highlighted ? <span>強調パスの関係 / highlighted path relation</span> : null}
@@ -420,14 +449,18 @@ function GraphSvgEdgeOverlay({
         return (
           <g key={edge.id}>
             <path
+              className={`semantic-edge semantic-edge-${edge.semanticCategory}`}
               d={path}
               fill="none"
               stroke="transparent"
               strokeWidth={1.8}
               style={{ pointerEvents: "stroke", cursor: "pointer" }}
               onClick={() => onSelectEdge(edge.id)}
-            />
+            >
+              <title>{`${edge.displayLabel}: ${edge.readOnlyMeaning}`}</title>
+            </path>
             <path
+              className={`semantic-edge-visual semantic-edge-${edge.semanticCategory}`}
               d={path}
               fill="none"
               stroke={strokeColor}
@@ -447,6 +480,7 @@ function GraphSvgEdgeOverlay({
 export function StaticGraphPrototype({
   nodes,
   edges,
+  edgeSemanticsLegend,
   selectedNodeId,
   selectedEdgeId,
   highlightedPathId,
@@ -576,6 +610,28 @@ export function StaticGraphPrototype({
             (dashed)
           </span>
         </div>
+        <section
+          style={styles.edgeSemanticsPanel}
+          aria-labelledby="edge-semantics-legend-heading"
+        >
+          <h5 id="edge-semantics-legend-heading" style={{ margin: 0 }}>
+            関係線の意味 / Edge Semantics
+          </h5>
+          <p style={styles.connectorText}>
+            legend は workflow legend ではありません。severity は execution priority
+            ではなく、path は remediation route ではありません。意味確認は Relation
+            Chip と Inspector で行います。
+          </p>
+          <div style={styles.edgeSemanticsGrid}>
+            {edgeSemanticsLegend.map((item) => (
+              <div key={item.semanticCategory} style={styles.edgeSemanticsCard}>
+                <strong>{item.label}</strong>
+                <span>semantic category: {item.semanticCategory}</span>
+                <span>{item.description}</span>
+              </div>
+            ))}
+          </div>
+        </section>
         <p style={styles.srOnly} id="svg-overlay-meaning">
           SVG relation overlay は observability path only
           の read-only semantic relation 表示です。No execution route。
