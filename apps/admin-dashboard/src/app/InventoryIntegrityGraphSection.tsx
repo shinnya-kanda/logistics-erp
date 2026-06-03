@@ -282,12 +282,24 @@ export function InventoryIntegrityGraphSection() {
     if (activeInspectorTab === "edge") {
       return [
         ["選択中エッジ / Selected Edge", selectedEdge.label],
-        ["種別 / Type", selectedEdge.type],
-        ["From", selectedEdgeFromLabel],
-        ["To", selectedEdgeToLabel],
+        ["表示ラベル / Display Label", selectedEdge.displayLabel],
+        ["エッジ種別 / Edge Type", selectedEdge.type],
+        ["Semantic Category", selectedEdge.semanticCategory],
+        ["経路の意味 / Path Meaning", selectedEdge.pathMeaning],
+        ["From Node", selectedEdgeFromLabel],
+        ["To Node", selectedEdgeToLabel],
         ["理由 / Reason", selectedEdge.description],
+        ["Read-only Meaning", selectedEdge.readOnlyMeaning],
+        [
+          "観測境界 / Observability Boundary",
+          "観測用の意味関係です / Observability Semantic Relation",
+        ],
+        [
+          "No Execution Route",
+          "実行経路ではありません / No Execution Route",
+        ],
         ["Severity", selectedEdge.severity],
-        ["根拠 / Source", "mock model / モックモデル"],
+        ["根拠 / Source", selectedEdge.source ?? "mock model / モックモデル"],
       ];
     }
 
@@ -407,6 +419,7 @@ export function InventoryIntegrityGraphSection() {
           <StaticGraphPrototype
             nodes={graphData.nodes}
             edges={graphData.edges}
+            edgeSemanticsLegend={graphData.edgeSemanticsLegend}
             selectedNodeId={selectedNodeId}
             selectedEdgeId={selectedEdgeId}
             highlightedPathId={highlightedPathId}
@@ -459,6 +472,7 @@ export function InventoryIntegrityGraphSection() {
               <span style={styles.badge}>No Execution Controls / 実行操作なし</span>
               <span style={styles.badge}>No Mutation / データ変更なし</span>
               <span style={styles.badge}>SVG Relation Overlay / SVG関係線</span>
+              <span style={styles.badge}>Edge Semantics / 関係線の意味</span>
               <span style={styles.badge}>Observability Path Only / 観測用経路のみ</span>
               <span style={styles.badge}>No Execution Route / 実行経路ではありません</span>
               <span style={styles.badge}>Local State / 画面内状態</span>

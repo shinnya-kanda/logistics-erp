@@ -165,8 +165,14 @@ export const inventoryIntegrityGraphMockData: InventoryIntegrityGraphData = {
       to: "risk_node",
       type: "collapse_propagation",
       label: "崩壊傾向からリスク / Collapse to Risk",
+      displayLabel: "崩壊伝播 / Collapse Propagation",
+      semanticCategory: "collapse_path",
+      pathMeaning: "崩壊傾向の伝播 / Collapse propagation",
+      readOnlyMeaning:
+        "観測用の意味関係です。実行経路ではありません / Observability Semantic Relation, No Execution Route.",
       description: "collapse propagation が graph risk を高める観測上の関係です。",
       severity: "critical",
+      source: "mock edge semantics / モック関係線意味",
     },
     {
       id: "edge_collapse_to_convergence",
@@ -174,8 +180,14 @@ export const inventoryIntegrityGraphMockData: InventoryIntegrityGraphData = {
       to: "convergence_node",
       type: "collapse_caveat",
       label: "崩壊傾向の注意点 / Collapse caveat to convergence",
+      displayLabel: "収束注意 / Convergence Caveat",
+      semanticCategory: "convergence_path",
+      pathMeaning: "崩壊傾向を前提にした収束の読み方 / Convergence path with collapse caveat",
+      readOnlyMeaning:
+        "観測用の意味関係です。実行経路ではありません / Observability Semantic Relation, No Execution Route.",
       description: "collapse context が positive interpretation を制限します。",
       severity: "warning",
+      source: "mock edge semantics / モック関係線意味",
     },
     {
       id: "edge_survivability_to_sustainability",
@@ -183,8 +195,15 @@ export const inventoryIntegrityGraphMockData: InventoryIntegrityGraphData = {
       to: "sustainability_node",
       type: "survivability_propagation",
       label: "生存性から持続性 / Survivability to Sustainability",
+      displayLabel: "ライフサイクル伝播 / Lifecycle Propagation",
+      semanticCategory: "lifecycle_propagation",
+      pathMeaning:
+        "生存性から持続性への長期 viability 伝播 / Long-term viability propagation",
+      readOnlyMeaning:
+        "観測用の意味関係です。実行経路ではありません / Observability Semantic Relation, No Execution Route.",
       description: "survivability caveat が long-term persistence を制限します。",
       severity: "warning",
+      source: "mock edge semantics / モック関係線意味",
     },
     {
       id: "edge_sustainability_to_maintainability",
@@ -192,8 +211,15 @@ export const inventoryIntegrityGraphMockData: InventoryIntegrityGraphData = {
       to: "maintainability_node",
       type: "maintainability_propagation",
       label: "持続性から保守性 / Sustainability to Maintainability",
+      displayLabel: "補助関係 / Support Relation",
+      semanticCategory: "support_relation",
+      pathMeaning:
+        "持続性が保守性の読み方を補助する関係 / Sustainability support for maintainability",
+      readOnlyMeaning:
+        "観測用の意味関係です。実行経路ではありません / Observability Semantic Relation, No Execution Route.",
       description: "sustainability context が maintenance capacity を制限します。",
       severity: "neutral",
+      source: "mock edge semantics / モック関係線意味",
     },
     {
       id: "edge_maintainability_to_evolvability",
@@ -201,8 +227,47 @@ export const inventoryIntegrityGraphMockData: InventoryIntegrityGraphData = {
       to: "evolvability_node",
       type: "evolvability_propagation",
       label: "保守性から発展性 / Maintainability to Evolvability",
+      displayLabel: "発展性伝播 / Evolvability Propagation",
+      semanticCategory: "lifecycle_propagation",
+      pathMeaning:
+        "保守性から発展性への lifecycle propagation / Maintainability to evolvability propagation",
+      readOnlyMeaning:
+        "観測用の意味関係です。実行経路ではありません / Observability Semantic Relation, No Execution Route.",
       description: "future extension は support context の範囲で参照します。",
       severity: "neutral",
+      source: "mock edge semantics / モック関係線意味",
+    },
+  ],
+  edgeSemanticsLegend: [
+    {
+      semanticCategory: "collapse_path",
+      label: "崩壊経路 / Collapse Path",
+      description:
+        "崩壊傾向や critical caveat の伝播を読むための関係です。remediation route ではありません。",
+    },
+    {
+      semanticCategory: "convergence_path",
+      label: "収束経路 / Convergence Path",
+      description:
+        "安定方向に読める可能性と caveat を確認する関係です。automation permission ではありません。",
+    },
+    {
+      semanticCategory: "support_relation",
+      label: "補助関係 / Support Relation",
+      description:
+        "reason / source / signals の補助的な意味関係です。operation trigger ではありません。",
+    },
+    {
+      semanticCategory: "lifecycle_propagation",
+      label: "ライフサイクル伝播 / Lifecycle Propagation",
+      description:
+        "survivability / sustainability / maintainability / evolvability の読み方をつなぐ関係です。",
+    },
+    {
+      semanticCategory: "boundary_relation",
+      label: "境界関係 / Boundary Relation",
+      description:
+        "read-only boundary や integrity boundary の注意点を示す関係です。workflow lane ではありません。",
     },
   ],
   viewModes: [
