@@ -86,6 +86,7 @@ const styles: Record<string, CSSProperties> = {
     gridTemplateColumns: "minmax(18rem, 0.9fr) minmax(22rem, 1.6fr)",
     gap: "1rem",
     alignItems: "stretch",
+    minWidth: 0,
   },
   bottomGrid: {
     display: "grid",
@@ -133,10 +134,12 @@ const styles: Record<string, CSSProperties> = {
     display: "grid",
     gap: "0.75rem",
     minHeight: "29rem",
+    minWidth: 0,
     padding: "1rem",
     border: "1px dashed #90a4ae",
     borderRadius: "12px",
     background: "#f5f7fb",
+    overflow: "hidden",
   },
   filterButton: {
     width: "100%",
@@ -399,7 +402,7 @@ export function InventoryIntegrityGraphSection() {
 
         <section style={styles.canvas} aria-labelledby="static-graph-prototype-heading">
           <h3 id="static-graph-prototype-heading">
-            静的グラフ試作 / Static Graph Prototype
+            静的グラフ試作 + SVG関係線 / Static Graph + SVG Relation Overlay
           </h3>
           <StaticGraphPrototype
             nodes={graphData.nodes}
@@ -455,6 +458,9 @@ export function InventoryIntegrityGraphSection() {
               </span>
               <span style={styles.badge}>No Execution Controls / 実行操作なし</span>
               <span style={styles.badge}>No Mutation / データ変更なし</span>
+              <span style={styles.badge}>SVG Relation Overlay / SVG関係線</span>
+              <span style={styles.badge}>Observability Path Only / 観測用経路のみ</span>
+              <span style={styles.badge}>No Execution Route / 実行経路ではありません</span>
               <span style={styles.badge}>Local State / 画面内状態</span>
             </div>
           </section>
