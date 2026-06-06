@@ -9,6 +9,7 @@ import type {
   InventoryIntegrityGraphViewModeOption,
 } from "./inventoryIntegrityGraphTypes";
 import type {
+  InventoryIntegrityCompareResponseFixture,
   InventoryIntegrityEdgeMappingInput,
   InventoryIntegrityEdgeMappingResult,
   InventoryIntegrityGraphAdapterFixtureMetadata,
@@ -25,7 +26,8 @@ import type {
 } from "./inventoryIntegrityGraphAdapterTypes";
 
 // Read-only projection for fixture-like GET-only source data.
-// No mutation, no workflow execution, no inventory data changes, no API or UI integration.
+// Fixture only: no fetch, no mutation, no workflow execution, no inventory data changes,
+// and no API or UI integration.
 
 const UNAVAILABLE_SUMMARY_ID = "graph_unavailable";
 const UNAVAILABLE_NODE_ID = "graph_unavailable_node";
@@ -274,6 +276,12 @@ export function buildInventoryIntegrityGraphData(
   };
 }
 
+export function extractGraphFixtureMetadata(
+  compareResponse: unknown,
+): InventoryIntegrityGraphAdapterFixtureMetadata | null {
+  return extractFixtureMetadata(compareResponse).metadata ?? null;
+}
+
 export function createUnavailableGraphData(): InventoryIntegrityGraphData {
   return {
     metadata: {
@@ -350,7 +358,7 @@ function extractFixtureMetadata(compareResponse: unknown): {
     };
   }
 
-  const rawMetadata = compareResponse.metadata;
+  const rawMetadata = selectFixtureMetadataRecord(compareResponse);
   if (!isRecord(rawMetadata)) {
     return {
       warnings: [
@@ -362,8 +370,10 @@ function extractFixtureMetadata(compareResponse: unknown): {
     };
   }
 
-  const metadata = toFixtureMetadata(rawMetadata);
-  const warnings: InventoryIntegrityGraphAdapterWarning[] = [];
+  const warnings: InventoryIntegrityGraphAdapterWarning[] = [
+    "extracted_compare_fixture_metadata",
+  ];
+  const metadata = toFixtureMetadata(rawMetadata, warnings);
   if (Object.keys(metadata).length === 0) {
     warnings.push("incomplete_fixture", "missing_value");
   } else if (hasMissingFixtureValues(metadata)) {
@@ -373,36 +383,75 @@ function extractFixtureMetadata(compareResponse: unknown): {
   return { metadata, warnings };
 }
 
+function selectFixtureMetadataRecord(
+  compareResponse: Record<string, unknown>,
+): unknown {
+  if (isRecord(compareResponse.metadata)) {
+    return compareResponse.metadata;
+  }
+
+  if (isRecord(compareResponse.responseMetadata)) {
+    return compareResponse.responseMetadata;
+  }
+
+  if (isRecord(compareResponse.rawPayloadMetadata)) {
+    return compareResponse.rawPayloadMetadata;
+  }
+
+  return undefined;
+}
+
 function toFixtureMetadata(
   rawMetadata: Record<string, unknown>,
+  warnings: InventoryIntegrityGraphAdapterWarning[],
 ): InventoryIntegrityGraphAdapterFixtureMetadata {
   return {
-    compareSeverity: readString(rawMetadata.compareSeverity),
-    compareRisk: readString(rawMetadata.compareRisk),
-    compareEvidence: readString(rawMetadata.compareEvidence),
-    compareConfidence: readString(rawMetadata.compareConfidence),
-    compareProjectionFreshness: readString(rawMetadata.compareProjectionFreshness),
-    compareTruthAggregationQuality: readString(
+    compareSeverity: readMetadataField(rawMetadata.compareSeverity, "compareSeverity", warnings),
+    compareRisk: readMetadataField(rawMetadata.compareRisk, "compareRisk", warnings),
+    compareEvidence: readMetadataField(rawMetadata.compareEvidence, "compareEvidence", warnings),
+    compareConfidence: readMetadataField(
+      rawMetadata.compareConfidence,
+      "compareConfidence",
+      warnings,
+    ),
+    compareProjectionFreshness: readMetadataField(
+      rawMetadata.compareProjectionFreshness,
+      "compareProjectionFreshness",
+      warnings,
+    ),
+    compareTruthAggregationQuality: readMetadataField(
       rawMetadata.compareTruthAggregationQuality,
+      "compareTruthAggregationQuality",
+      warnings,
     ),
-    compareInterpretationStability: readString(
+    compareInterpretationStability: readMetadataField(
       rawMetadata.compareInterpretationStability,
+      "compareInterpretationStability",
+      warnings,
     ),
-    compareGovernanceSemanticSurvivability: readString(
+    compareGovernanceSemanticSurvivability: readMetadataField(
       rawMetadata.compareGovernanceSemanticSurvivability ??
         rawMetadata.governanceSemanticSurvivability,
+      "compareGovernanceSemanticSurvivability",
+      warnings,
     ),
-    compareGovernanceSemanticSustainability: readString(
+    compareGovernanceSemanticSustainability: readMetadataField(
       rawMetadata.compareGovernanceSemanticSustainability ??
         rawMetadata.governanceSemanticSustainability,
+      "compareGovernanceSemanticSustainability",
+      warnings,
     ),
-    compareGovernanceSemanticMaintainability: readString(
+    compareGovernanceSemanticMaintainability: readMetadataField(
       rawMetadata.compareGovernanceSemanticMaintainability ??
         rawMetadata.governanceSemanticMaintainability,
+      "compareGovernanceSemanticMaintainability",
+      warnings,
     ),
-    compareGovernanceSemanticEvolvability: readString(
+    compareGovernanceSemanticEvolvability: readMetadataField(
       rawMetadata.compareGovernanceSemanticEvolvability ??
         rawMetadata.governanceSemanticEvolvability,
+      "compareGovernanceSemanticEvolvability",
+      warnings,
     ),
   };
 }
@@ -754,6 +803,57 @@ function isFixtureMetadata(
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function readMetadataField(
+  value: unknown,
+  preferredKey: string,
+  warnings: InventoryIntegrityGraphAdapterWarning[],
+): string | undefined {
+  const directValue = readString(value);
+  if (directValue) {
+    return directValue;
+  }
+
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  warnings.push("normalized_non_string_metadata");
+
+  return (
+    readString(value[preferredKey]) ??
+    readString(value[toShortMetadataKey(preferredKey)]) ??
+    readString(value.value) ??
+    readString(value.state) ??
+    readString(value.level) ??
+    readString(value.status) ??
+    readString(value.classification) ??
+    readString(value.severity) ??
+    readString(value.readiness) ??
+    readString(value.priority) ??
+    readString(value.operatorSummary) ??
+    readString(value.compareConfidence) ??
+    readString(value.projectionFreshness) ??
+    readString(value.truthAggregationQuality) ??
+    readString(value.compareEvidence) ??
+    readString(value.compareRisk) ??
+    readString(value.interpretationStability) ??
+    readString(value.governanceSemanticSurvivability) ??
+    readString(value.governanceSemanticSustainability) ??
+    readString(value.governanceSemanticMaintainability) ??
+    readString(value.governanceSemanticEvolvability) ??
+    "unavailable"
+  );
+}
+
+function toShortMetadataKey(preferredKey: string): string {
+  if (!preferredKey.startsWith("compare")) {
+    return preferredKey;
+  }
+
+  const withoutPrefix = preferredKey.slice("compare".length);
+  return `${withoutPrefix.charAt(0).toLowerCase()}${withoutPrefix.slice(1)}`;
 }
 
 function readString(value: unknown): string | undefined {
