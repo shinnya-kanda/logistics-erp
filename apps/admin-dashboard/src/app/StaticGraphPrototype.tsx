@@ -115,17 +115,18 @@ const styles: Record<string, CSSProperties> = {
   },
   relationChip: {
     display: "grid",
-    gap: "0.2rem",
+    gap: "0.28rem",
     minWidth: 0,
-    flex: "1 1 13rem",
+    flex: "1 1 12rem",
     maxWidth: "100%",
     padding: "0.65rem 0.75rem",
     border: "1px solid #cfd8dc",
-    borderRadius: "999px",
+    borderRadius: "12px",
     background: "#fff",
     color: "#263238",
     cursor: "pointer",
     textAlign: "left",
+    fontSize: "0.8rem",
   },
   graphLane: {
     display: "grid",
@@ -145,24 +146,25 @@ const styles: Record<string, CSSProperties> = {
   edgeSemanticsPanel: {
     display: "grid",
     gap: "0.55rem",
-    padding: "0.85rem",
+    padding: "0.75rem",
     border: "1px solid #cfd8dc",
     borderRadius: "12px",
     background: "#fff",
   },
   edgeSemanticsGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(13rem, 1fr))",
+    gridTemplateColumns: "repeat(auto-fit, minmax(11rem, 1fr))",
     gap: "0.5rem",
   },
   edgeSemanticsCard: {
     display: "grid",
     gap: "0.25rem",
-    padding: "0.7rem",
+    padding: "0.6rem",
     border: "1px solid #e0e0e0",
     borderRadius: "10px",
     background: "#fafafa",
     color: "#37474f",
+    fontSize: "0.78rem",
   },
   nodeCard: {
     display: "grid",
@@ -176,7 +178,7 @@ const styles: Record<string, CSSProperties> = {
     textAlign: "left",
     width: "100%",
     minWidth: 0,
-    minHeight: "10.5rem",
+    minHeight: "9.5rem",
     boxSizing: "border-box",
   },
   nodeTitle: {
@@ -203,6 +205,12 @@ const styles: Record<string, CSSProperties> = {
     color: "#6d4c41",
     fontSize: "0.82rem",
     fontWeight: 800,
+  },
+  compactText: {
+    margin: 0,
+    color: "#546e7a",
+    fontSize: "0.78rem",
+    lineHeight: 1.45,
   },
   srOnly: {
     position: "absolute",
@@ -339,7 +347,11 @@ function GraphNodeCard({
         {relatedToPath ? <span style={styles.badge}>関連パス / path related</span> : null}
       </div>
       <p style={styles.nodeText}>理由 / Reason: {node.reason}</p>
-      <p style={styles.nodeText}>根拠 / Source: {node.source}</p>
+      {selected || relatedToPath ? (
+        <p style={styles.nodeText}>根拠 / Source: {node.source}</p>
+      ) : (
+        <p style={styles.compactText}>詳細は Inspector で確認</p>
+      )}
     </button>
   );
 }
@@ -376,15 +388,20 @@ function GraphRelationChip({
       aria-label={`関係詳細を表示 / Show relation detail: ${edge.label}`}
     >
       <strong>{edge.displayLabel}</strong>
-      <span>semantic category: {edge.semanticCategory}</span>
-      <span>path meaning: {edge.pathMeaning}</span>
-      <span>{edge.readOnlyMeaning}</span>
       <span>
         {fromLabel} -&gt; {toLabel}
       </span>
-      <span>edge type: {edge.type}</span>
+      <span>category: {edge.semanticCategory}</span>
       <span>severity: {edge.severity}</span>
-      <span>{edge.description}</span>
+      {selected ? (
+        <>
+          <span>path meaning: {edge.pathMeaning}</span>
+          <span>{edge.readOnlyMeaning}</span>
+          <span>{edge.description}</span>
+        </>
+      ) : (
+        <span>詳細は Inspector で確認</span>
+      )}
       {selected ? <span>選択中の関係 / selected relation</span> : null}
       {highlighted ? <span>強調パスの関係 / highlighted path relation</span> : null}
     </button>
@@ -440,8 +457,8 @@ function GraphSvgEdgeOverlay({
         const selected = selectedEdgeId === edge.id;
         const highlighted = isEdgeInPath(edge, highlightedPathId);
         const strokeColor = severityStrokeColor(edge.severity);
-        const strokeWidth = selected ? 0.42 : highlighted ? 0.34 : 0.22;
-        const strokeOpacity = selected ? 0.82 : highlighted ? 0.58 : 0.24;
+        const strokeWidth = selected ? 0.36 : highlighted ? 0.28 : 0.18;
+        const strokeOpacity = selected ? 0.76 : highlighted ? 0.48 : 0.18;
         const markerEnd = selected
           ? "url(#semantic-relation-arrow-selected)"
           : "url(#semantic-relation-arrow)";
@@ -618,9 +635,8 @@ export function StaticGraphPrototype({
             関係線の意味 / Edge Semantics
           </h5>
           <p style={styles.connectorText}>
-            legend は workflow legend ではありません。severity は execution priority
-            ではなく、path は remediation route ではありません。意味確認は Relation
-            Chip と Inspector で行います。
+            workflow legend ではありません。severity は優先順位ではなく、path は対応経路ではありません。
+            意味確認は Relation Chip と Inspector で行います。
           </p>
           <div style={styles.edgeSemanticsGrid}>
             {edgeSemanticsLegend.map((item) => (

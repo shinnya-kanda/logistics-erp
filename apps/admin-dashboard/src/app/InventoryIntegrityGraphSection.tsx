@@ -102,6 +102,7 @@ const styles: Record<string, CSSProperties> = {
     cursor: "pointer",
     textAlign: "left",
     width: "100%",
+    minHeight: "8.25rem",
   },
   cardGrid: {
     display: "grid",
@@ -110,19 +111,27 @@ const styles: Record<string, CSSProperties> = {
   cardTitle: {
     margin: 0,
     color: "#555",
-    fontSize: "0.88rem",
+    fontSize: "0.82rem",
     fontWeight: 800,
   },
   cardValue: {
     display: "block",
     marginTop: "0.35rem",
-    fontSize: "1.3rem",
+    fontSize: "1.08rem",
     fontWeight: 900,
+    lineHeight: 1.35,
   },
   cardDescription: {
     margin: "0.45rem 0 0",
     color: "#555",
     lineHeight: 1.5,
+    fontSize: "0.84rem",
+  },
+  summaryMetaRow: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "0.35rem",
+    marginTop: "0.55rem",
   },
   sectionBox: {
     padding: "1rem",
@@ -163,10 +172,23 @@ const styles: Record<string, CSSProperties> = {
     marginTop: "0.75rem",
   },
   inspectorRow: {
-    padding: "0.7rem",
+    display: "grid",
+    gridTemplateColumns: "minmax(9rem, 0.45fr) minmax(0, 1fr)",
+    gap: "0.75rem",
+    alignItems: "start",
+    padding: "0.65rem 0.7rem",
     border: "1px solid #e0e0e0",
     borderRadius: "10px",
     background: "#fff",
+  },
+  inspectorLabel: {
+    color: "#455a64",
+    fontSize: "0.82rem",
+  },
+  inspectorValue: {
+    color: "#263238",
+    lineHeight: 1.55,
+    overflowWrap: "anywhere",
   },
   legendGrid: {
     display: "grid",
@@ -201,12 +223,15 @@ function SummaryCard({
   readonly selected: boolean;
   readonly onSelect: () => void;
 }) {
+  const subdued = card.severity === "neutral" || card.severity === "stable";
+
   return (
     <button
       type="button"
       style={{
         ...styles.card,
         ...cardToneStyle(card.severity),
+        opacity: subdued && !selected ? 0.82 : 1,
         outline: selected ? "3px solid #263238" : undefined,
       }}
       onClick={onSelect}
@@ -214,7 +239,11 @@ function SummaryCard({
     >
       <p style={styles.cardTitle}>{card.title}</p>
       <span style={styles.cardValue}>{card.value}</span>
-      <p style={styles.cardDescription}>{card.description}</p>
+      <p style={styles.cardDescription}>{card.shortDescription}</p>
+      <div style={styles.summaryMetaRow}>
+        <span style={styles.badge}>表示順 / Read order: {card.priority}</span>
+        <span style={styles.badge}>詳細は Inspector で確認</span>
+      </div>
     </button>
   );
 }
@@ -235,6 +264,7 @@ function BoundaryBadges() {
       <span style={styles.badge}>No API / API 接続なし</span>
       <span style={styles.badge}>No DB / DB 接続なし</span>
       <span style={styles.badge}>No Mutation / データ変更なし</span>
+      <span style={styles.badge}>No Execution Route / 実行経路ではありません</span>
     </div>
   );
 }
@@ -266,6 +296,21 @@ export function InventoryIntegrityGraphSection() {
   const selectedEdgeToLabel =
     graphData.nodes.find((node) => node.id === selectedEdge.to)?.label ??
     selectedEdge.to;
+  const orderedSummaries = useMemo(
+    () => [...graphData.summaries].sort((a, b) => a.priority - b.priority),
+    [],
+  );
+  const inspectorTitle =
+    activeInspectorTab === "edge"
+      ? "選択中エッジ / Selected Edge"
+      : activeInspectorTab === "summary"
+        ? "選択中要約 / Selected Summary"
+        : "選択中ノード / Selected Node";
+  const inspectorTabLabels: Record<InventoryIntegrityGraphInspectorTab, string> = {
+    summary: "要約 / Summary",
+    node: "ノード / Node",
+    edge: "エッジ / Edge",
+  };
 
   const inspectorRows = useMemo(() => {
     if (activeInspectorTab === "summary") {
@@ -347,6 +392,19 @@ export function InventoryIntegrityGraphSection() {
 
   return (
     <section style={styles.panel} aria-labelledby="inventory-integrity-graph-heading">
+      <style>{`
+        @media (max-width: 980px) {
+          .inventory-graph-layout-grid,
+          .inventory-graph-bottom-grid {
+            grid-template-columns: minmax(0, 1fr) !important;
+          }
+        }
+        @media (max-width: 620px) {
+          .inventory-graph-inspector-row {
+            grid-template-columns: minmax(0, 1fr) !important;
+          }
+        }
+      `}</style>
       <div style={styles.header}>
         <div>
           <h2 id="inventory-integrity-graph-heading">{graphData.metadata.title}</h2>
@@ -394,14 +452,14 @@ export function InventoryIntegrityGraphSection() {
         </button>
       </nav>
 
-      <div style={styles.layoutGrid}>
+      <div className="inventory-graph-layout-grid" style={styles.layoutGrid}>
         <section style={styles.sectionBox} aria-labelledby="graph-summary-panel-heading">
           <h3 id="graph-summary-panel-heading">要約パネル / Summary Panel</h3>
           <p style={styles.lead}>
             静的 mock summary を表示します。クリックは local state の表示切替のみです。
           </p>
           <div style={styles.cardGrid}>
-            {graphData.summaries.map((card) => (
+            {orderedSummaries.map((card) => (
               <SummaryCard
                 key={card.id}
                 card={card}
@@ -430,7 +488,7 @@ export function InventoryIntegrityGraphSection() {
         </section>
       </div>
 
-      <div style={styles.bottomGrid}>
+      <div className="inventory-graph-bottom-grid" style={styles.bottomGrid}>
         <aside style={styles.sectionBox} aria-labelledby="graph-filter-panel-heading">
           <h3 id="graph-filter-panel-heading">表示フィルター / Filter Panel</h3>
           <p style={styles.lead}>
@@ -485,7 +543,8 @@ export function InventoryIntegrityGraphSection() {
             <div>
               <h3 id="graph-inspector-panel-heading">詳細確認 / Inspector Panel</h3>
               <p style={styles.lead}>
-                静的 mock metadata を確認します。Inspector の切替は表示変更のみです。
+                静的 mock metadata を確認します。理由・根拠・シグナルをここで読みます。
+                切替は表示変更のみです。
               </p>
             </div>
             <BoundaryBadges />
@@ -504,16 +563,23 @@ export function InventoryIntegrityGraphSection() {
                 onClick={() => setActiveInspectorTab(tab)}
                 aria-pressed={activeInspectorTab === tab}
               >
-                {tab}
+                {inspectorTabLabels[tab]}
               </button>
             ))}
           </div>
 
+          <div style={{ ...styles.inspectorRow, marginTop: "0.75rem" }}>
+            <strong style={styles.inspectorLabel}>{inspectorTitle}</strong>
+            <div style={styles.inspectorValue}>
+              観測用の意味情報です。実行経路ではありません / No Execution Route。
+            </div>
+          </div>
+
           <div style={styles.inspectorGrid}>
             {inspectorRows.map(([label, value]) => (
-              <div key={label} style={styles.inspectorRow}>
-                <strong>{label}:</strong>
-                <div>{value}</div>
+              <div key={label} className="inventory-graph-inspector-row" style={styles.inspectorRow}>
+                <strong style={styles.inspectorLabel}>{label}</strong>
+                <div style={styles.inspectorValue}>{value}</div>
               </div>
             ))}
           </div>
