@@ -7,6 +7,11 @@ import {
 } from "./inventoryIntegrityGraphAdapter";
 import { sampleInventoryIntegrityCompareResponseFixture } from "./inventoryIntegrityGraphAdapterFixtures";
 import type { InventoryIntegrityGraphAdapterWarning } from "./inventoryIntegrityGraphAdapterTypes";
+import {
+  getInventoryIntegrityGraphDataSourceOption,
+  inventoryIntegrityGraphDataSourceOptions,
+} from "./inventoryIntegrityGraphDataSourceOptions";
+import type { InventoryIntegrityGraphDataSourceMode } from "./inventoryIntegrityGraphDataSourceTypes";
 import { inventoryIntegrityGraphMockData } from "./inventoryIntegrityGraphMockData";
 import { StaticGraphPrototype } from "./StaticGraphPrototype";
 import type {
@@ -17,32 +22,6 @@ import type {
   InventoryIntegrityGraphViewMode,
 } from "./inventoryIntegrityGraphTypes";
 
-type GraphDataSourceMode = "mock" | "adapter" | "fallback";
-
-type GraphDataSourceOption = {
-  readonly id: GraphDataSourceMode;
-  readonly label: string;
-  readonly description: string;
-};
-
-const graphDataSourceOptions: readonly GraphDataSourceOption[] = [
-  {
-    id: "mock",
-    label: "Mock",
-    description: "Existing static mock graph data.",
-  },
-  {
-    id: "adapter",
-    label: "Adapter",
-    description: "Fixture Adapter. Not Live Compare Data.",
-  },
-  {
-    id: "fallback",
-    label: "Fallback",
-    description: "Unavailable fallback graph projection.",
-  },
-];
-
 const adapterGraphResult = buildInventoryIntegrityGraphData({
   compareResponse: sampleInventoryIntegrityCompareResponseFixture,
   sourceKind: "graph_adapter_fixture",
@@ -50,42 +29,37 @@ const adapterGraphResult = buildInventoryIntegrityGraphData({
 
 const fallbackGraphData = createUnavailableGraphData();
 
-function selectGraphData(mode: GraphDataSourceMode): InventoryIntegrityGraphData {
-  if (mode === "adapter") {
+function selectGraphData(
+  mode: InventoryIntegrityGraphDataSourceMode,
+): InventoryIntegrityGraphData {
+  if (mode === "adapter_fixture") {
     return adapterGraphResult.graphData;
   }
 
-  if (mode === "fallback") {
+  if (mode === "fallback_unavailable") {
     return fallbackGraphData;
   }
 
   return inventoryIntegrityGraphMockData;
 }
 
-function graphSourceLabel(mode: GraphDataSourceMode): string {
-  if (mode === "adapter") {
-    return "Adapter / Fixture Adapter / Not Live Compare Data";
-  }
-
-  if (mode === "fallback") {
-    return "Fallback / Adapter Graph Unavailable";
-  }
-
-  return "Mock / Static Mock Data";
-}
-
 function graphSourceWarnings(
-  mode: GraphDataSourceMode,
+  mode: InventoryIntegrityGraphDataSourceMode,
 ): readonly InventoryIntegrityGraphAdapterWarning[] {
-  if (mode === "adapter") {
+  if (mode === "adapter_fixture") {
     return adapterGraphResult.warnings;
   }
 
-  if (mode === "fallback") {
+  if (mode === "fallback_unavailable") {
     return ["adapter_unavailable", "fallback_used", "graph_unavailable"];
   }
 
   return [];
+}
+
+function graphSourceDisplayLabel(mode: InventoryIntegrityGraphDataSourceMode): string {
+  const option = getInventoryIntegrityGraphDataSourceOption(mode);
+  return `${option.shortLabel} / ${option.disclosure}`;
 }
 
 const styles: Record<string, CSSProperties> = {
@@ -385,13 +359,17 @@ function BoundaryBadges() {
 
 export function InventoryIntegrityGraphSection() {
   const [dataSourceMode, setDataSourceMode] =
-    useState<GraphDataSourceMode>("mock");
+    useState<InventoryIntegrityGraphDataSourceMode>("mock");
   const graphData = useMemo(
     () => selectGraphData(dataSourceMode),
     [dataSourceMode],
   );
   const sourceWarnings = useMemo(
     () => graphSourceWarnings(dataSourceMode),
+    [dataSourceMode],
+  );
+  const selectedSourceOption = useMemo(
+    () => getInventoryIntegrityGraphDataSourceOption(dataSourceMode),
     [dataSourceMode],
   );
   const [activeViewMode, setActiveViewMode] =
@@ -442,7 +420,10 @@ export function InventoryIntegrityGraphSection() {
         ["値 / Value", selectedSummary.value],
         ["理由 / Reason", selectedSummary.description],
         ["Severity", selectedSummary.severity],
-        ["根拠 / Source", graphSourceLabel(dataSourceMode)],
+        ["根拠 / Source", graphSourceDisplayLabel(dataSourceMode)],
+        ["Trust Level", selectedSourceOption.trustLevel],
+        ["Disclosure", selectedSourceOption.disclosure],
+        ["Caveat", selectedSourceOption.caveat],
         ["境界 / Boundary", graphData.metadata.readOnlyBoundary],
       ];
     }
@@ -484,6 +465,7 @@ export function InventoryIntegrityGraphSection() {
     activeInspectorTab,
     dataSourceMode,
     graphData.metadata.readOnlyBoundary,
+    selectedSourceOption,
     selectedEdge,
     selectedEdgeFromLabel,
     selectedEdgeToLabel,
@@ -491,7 +473,7 @@ export function InventoryIntegrityGraphSection() {
     selectedSummary,
   ]);
 
-  function selectDataSourceMode(nextMode: GraphDataSourceMode) {
+  function selectDataSourceMode(nextMode: InventoryIntegrityGraphDataSourceMode) {
     const nextGraphData = selectGraphData(nextMode);
     setDataSourceMode(nextMode);
     setActiveViewMode("overview");
@@ -555,9 +537,9 @@ export function InventoryIntegrityGraphSection() {
           </p>
         </div>
         <div style={styles.sourcePanel} aria-label="Graph source mode">
-          <strong>Graph Source</strong>
+          <strong>Graph Source / グラフソース</strong>
           <div style={styles.sourceControls}>
-            {graphDataSourceOptions.map((option) => (
+            {inventoryIntegrityGraphDataSourceOptions.map((option) => (
               <button
                 key={option.id}
                 type="button"
@@ -570,20 +552,23 @@ export function InventoryIntegrityGraphSection() {
                 }}
                 onClick={() => selectDataSourceMode(option.id)}
                 aria-pressed={dataSourceMode === option.id}
-                aria-label={`Graph source を ${option.label} に切替 / Change graph source to ${option.label}. Display change only. No API. No execution action.`}
-                title={option.description}
+                aria-label={`Graph source を ${option.label} に切替 / Change graph source to ${option.label}. Display-only Toggle. No API. No execution action.`}
+                title={`${option.trustLevel}. ${option.disclosure}. ${option.caveat}`}
               >
-                {option.label}
+                {option.shortLabel}
               </button>
             ))}
           </div>
-          <span style={styles.badge}>Source: {graphSourceLabel(dataSourceMode)}</span>
-          {dataSourceMode === "adapter" ? (
-            <span style={styles.badge}>Fixture Adapter / Not Live Compare Data</span>
-          ) : null}
-          {dataSourceMode === "fallback" ? (
-            <span style={styles.badge}>Adapter Graph Unavailable</span>
-          ) : null}
+          <span style={styles.badge}>
+            Data Source Mode / データソースモード: {selectedSourceOption.label}
+          </span>
+          <span style={styles.badge}>Trust: {selectedSourceOption.trustLevel}</span>
+          <span style={styles.badge}>{selectedSourceOption.disclosure}</span>
+          <span style={styles.badge}>{selectedSourceOption.caveat}</span>
+          <span style={styles.badge}>Display-only Toggle / 表示切替のみ</span>
+          <span style={styles.badge}>
+            Live Data: {selectedSourceOption.isLiveData ? "yes" : "no"}
+          </span>
         </div>
       </div>
       <BoundaryBadges />
@@ -599,7 +584,7 @@ export function InventoryIntegrityGraphSection() {
         <span style={styles.badge}>{graphData.metadata.activeLayer}</span>
         <span style={styles.badge}>表示モード / Active View: {activeViewMode}</span>
         <span style={styles.badge}>強調パス / Highlighted Path: {highlightedPathId}</span>
-        <span style={styles.badge}>Source: {graphSourceLabel(dataSourceMode)}</span>
+        <span style={styles.badge}>Source: {graphSourceDisplayLabel(dataSourceMode)}</span>
         <span style={styles.badge}>
           Compare Endpoint: {graphData.metadata.compareEndpointMethod} only
         </span>
@@ -649,7 +634,7 @@ export function InventoryIntegrityGraphSection() {
         <section style={styles.sectionBox} aria-labelledby="graph-summary-panel-heading">
           <h3 id="graph-summary-panel-heading">要約パネル / Summary Panel</h3>
           <p style={styles.lead}>
-            {graphSourceLabel(dataSourceMode)} の summary を表示します。クリックは local
+            {graphSourceDisplayLabel(dataSourceMode)} の summary を表示します。クリックは local
             state の表示切替のみです。
           </p>
           <div style={styles.cardGrid}>
