@@ -28,6 +28,8 @@ export type InventoryIntegrityGraphSummary = {
   readonly value: string;
   readonly severity: InventoryIntegrityGraphSeverity;
   readonly description: string;
+  readonly shortDescription: string;
+  readonly priority: number;
   readonly relatedNodeId?: string;
   readonly relatedPathId?: string;
 };
