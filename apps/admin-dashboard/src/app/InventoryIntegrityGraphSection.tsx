@@ -51,6 +51,16 @@ const styles: Record<string, CSSProperties> = {
     fontSize: "0.78rem",
     fontWeight: 800,
   },
+  keyboardHelp: {
+    margin: "0.75rem 0 0",
+    padding: "0.75rem",
+    border: "1px solid #cfd8dc",
+    borderRadius: "12px",
+    background: "#f8fbff",
+    color: "#37474f",
+    lineHeight: 1.6,
+    fontSize: "0.88rem",
+  },
   readOnlyBadge: {
     borderColor: "#0d47a1",
     background: "#e3f2fd",
@@ -228,6 +238,7 @@ function SummaryCard({
   return (
     <button
       type="button"
+      className="inventory-graph-focusable"
       style={{
         ...styles.card,
         ...cardToneStyle(card.severity),
@@ -236,6 +247,7 @@ function SummaryCard({
       }}
       onClick={onSelect}
       aria-pressed={selected}
+      aria-label={`詳細を表示 / Show detail. ${card.title}. Value: ${card.value}. Severity: ${card.severity}. ${card.shortDescription}. 表示切替のみ / Display change only. No execution action.`}
     >
       <p style={styles.cardTitle}>{card.title}</p>
       <span style={styles.cardValue}>{card.value}</span>
@@ -251,20 +263,32 @@ function SummaryCard({
 function BoundaryBadges() {
   return (
     <div style={styles.badgeRow} aria-label="Graph UI boundary">
-      <span style={{ ...styles.badge, ...styles.readOnlyBadge }}>
+      <span
+        style={{ ...styles.badge, ...styles.readOnlyBadge }}
+        title="Read Only / 読み取り専用"
+        aria-label="Read Only / 読み取り専用"
+      >
         Read Only / 読み取り専用
       </span>
-      <span style={{ ...styles.badge, ...styles.noExecutionBadge }}>
+      <span
+        style={{ ...styles.badge, ...styles.noExecutionBadge }}
+        title="Observability Only / 観測専用"
+        aria-label="Observability Only / 観測専用"
+      >
         Observability Only / 観測専用
       </span>
-      <span style={{ ...styles.badge, ...styles.noExecutionBadge }}>
+      <span
+        style={{ ...styles.badge, ...styles.noExecutionBadge }}
+        title="No Execution Controls / 実行操作なし"
+        aria-label="No Execution Controls / 実行操作なし"
+      >
         No Execution Controls / 実行操作なし
       </span>
-      <span style={styles.badge}>Mock Data / モックデータ</span>
-      <span style={styles.badge}>No API / API 接続なし</span>
-      <span style={styles.badge}>No DB / DB 接続なし</span>
-      <span style={styles.badge}>No Mutation / データ変更なし</span>
-      <span style={styles.badge}>No Execution Route / 実行経路ではありません</span>
+      <span style={styles.badge} title="Mock Data / モックデータ" aria-label="Mock Data / モックデータ">Mock Data / モックデータ</span>
+      <span style={styles.badge} title="No API / API 接続なし" aria-label="No API / API 接続なし">No API / API 接続なし</span>
+      <span style={styles.badge} title="No DB / DB 接続なし" aria-label="No DB / DB 接続なし">No DB / DB 接続なし</span>
+      <span style={styles.badge} title="No Mutation / データ変更なし" aria-label="No Mutation / データ変更なし">No Mutation / データ変更なし</span>
+      <span style={styles.badge} title="No Execution Route / 実行経路ではありません" aria-label="No Execution Route / 実行経路ではありません">No Execution Route / 実行経路ではありません</span>
     </div>
   );
 }
@@ -393,6 +417,11 @@ export function InventoryIntegrityGraphSection() {
   return (
     <section style={styles.panel} aria-labelledby="inventory-integrity-graph-heading">
       <style>{`
+        .inventory-graph-focusable:focus-visible {
+          outline: 3px solid #0d47a1 !important;
+          outline-offset: 3px;
+          box-shadow: 0 0 0 4px rgba(13, 71, 161, 0.18);
+        }
         @media (max-width: 980px) {
           .inventory-graph-layout-grid,
           .inventory-graph-bottom-grid {
@@ -416,6 +445,12 @@ export function InventoryIntegrityGraphSection() {
         <BoundaryBadges />
       </div>
 
+      <p style={styles.keyboardHelp}>
+        キーボード操作 / Keyboard navigation: Tab で移動し、Enter または Space
+        で詳細を表示します。これは表示切替のみで、実行操作ではありません / This
+        only changes displayed detail. It does not execute any workflow.
+      </p>
+
       <div style={styles.badgeRow} aria-label="Current graph context">
         <span style={styles.badge}>概要表示 / Overview View</span>
         <span style={styles.badge}>{activeLayer}</span>
@@ -429,24 +464,30 @@ export function InventoryIntegrityGraphSection() {
       <nav style={styles.breadcrumb} aria-label="Graph breadcrumb">
         <button
           type="button"
+          className="inventory-graph-focusable"
           style={styles.breadcrumbButton}
           onClick={() => selectBreadcrumb("summary")}
+          aria-label="グラフ要約を表示 / Show Graph Summary detail. Display change only."
         >
           グラフ要約 / Graph Summary
         </button>
         <span aria-hidden="true">&gt;</span>
         <button
           type="button"
+          className="inventory-graph-focusable"
           style={styles.breadcrumbButton}
           onClick={() => selectSummary("collapse")}
+          aria-label="崩壊傾向要約を表示 / Show Collapse Summary detail. Display change only."
         >
           崩壊傾向 / Collapse Summary
         </button>
         <span aria-hidden="true">&gt;</span>
         <button
           type="button"
+          className="inventory-graph-focusable"
           style={styles.breadcrumbButton}
           onClick={() => selectBreadcrumb("node")}
+          aria-label="ノード詳細を表示 / Show Node Detail. Display change only."
         >
           ノード詳細 / Node Detail
         </button>
@@ -498,12 +539,14 @@ export function InventoryIntegrityGraphSection() {
             <button
               key={view.id}
               type="button"
+              className="inventory-graph-focusable"
               style={{
                 ...styles.filterButton,
                 ...(activeViewMode === view.id ? styles.activeFilterButton : {}),
               }}
               onClick={() => setActiveViewMode(view.id)}
               aria-pressed={activeViewMode === view.id}
+              aria-label={`表示モードを切替 / Change view mode: ${view.label}. Display change only. No execution action.`}
             >
               {view.label}
             </button>
@@ -511,34 +554,38 @@ export function InventoryIntegrityGraphSection() {
 
           <section style={{ marginTop: "1rem" }} aria-labelledby="graph-legend-heading">
             <h3 id="graph-legend-heading">凡例 / Legend</h3>
-            <div style={styles.legendGrid}>
-              <span style={{ ...styles.badge, ...cardToneStyle("critical") }}>
+            <div style={styles.legendGrid} role="list" aria-label="Read-only graph legend">
+              <span style={{ ...styles.badge, ...cardToneStyle("critical") }} role="listitem">
                 重大 / Critical
               </span>
-              <span style={{ ...styles.badge, ...cardToneStyle("warning") }}>
+              <span style={{ ...styles.badge, ...cardToneStyle("warning") }} role="listitem">
                 注意 / Warning
               </span>
-              <span style={{ ...styles.badge, ...cardToneStyle("stable") }}>
+              <span style={{ ...styles.badge, ...cardToneStyle("stable") }} role="listitem">
                 安定 / Stable
               </span>
-              <span style={{ ...styles.badge, ...styles.readOnlyBadge }}>
+              <span style={{ ...styles.badge, ...styles.readOnlyBadge }} role="listitem">
                 Read Only / 読み取り専用
               </span>
-              <span style={{ ...styles.badge, ...styles.noExecutionBadge }}>
+              <span style={{ ...styles.badge, ...styles.noExecutionBadge }} role="listitem">
                 Observability Only / 観測専用
               </span>
-              <span style={styles.badge}>No Execution Controls / 実行操作なし</span>
-              <span style={styles.badge}>No Mutation / データ変更なし</span>
-              <span style={styles.badge}>SVG Relation Overlay / SVG関係線</span>
-              <span style={styles.badge}>Edge Semantics / 関係線の意味</span>
-              <span style={styles.badge}>Observability Path Only / 観測用経路のみ</span>
-              <span style={styles.badge}>No Execution Route / 実行経路ではありません</span>
-              <span style={styles.badge}>Local State / 画面内状態</span>
+              <span style={styles.badge} role="listitem">No Execution Controls / 実行操作なし</span>
+              <span style={styles.badge} role="listitem">No Mutation / データ変更なし</span>
+              <span style={styles.badge} role="listitem">SVG Relation Overlay / SVG関係線</span>
+              <span style={styles.badge} role="listitem">Edge Semantics / 関係線の意味</span>
+              <span style={styles.badge} role="listitem">Observability Path Only / 観測用経路のみ</span>
+              <span style={styles.badge} role="listitem">No Execution Route / 実行経路ではありません</span>
+              <span style={styles.badge} role="listitem">Local State / 画面内状態</span>
             </div>
           </section>
         </aside>
 
-        <section style={styles.sectionBox} aria-labelledby="graph-inspector-panel-heading">
+        <section
+          style={styles.sectionBox}
+          aria-labelledby="graph-inspector-panel-heading"
+          aria-live="polite"
+        >
           <div style={styles.header}>
             <div>
               <h3 id="graph-inspector-panel-heading">詳細確認 / Inspector Panel</h3>
@@ -550,11 +597,13 @@ export function InventoryIntegrityGraphSection() {
             <BoundaryBadges />
           </div>
 
-          <div style={styles.badgeRow} aria-label="Inspector tabs">
+          <div style={styles.badgeRow} role="tablist" aria-label="Inspector tabs / 詳細確認タブ">
             {(["summary", "node", "edge"] as const).map((tab) => (
               <button
                 key={tab}
                 type="button"
+                className="inventory-graph-focusable"
+                role="tab"
                 style={{
                   ...styles.filterButton,
                   width: "auto",
@@ -562,6 +611,8 @@ export function InventoryIntegrityGraphSection() {
                 }}
                 onClick={() => setActiveInspectorTab(tab)}
                 aria-pressed={activeInspectorTab === tab}
+                aria-selected={activeInspectorTab === tab}
+                aria-label={`${inspectorTabLabels[tab]} を表示 / Show ${tab} detail. Display change only. No execution action.`}
               >
                 {inspectorTabLabels[tab]}
               </button>

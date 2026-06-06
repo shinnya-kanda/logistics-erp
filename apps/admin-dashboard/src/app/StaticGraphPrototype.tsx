@@ -143,6 +143,16 @@ const styles: Record<string, CSSProperties> = {
     fontSize: "0.78rem",
     color: "#555",
   },
+  keyboardHelp: {
+    margin: 0,
+    padding: "0.7rem 0.75rem",
+    border: "1px solid #cfd8dc",
+    borderRadius: "12px",
+    background: "#f8fbff",
+    color: "#37474f",
+    fontSize: "0.84rem",
+    lineHeight: 1.55,
+  },
   edgeSemanticsPanel: {
     display: "grid",
     gap: "0.55rem",
@@ -155,6 +165,9 @@ const styles: Record<string, CSSProperties> = {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(11rem, 1fr))",
     gap: "0.5rem",
+    listStyle: "none",
+    margin: 0,
+    padding: 0,
   },
   edgeSemanticsCard: {
     display: "grid",
@@ -323,7 +336,7 @@ function GraphNodeCard({
   return (
     <button
       type="button"
-      className="static-graph-node-card"
+      className="static-graph-node-card static-graph-focusable"
       style={{
         ...styles.nodeCard,
         ...severityStyle(node.severity),
@@ -335,7 +348,7 @@ function GraphNodeCard({
       }}
       onClick={onSelect}
       aria-pressed={selected}
-      aria-label={`ノード詳細を表示 / Show node detail: ${node.label}`}
+      aria-label={`ノード詳細を表示 / Show node detail. ${node.label}. Type: ${node.type}. Severity: ${node.severity}. Reason: ${node.reason}. ${selected ? "表示中 / Selected." : ""} 表示切替のみ / Display change only. No execution action.`}
     >
       <p style={styles.nodeTitle}>{node.label}</p>
       <div style={styles.nodeMeta}>
@@ -374,6 +387,7 @@ function GraphRelationChip({
   return (
     <button
       type="button"
+      className="static-graph-focusable"
       style={{
         ...styles.relationChip,
         ...severityStyle(edge.severity),
@@ -385,7 +399,7 @@ function GraphRelationChip({
       }}
       onClick={onSelect}
       aria-pressed={selected}
-      aria-label={`関係詳細を表示 / Show relation detail: ${edge.label}`}
+      aria-label={`関係詳細を表示 / Show relation detail. ${edge.displayLabel}. Semantic category: ${edge.semanticCategory}. Severity: ${edge.severity}. 実行経路ではありません / No execution route. ${selected ? "表示中 / Selected." : ""}`}
     >
       <strong>{edge.displayLabel}</strong>
       <span>
@@ -516,6 +530,11 @@ export function StaticGraphPrototype({
   return (
     <div style={styles.wrapper} aria-label="Static graph prototype">
       <style>{`
+        .static-graph-focusable:focus-visible {
+          outline: 3px solid #0d47a1 !important;
+          outline-offset: 3px;
+          box-shadow: 0 0 0 4px rgba(13, 71, 161, 0.18);
+        }
         .static-graph-overlay-canvas {
           position: relative;
           width: 100%;
@@ -598,6 +617,10 @@ export function StaticGraphPrototype({
           relation の視覚補助であり、実行経路・workflow route ではありません。クリックは
           local selection state の表示切替のみです。
         </p>
+        <p style={styles.keyboardHelp}>
+          キーボード操作 / Keyboard: Tab で Node Card と Relation Chip に移動し、
+          Enter または Space で詳細を表示します。表示切替のみで、実行操作ではありません。
+        </p>
         <div style={styles.badgeRow} aria-label="Static graph statistics">
           <span style={styles.badge}>表示モード / View: {activeViewMode}</span>
           <span style={styles.badge}>ノード / Nodes: {nodes.length}</span>
@@ -638,15 +661,15 @@ export function StaticGraphPrototype({
             workflow legend ではありません。severity は優先順位ではなく、path は対応経路ではありません。
             意味確認は Relation Chip と Inspector で行います。
           </p>
-          <div style={styles.edgeSemanticsGrid}>
+          <ul style={styles.edgeSemanticsGrid} aria-label="Edge semantic categories">
             {edgeSemanticsLegend.map((item) => (
-              <div key={item.semanticCategory} style={styles.edgeSemanticsCard}>
+              <li key={item.semanticCategory} style={styles.edgeSemanticsCard}>
                 <strong>{item.label}</strong>
                 <span>semantic category: {item.semanticCategory}</span>
                 <span>{item.description}</span>
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
         </section>
         <p style={styles.srOnly} id="svg-overlay-meaning">
           SVG relation overlay は observability path only
