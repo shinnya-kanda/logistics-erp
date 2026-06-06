@@ -1,16 +1,92 @@
 "use client";
 
 import { useMemo, useState, type CSSProperties } from "react";
+import {
+  buildInventoryIntegrityGraphData,
+  createUnavailableGraphData,
+} from "./inventoryIntegrityGraphAdapter";
+import { sampleInventoryIntegrityCompareResponseFixture } from "./inventoryIntegrityGraphAdapterFixtures";
+import type { InventoryIntegrityGraphAdapterWarning } from "./inventoryIntegrityGraphAdapterTypes";
 import { inventoryIntegrityGraphMockData } from "./inventoryIntegrityGraphMockData";
 import { StaticGraphPrototype } from "./StaticGraphPrototype";
 import type {
+  InventoryIntegrityGraphData,
   InventoryIntegrityGraphInspectorTab,
   InventoryIntegrityGraphSeverity,
   InventoryIntegrityGraphSummary,
   InventoryIntegrityGraphViewMode,
 } from "./inventoryIntegrityGraphTypes";
 
-const graphData = inventoryIntegrityGraphMockData;
+type GraphDataSourceMode = "mock" | "adapter" | "fallback";
+
+type GraphDataSourceOption = {
+  readonly id: GraphDataSourceMode;
+  readonly label: string;
+  readonly description: string;
+};
+
+const graphDataSourceOptions: readonly GraphDataSourceOption[] = [
+  {
+    id: "mock",
+    label: "Mock",
+    description: "Existing static mock graph data.",
+  },
+  {
+    id: "adapter",
+    label: "Adapter",
+    description: "Fixture Adapter. Not Live Compare Data.",
+  },
+  {
+    id: "fallback",
+    label: "Fallback",
+    description: "Unavailable fallback graph projection.",
+  },
+];
+
+const adapterGraphResult = buildInventoryIntegrityGraphData({
+  compareResponse: sampleInventoryIntegrityCompareResponseFixture,
+  sourceKind: "graph_adapter_fixture",
+});
+
+const fallbackGraphData = createUnavailableGraphData();
+
+function selectGraphData(mode: GraphDataSourceMode): InventoryIntegrityGraphData {
+  if (mode === "adapter") {
+    return adapterGraphResult.graphData;
+  }
+
+  if (mode === "fallback") {
+    return fallbackGraphData;
+  }
+
+  return inventoryIntegrityGraphMockData;
+}
+
+function graphSourceLabel(mode: GraphDataSourceMode): string {
+  if (mode === "adapter") {
+    return "Adapter / Fixture Adapter / Not Live Compare Data";
+  }
+
+  if (mode === "fallback") {
+    return "Fallback / Adapter Graph Unavailable";
+  }
+
+  return "Mock / Static Mock Data";
+}
+
+function graphSourceWarnings(
+  mode: GraphDataSourceMode,
+): readonly InventoryIntegrityGraphAdapterWarning[] {
+  if (mode === "adapter") {
+    return adapterGraphResult.warnings;
+  }
+
+  if (mode === "fallback") {
+    return ["adapter_unavailable", "fallback_used", "graph_unavailable"];
+  }
+
+  return [];
+}
 
 const styles: Record<string, CSSProperties> = {
   panel: {
@@ -70,6 +146,20 @@ const styles: Record<string, CSSProperties> = {
     borderColor: "#1b5e20",
     background: "#e8f5e9",
     color: "#1b5e20",
+  },
+  sourcePanel: {
+    display: "grid",
+    gap: "0.55rem",
+    minWidth: "18rem",
+    padding: "0.75rem",
+    border: "1px solid #cfd8dc",
+    borderRadius: "12px",
+    background: "#f8fbff",
+  },
+  sourceControls: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "0.45rem",
   },
   breadcrumb: {
     display: "flex",
@@ -294,9 +384,18 @@ function BoundaryBadges() {
 }
 
 export function InventoryIntegrityGraphSection() {
+  const [dataSourceMode, setDataSourceMode] =
+    useState<GraphDataSourceMode>("mock");
+  const graphData = useMemo(
+    () => selectGraphData(dataSourceMode),
+    [dataSourceMode],
+  );
+  const sourceWarnings = useMemo(
+    () => graphSourceWarnings(dataSourceMode),
+    [dataSourceMode],
+  );
   const [activeViewMode, setActiveViewMode] =
     useState<InventoryIntegrityGraphViewMode>("overview");
-  const [activeLayer] = useState(graphData.metadata.activeLayer);
   const [selectedSummaryId, setSelectedSummaryId] = useState(
     graphData.defaultSummaryId,
   );
@@ -322,7 +421,7 @@ export function InventoryIntegrityGraphSection() {
     selectedEdge.to;
   const orderedSummaries = useMemo(
     () => [...graphData.summaries].sort((a, b) => a.priority - b.priority),
-    [],
+    [graphData],
   );
   const inspectorTitle =
     activeInspectorTab === "edge"
@@ -343,7 +442,7 @@ export function InventoryIntegrityGraphSection() {
         ["値 / Value", selectedSummary.value],
         ["理由 / Reason", selectedSummary.description],
         ["Severity", selectedSummary.severity],
-        ["根拠 / Source", "mock model / モックモデル"],
+        ["根拠 / Source", graphSourceLabel(dataSourceMode)],
         ["境界 / Boundary", graphData.metadata.readOnlyBoundary],
       ];
     }
@@ -383,12 +482,25 @@ export function InventoryIntegrityGraphSection() {
     ];
   }, [
     activeInspectorTab,
+    dataSourceMode,
+    graphData.metadata.readOnlyBoundary,
     selectedEdge,
     selectedEdgeFromLabel,
     selectedEdgeToLabel,
     selectedNode,
     selectedSummary,
   ]);
+
+  function selectDataSourceMode(nextMode: GraphDataSourceMode) {
+    const nextGraphData = selectGraphData(nextMode);
+    setDataSourceMode(nextMode);
+    setActiveViewMode("overview");
+    setSelectedSummaryId(nextGraphData.defaultSummaryId);
+    setSelectedNodeId(nextGraphData.defaultNodeId);
+    setSelectedEdgeId(nextGraphData.defaultEdgeId);
+    setHighlightedPathId(nextGraphData.defaultHighlightedPathId);
+    setActiveInspectorTab("summary");
+  }
 
   function selectSummary(summaryId: string) {
     const summary = graphData.summaries.find((item) => item.id === summaryId);
@@ -442,8 +554,39 @@ export function InventoryIntegrityGraphSection() {
             Graph Engine、API、DB、Mutation は接続していません。
           </p>
         </div>
-        <BoundaryBadges />
+        <div style={styles.sourcePanel} aria-label="Graph source mode">
+          <strong>Graph Source</strong>
+          <div style={styles.sourceControls}>
+            {graphDataSourceOptions.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                className="inventory-graph-focusable"
+                style={{
+                  ...styles.filterButton,
+                  width: "auto",
+                  marginTop: 0,
+                  ...(dataSourceMode === option.id ? styles.activeFilterButton : {}),
+                }}
+                onClick={() => selectDataSourceMode(option.id)}
+                aria-pressed={dataSourceMode === option.id}
+                aria-label={`Graph source を ${option.label} に切替 / Change graph source to ${option.label}. Display change only. No API. No execution action.`}
+                title={option.description}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          <span style={styles.badge}>Source: {graphSourceLabel(dataSourceMode)}</span>
+          {dataSourceMode === "adapter" ? (
+            <span style={styles.badge}>Fixture Adapter / Not Live Compare Data</span>
+          ) : null}
+          {dataSourceMode === "fallback" ? (
+            <span style={styles.badge}>Adapter Graph Unavailable</span>
+          ) : null}
+        </div>
       </div>
+      <BoundaryBadges />
 
       <p style={styles.keyboardHelp}>
         キーボード操作 / Keyboard navigation: Tab で移動し、Enter または Space
@@ -453,13 +596,22 @@ export function InventoryIntegrityGraphSection() {
 
       <div style={styles.badgeRow} aria-label="Current graph context">
         <span style={styles.badge}>概要表示 / Overview View</span>
-        <span style={styles.badge}>{activeLayer}</span>
+        <span style={styles.badge}>{graphData.metadata.activeLayer}</span>
         <span style={styles.badge}>表示モード / Active View: {activeViewMode}</span>
         <span style={styles.badge}>強調パス / Highlighted Path: {highlightedPathId}</span>
+        <span style={styles.badge}>Source: {graphSourceLabel(dataSourceMode)}</span>
         <span style={styles.badge}>
           Compare Endpoint: {graphData.metadata.compareEndpointMethod} only
         </span>
+        <span style={styles.badge}>No API / No DB / No Mutation</span>
       </div>
+
+      {sourceWarnings.length > 0 ? (
+        <div style={styles.keyboardHelp} role="status" aria-live="polite">
+          <strong>Adapter warning visibility / 読み取り専用 caveat:</strong>{" "}
+          {sourceWarnings.join(", ")}。表示上の注意情報のみで、retry・修復・同期・実行操作はありません。
+        </div>
+      ) : null}
 
       <nav style={styles.breadcrumb} aria-label="Graph breadcrumb">
         <button
@@ -497,7 +649,8 @@ export function InventoryIntegrityGraphSection() {
         <section style={styles.sectionBox} aria-labelledby="graph-summary-panel-heading">
           <h3 id="graph-summary-panel-heading">要約パネル / Summary Panel</h3>
           <p style={styles.lead}>
-            静的 mock summary を表示します。クリックは local state の表示切替のみです。
+            {graphSourceLabel(dataSourceMode)} の summary を表示します。クリックは local
+            state の表示切替のみです。
           </p>
           <div style={styles.cardGrid}>
             {orderedSummaries.map((card) => (
@@ -533,7 +686,7 @@ export function InventoryIntegrityGraphSection() {
         <aside style={styles.sectionBox} aria-labelledby="graph-filter-panel-heading">
           <h3 id="graph-filter-panel-heading">表示フィルター / Filter Panel</h3>
           <p style={styles.lead}>
-            静的 mock UI です。フィルター操作は local state の表示切替のみです。
+            Graph source と view mode は local state の表示切替のみです。
           </p>
           {graphData.viewModes.map((view) => (
             <button
@@ -590,7 +743,7 @@ export function InventoryIntegrityGraphSection() {
             <div>
               <h3 id="graph-inspector-panel-heading">詳細確認 / Inspector Panel</h3>
               <p style={styles.lead}>
-                静的 mock metadata を確認します。理由・根拠・シグナルをここで読みます。
+                選択中 graph source の metadata を確認します。理由・根拠・シグナルをここで読みます。
                 切替は表示変更のみです。
               </p>
             </div>
