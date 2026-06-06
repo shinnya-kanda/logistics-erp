@@ -29,6 +29,8 @@ export type InventoryIntegrityGraphAdapterWarning =
   | "incomplete_relation"
   | "incomplete_fixture"
   | "unsupported_metadata_shape"
+  | "extracted_compare_fixture_metadata"
+  | "normalized_non_string_metadata"
   | "fallback_used"
   | "graph_unavailable"
   | "adapter_unavailable";
@@ -60,6 +62,35 @@ export interface InventoryIntegrityGraphAdapterFixtureMetadata {
 export interface InventoryIntegrityGraphAdapterMetadataFixtureInput {
   readonly metadata: InventoryIntegrityGraphAdapterFixtureMetadata;
   readonly sourceKind?: "graph_adapter_fixture";
+}
+
+export interface InventoryIntegrityCompareResponseFixtureMetadata {
+  readonly compareClassification?: unknown;
+  readonly compareSeverity?: unknown;
+  readonly compareReviewReadiness?: unknown;
+  readonly compareEscalationReadiness?: unknown;
+  readonly compareOperationalPriority?: unknown;
+  readonly compareOperatorSummary?: unknown;
+  readonly compareConfidence?: unknown;
+  readonly compareProjectionFreshness?: unknown;
+  readonly compareTruthAggregationQuality?: unknown;
+  readonly compareEvidence?: unknown;
+  readonly compareRisk?: unknown;
+  readonly compareInterpretationStability?: unknown;
+  readonly compareGovernanceSemanticSurvivability?: unknown;
+  readonly compareGovernanceSemanticSustainability?: unknown;
+  readonly compareGovernanceSemanticMaintainability?: unknown;
+  readonly compareGovernanceSemanticEvolvability?: unknown;
+  readonly governanceSemanticSurvivability?: unknown;
+  readonly governanceSemanticSustainability?: unknown;
+  readonly governanceSemanticMaintainability?: unknown;
+  readonly governanceSemanticEvolvability?: unknown;
+}
+
+export interface InventoryIntegrityCompareResponseFixture {
+  readonly metadata?: InventoryIntegrityCompareResponseFixtureMetadata;
+  readonly responseMetadata?: unknown;
+  readonly rawPayloadMetadata?: unknown;
 }
 
 export interface InventoryIntegrityGraphAdapterInput {
