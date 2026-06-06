@@ -19,6 +19,7 @@ import type {
 export type InventoryIntegrityGraphAdapterWarning =
   | "missing_compare_response"
   | "missing_metadata"
+  | "missing_value"
   | "missing_summary"
   | "missing_node"
   | "missing_edge"
@@ -26,15 +27,40 @@ export type InventoryIntegrityGraphAdapterWarning =
   | "missing_source"
   | "missing_signals"
   | "incomplete_relation"
+  | "incomplete_fixture"
+  | "unsupported_metadata_shape"
+  | "fallback_used"
   | "graph_unavailable"
-  | "adapter_not_implemented";
+  | "adapter_unavailable";
 
 export type InventoryIntegrityGraphAdapterSourceKind =
   | "unknown_compare_response"
+  | "graph_adapter_fixture"
   | "edge_projection_response"
   | "projection_response_metadata"
   | "projection_metadata"
   | "read_only_data_fixture";
+
+export type InventoryIntegrityGraphAdapterFixtureMetadataValue = string;
+
+export interface InventoryIntegrityGraphAdapterFixtureMetadata {
+  readonly compareSeverity?: InventoryIntegrityGraphAdapterFixtureMetadataValue;
+  readonly compareRisk?: InventoryIntegrityGraphAdapterFixtureMetadataValue;
+  readonly compareEvidence?: InventoryIntegrityGraphAdapterFixtureMetadataValue;
+  readonly compareConfidence?: InventoryIntegrityGraphAdapterFixtureMetadataValue;
+  readonly compareProjectionFreshness?: InventoryIntegrityGraphAdapterFixtureMetadataValue;
+  readonly compareTruthAggregationQuality?: InventoryIntegrityGraphAdapterFixtureMetadataValue;
+  readonly compareInterpretationStability?: InventoryIntegrityGraphAdapterFixtureMetadataValue;
+  readonly compareGovernanceSemanticSurvivability?: InventoryIntegrityGraphAdapterFixtureMetadataValue;
+  readonly compareGovernanceSemanticSustainability?: InventoryIntegrityGraphAdapterFixtureMetadataValue;
+  readonly compareGovernanceSemanticMaintainability?: InventoryIntegrityGraphAdapterFixtureMetadataValue;
+  readonly compareGovernanceSemanticEvolvability?: InventoryIntegrityGraphAdapterFixtureMetadataValue;
+}
+
+export interface InventoryIntegrityGraphAdapterMetadataFixtureInput {
+  readonly metadata: InventoryIntegrityGraphAdapterFixtureMetadata;
+  readonly sourceKind?: "graph_adapter_fixture";
+}
 
 export interface InventoryIntegrityGraphAdapterInput {
   readonly compareResponse: unknown;
@@ -109,7 +135,7 @@ export interface InventoryIntegrityGraphMetadataMappingResult {
   readonly warnings: readonly InventoryIntegrityGraphAdapterWarning[];
 }
 
-export interface InventoryIntegrityGraphAdapterFixtureInput {
+export interface InventoryIntegrityGraphAdapterEdgeFixtureInput {
   readonly response: InventoryIntegrityEdgeProjectionResponse;
   readonly sourceKind: "edge_projection_response";
 }
