@@ -285,24 +285,24 @@ export function extractGraphFixtureMetadata(
 export function createUnavailableGraphData(): InventoryIntegrityGraphData {
   return {
     metadata: {
-      title: "Inventory Integrity Graph",
+      title: "Graph Unavailable / グラフ利用不可",
       activeLayer: "Unavailable Graph Adapter Projection",
       generatedAt: "adapter-unavailable",
       compareEndpointMethod: "GET",
       readOnlyBoundary:
-        "Read Only, Observability Only, GET-only source data, adapter fallback.",
+        "Read Only, Observability Only, GET-only source data assumption, unavailable safety fallback.",
       noExecutionMeaning:
-        "No Execution Controls. This fallback graph does not change inventory data.",
+        "No Execution Controls. This unavailable projection is not live compare data and does not change inventory data.",
     },
     summaries: [
       {
         id: UNAVAILABLE_SUMMARY_ID,
-        title: "Graph Unavailable",
+        title: "Graph Unavailable / グラフ利用不可",
         value: "unavailable",
         severity: "warning",
         description:
-          "Fixture metadata was missing or unsupported. The graph is an unavailable read-only projection.",
-        shortDescription: "Adapter fallback",
+          "Unavailable placeholder summary. Metadata may be missing or unsupported, so this graph is an unavailable read-only projection.",
+        shortDescription: "Unavailable placeholder summary / 利用不可 placeholder 要約",
         priority: 1,
         relatedNodeId: UNAVAILABLE_NODE_ID,
         relatedPathId: UNAVAILABLE_PATH_ID,
@@ -312,11 +312,11 @@ export function createUnavailableGraphData(): InventoryIntegrityGraphData {
       {
         id: UNAVAILABLE_NODE_ID,
         type: "graph_unavailable",
-        label: "Graph Unavailable",
+        label: "Unavailable Placeholder Node / 利用不可 placeholder ノード",
         value: "unavailable",
         severity: "warning",
         reason:
-          "The adapter could not read fixture metadata safely, so it returned the unavailable graph.",
+          "Unavailable placeholder node. The adapter could not read metadata safely, so it returned an unavailable projection.",
         source: "inventoryIntegrityGraphAdapter",
         signals: ["adapter_unavailable", "fallback_used", "read_only_projection"],
       },
@@ -327,14 +327,14 @@ export function createUnavailableGraphData(): InventoryIntegrityGraphData {
         from: UNAVAILABLE_NODE_ID,
         to: UNAVAILABLE_NODE_ID,
         type: "unavailable_boundary",
-        label: "Unavailable Boundary",
-        displayLabel: "Unavailable Projection",
+        label: "No Semantic Edge Available",
+        displayLabel: "No Semantic Edge Available / 意味関係線なし",
         semanticCategory: "boundary_relation",
         pathMeaning:
-          "The fixture metadata could not be projected into graph relations.",
+          "No semantic edge available. Metadata could not be projected into healthy graph relations.",
         readOnlyMeaning: READ_ONLY_EDGE_MEANING,
         description:
-          "This relation is a fallback marker for an unavailable adapter projection.",
+          "Unavailable placeholder edge only. This is a fallback marker, not a normal semantic relation.",
         severity: "warning",
         source: "inventoryIntegrityGraphAdapter",
       },
