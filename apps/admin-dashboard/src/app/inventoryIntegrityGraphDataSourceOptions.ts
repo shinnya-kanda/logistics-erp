@@ -18,8 +18,9 @@ export const inventoryIntegrityGraphDataSourceOptions: readonly InventoryIntegri
     label: "Fixture Adapter / フィクスチャアダプタ",
     shortLabel: "Adapter Fixture",
     trustLevel: "Adapter verification only",
-    disclosure: "Not Live Compare Data / 実比較データではありません",
-    caveat: "Adapter output from static compare response fixture only.",
+    disclosure: "Read-only Compare Fixture Projection",
+    caveat:
+      "Not Live Compare Data / 実比較データではありません。Static compare response fixture only.",
     isLiveData: false,
   },
   {
