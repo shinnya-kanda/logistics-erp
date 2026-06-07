@@ -4,6 +4,7 @@ import { useMemo, useState, type CSSProperties } from "react";
 import {
   buildInventoryIntegrityGraphData,
   createUnavailableGraphData,
+  extractGraphFixtureMetadata,
 } from "./inventoryIntegrityGraphAdapter";
 import { sampleInventoryIntegrityCompareResponseFixture } from "./inventoryIntegrityGraphAdapterFixtures";
 import type { InventoryIntegrityGraphAdapterWarning } from "./inventoryIntegrityGraphAdapterTypes";
@@ -26,8 +27,30 @@ const adapterGraphResult = buildInventoryIntegrityGraphData({
   compareResponse: sampleInventoryIntegrityCompareResponseFixture,
   sourceKind: "graph_adapter_fixture",
 });
+const adapterFixtureMetadata = extractGraphFixtureMetadata(
+  sampleInventoryIntegrityCompareResponseFixture,
+);
 
 const fallbackGraphData = createUnavailableGraphData();
+
+const ADAPTER_FIXTURE_PROJECTION_STEPS = [
+  "Compare Response Fixture",
+  "extractGraphFixtureMetadata",
+  "buildInventoryIntegrityGraphData",
+  "InventoryIntegrityGraphData",
+  "Graph UI Rendering",
+] as const;
+
+const FALLBACK_PROJECTION_STEPS = [
+  "createUnavailableGraphData()",
+  "Unavailable Graph Projection",
+  "Graph UI Rendering",
+] as const;
+
+const MOCK_PROJECTION_STEPS = [
+  "inventoryIntegrityGraphMockData",
+  "Graph UI Rendering",
+] as const;
 
 function selectGraphData(
   mode: InventoryIntegrityGraphDataSourceMode,
@@ -60,6 +83,20 @@ function graphSourceWarnings(
 function graphSourceDisplayLabel(mode: InventoryIntegrityGraphDataSourceMode): string {
   const option = getInventoryIntegrityGraphDataSourceOption(mode);
   return `${option.shortLabel} / ${option.disclosure}`;
+}
+
+function graphSourceProjectionSteps(
+  mode: InventoryIntegrityGraphDataSourceMode,
+): readonly string[] {
+  if (mode === "adapter_fixture") {
+    return ADAPTER_FIXTURE_PROJECTION_STEPS;
+  }
+
+  if (mode === "fallback_unavailable") {
+    return FALLBACK_PROJECTION_STEPS;
+  }
+
+  return MOCK_PROJECTION_STEPS;
 }
 
 const styles: Record<string, CSSProperties> = {
@@ -270,6 +307,14 @@ const styles: Record<string, CSSProperties> = {
     gap: "0.5rem",
     marginTop: "0.75rem",
   },
+  compactList: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "0.35rem",
+    margin: "0.45rem 0 0",
+    padding: 0,
+    listStyle: "none",
+  },
 };
 
 function cardToneStyle(severity: InventoryIntegrityGraphSeverity): CSSProperties {
@@ -372,6 +417,13 @@ export function InventoryIntegrityGraphSection() {
     () => getInventoryIntegrityGraphDataSourceOption(dataSourceMode),
     [dataSourceMode],
   );
+  const projectionSteps = useMemo(
+    () => graphSourceProjectionSteps(dataSourceMode),
+    [dataSourceMode],
+  );
+  const adapterFixtureMetadataStatus = adapterFixtureMetadata
+    ? "extracted / 抽出済み"
+    : "unavailable / 利用不可";
   const [activeViewMode, setActiveViewMode] =
     useState<InventoryIntegrityGraphViewMode>("overview");
   const [selectedSummaryId, setSelectedSummaryId] = useState(
@@ -424,6 +476,7 @@ export function InventoryIntegrityGraphSection() {
         ["Trust Level", selectedSourceOption.trustLevel],
         ["Disclosure", selectedSourceOption.disclosure],
         ["Caveat", selectedSourceOption.caveat],
+        ["Projection", projectionSteps.join(" -> ")],
         ["境界 / Boundary", graphData.metadata.readOnlyBoundary],
       ];
     }
@@ -465,6 +518,7 @@ export function InventoryIntegrityGraphSection() {
     activeInspectorTab,
     dataSourceMode,
     graphData.metadata.readOnlyBoundary,
+    projectionSteps,
     selectedSourceOption,
     selectedEdge,
     selectedEdgeFromLabel,
@@ -569,6 +623,21 @@ export function InventoryIntegrityGraphSection() {
           <span style={styles.badge}>
             Live Data: {selectedSourceOption.isLiveData ? "yes" : "no"}
           </span>
+          {dataSourceMode === "adapter_fixture" ? (
+            <>
+              <span style={styles.badge}>Not Live Compare Data / 実比較データではありません</span>
+              <span style={styles.badge}>Read-only Projection / 読み取り専用投影</span>
+              <span style={styles.badge}>
+                Fixture Metadata: {adapterFixtureMetadataStatus}
+              </span>
+            </>
+          ) : null}
+          {dataSourceMode === "fallback_unavailable" ? (
+            <>
+              <span style={styles.badge}>Safety Fallback Active</span>
+              <span style={styles.badge}>Unavailable Graph Projection</span>
+            </>
+          ) : null}
         </div>
       </div>
       <BoundaryBadges />
@@ -591,10 +660,29 @@ export function InventoryIntegrityGraphSection() {
         <span style={styles.badge}>No API / No DB / No Mutation</span>
       </div>
 
+      <div style={styles.keyboardHelp} aria-label="Read-only graph projection path">
+        <strong>Projection Path / 読み取り専用投影:</strong>{" "}
+        {projectionSteps.join(" -> ")}
+        <div style={styles.badgeRow}>
+          <span style={styles.badge}>Trust Level: {selectedSourceOption.trustLevel}</span>
+          <span style={styles.badge}>No API / API 接続なし</span>
+          <span style={styles.badge}>No DB / DB 接続なし</span>
+          <span style={styles.badge}>No Mutation / データ変更なし</span>
+        </div>
+      </div>
+
       {sourceWarnings.length > 0 ? (
         <div style={styles.keyboardHelp} role="status" aria-live="polite">
           <strong>Adapter warning visibility / 読み取り専用 caveat:</strong>{" "}
-          {sourceWarnings.join(", ")}。表示上の注意情報のみで、retry・修復・同期・実行操作はありません。
+          <span style={styles.badge}>Warnings: {sourceWarnings.length}</span>
+          <ul style={styles.compactList} aria-label="Adapter warning list">
+            {sourceWarnings.map((warning) => (
+              <li key={warning}>
+                <span style={styles.badge}>{warning}</span>
+              </li>
+            ))}
+          </ul>
+          表示上の注意情報のみで、retry・修復・同期・実行操作はありません。
         </div>
       ) : null}
 
