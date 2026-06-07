@@ -2,7 +2,10 @@ import type {
   InventoryIntegrityGraphDataSourceMode,
   InventoryIntegrityGraphDataSourceOption,
 } from "./inventoryIntegrityGraphDataSourceTypes";
-import { ENABLE_REAL_COMPARE_READONLY_GRAPH_SOURCE } from "./inventoryIntegrityGraphFeatureFlags";
+import {
+  ENABLE_ADMIN_ONLY_COMPARE_GRAPH_SOURCE,
+  ENABLE_REAL_COMPARE_READONLY_GRAPH_SOURCE,
+} from "./inventoryIntegrityGraphFeatureFlags";
 
 export const inventoryIntegrityGraphDataSourceOptions: readonly InventoryIntegrityGraphDataSourceOption[] = [
   {
@@ -41,10 +44,13 @@ export const inventoryIntegrityGraphDataSourceOptions: readonly InventoryIntegri
     trustLevel: "Guarded live source",
     disclosure: "Guarded source mode. Not enabled in this phase.",
     caveat:
-      "Requires validation gate. Falls back to unavailable graph. / 検証ゲート必須。利用不可グラフへフォールバックします。",
+      "Admin Only / 管理者限定。Requires validation gate. Falls back to unavailable graph. / 検証ゲート必須。利用不可グラフへフォールバックします。",
     isLiveData: false,
     isGuarded: true,
     isEnabled: false,
+    isAdminOnly: true,
+    adminDisclosure:
+      "Admin Only / 管理者限定。Static admin guard required. No auth or role implementation in this phase.",
   },
   {
     id: "fallback_unavailable",
@@ -68,7 +74,10 @@ export function getInventoryIntegrityGraphDataSourceOption(
 }
 
 export function getVisibleInventoryIntegrityGraphDataSourceOptions(): readonly InventoryIntegrityGraphDataSourceOption[] {
-  if (ENABLE_REAL_COMPARE_READONLY_GRAPH_SOURCE) {
+  if (
+    ENABLE_REAL_COMPARE_READONLY_GRAPH_SOURCE &&
+    ENABLE_ADMIN_ONLY_COMPARE_GRAPH_SOURCE
+  ) {
     return inventoryIntegrityGraphDataSourceOptions;
   }
 
@@ -77,4 +86,4 @@ export function getVisibleInventoryIntegrityGraphDataSourceOptions(): readonly I
   );
 }
 
-// real_compare_readonly is defined, but hidden unless the B77-47 flag is enabled.
+// real_compare_readonly is defined, but hidden unless both B77-47 and B77-49 guards pass.
