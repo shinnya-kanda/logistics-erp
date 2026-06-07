@@ -27,7 +27,7 @@ import type {
 
 // Read-only projection for fixture-like GET-only source data.
 // Fixture only: no fetch, no mutation, no workflow execution, no inventory data changes,
-// and no API or UI integration.
+// no UI integration change, and no API or route integration.
 
 const UNAVAILABLE_SUMMARY_ID = "graph_unavailable";
 const UNAVAILABLE_NODE_ID = "graph_unavailable_node";
@@ -44,6 +44,7 @@ type GraphMappingSpec = {
   readonly summaryTitle: string;
   readonly summaryShortDescription: string;
   readonly summaryPriority: number;
+  readonly includeSummary?: boolean;
   readonly nodeId: string;
   readonly nodeType: string;
   readonly nodeLabel: string;
@@ -103,6 +104,7 @@ const MAPPING_SPECS: readonly GraphMappingSpec[] = [
     summaryTitle: "Freshness",
     summaryShortDescription: "Freshness context",
     summaryPriority: 50,
+    includeSummary: false,
     nodeId: "freshness_node",
     nodeType: "freshness",
     nodeLabel: "Freshness",
@@ -114,6 +116,7 @@ const MAPPING_SPECS: readonly GraphMappingSpec[] = [
     summaryTitle: "Truth Quality",
     summaryShortDescription: "Truth aggregation context",
     summaryPriority: 60,
+    includeSummary: false,
     nodeId: "truth_quality_node",
     nodeType: "truth_quality",
     nodeLabel: "Truth Quality",
@@ -129,6 +132,156 @@ const MAPPING_SPECS: readonly GraphMappingSpec[] = [
     nodeType: "stability",
     nodeLabel: "Stability",
     signals: ["stability", "interpretation", "confidence"],
+  },
+  {
+    key: "compareOwnership",
+    summaryId: "ownership",
+    summaryTitle: "Ownership Summary",
+    summaryShortDescription: "Ownership boundary",
+    summaryPriority: 120,
+    nodeId: "ownership_node",
+    nodeType: "ownership",
+    nodeLabel: "Ownership",
+    signals: ["ownership", "responsibility", "governance"],
+  },
+  {
+    key: "compareOwnerActionability",
+    summaryId: "actionability",
+    summaryTitle: "Actionability Summary",
+    summaryShortDescription: "Actionability caveat",
+    summaryPriority: 130,
+    nodeId: "actionability_node",
+    nodeType: "actionability",
+    nodeLabel: "Actionability",
+    signals: ["actionability", "owner", "display_only"],
+  },
+  {
+    key: "compareOperatorGuidance",
+    summaryId: "operator_guidance",
+    summaryTitle: "Operator Guidance Summary",
+    summaryShortDescription: "Operator reading guidance",
+    summaryPriority: 140,
+    nodeId: "operator_guidance_node",
+    nodeType: "operator_guidance",
+    nodeLabel: "Operator Guidance",
+    signals: ["operator", "guidance", "read_only"],
+  },
+  {
+    key: "compareOperatorMessage",
+    summaryId: "operator_message",
+    summaryTitle: "Operator Message",
+    summaryShortDescription: "Operator message context",
+    summaryPriority: 145,
+    includeSummary: false,
+    nodeId: "operator_message_node",
+    nodeType: "operator_message",
+    nodeLabel: "Operator Message",
+    signals: ["operator", "message", "display_only"],
+  },
+  {
+    key: "compareOperatorSummary",
+    summaryId: "operator_summary",
+    summaryTitle: "Operator Summary",
+    summaryShortDescription: "Operator summary context",
+    summaryPriority: 150,
+    includeSummary: false,
+    nodeId: "operator_summary_node",
+    nodeType: "operator_summary",
+    nodeLabel: "Operator Summary",
+    signals: ["operator", "summary", "compare"],
+  },
+  {
+    key: "compareOperatorTimeline",
+    summaryId: "operator_timeline",
+    summaryTitle: "Operator Timeline",
+    summaryShortDescription: "Reading timeline context",
+    summaryPriority: 155,
+    includeSummary: false,
+    nodeId: "operator_timeline_node",
+    nodeType: "operator_timeline",
+    nodeLabel: "Operator Timeline",
+    signals: ["operator", "timeline", "no_workflow"],
+  },
+  {
+    key: "compareGovernanceAuditTrail",
+    summaryId: "audit_explainability",
+    summaryTitle: "Audit / Explainability Summary",
+    summaryShortDescription: "Audit trail context",
+    summaryPriority: 160,
+    nodeId: "audit_explainability_node",
+    nodeType: "audit_explainability",
+    nodeLabel: "Audit / Explainability",
+    signals: ["audit", "explainability", "governance"],
+  },
+  {
+    key: "compareGovernanceExplainability",
+    summaryId: "explainability",
+    summaryTitle: "Explainability",
+    summaryShortDescription: "Explainability context",
+    summaryPriority: 165,
+    includeSummary: false,
+    nodeId: "explainability_node",
+    nodeType: "explainability",
+    nodeLabel: "Explainability",
+    signals: ["explainability", "reason", "governance"],
+  },
+  {
+    key: "compareGovernanceReasoningCoherence",
+    summaryId: "reasoning_coherence",
+    summaryTitle: "Reasoning Coherence Summary",
+    summaryShortDescription: "Reasoning coherence context",
+    summaryPriority: 170,
+    nodeId: "reasoning_coherence_node",
+    nodeType: "reasoning_coherence",
+    nodeLabel: "Reasoning Coherence",
+    signals: ["reasoning", "coherence", "explainability"],
+  },
+  {
+    key: "compareGovernanceSemanticDrift",
+    summaryId: "drift_resilience",
+    summaryTitle: "Drift / Resilience Summary",
+    summaryShortDescription: "Drift and resilience context",
+    summaryPriority: 180,
+    nodeId: "drift_node",
+    nodeType: "semantic_drift",
+    nodeLabel: "Semantic Drift",
+    signals: ["drift", "resilience", "governance"],
+  },
+  {
+    key: "compareGovernanceSemanticResilience",
+    summaryId: "resilience",
+    summaryTitle: "Resilience",
+    summaryShortDescription: "Resilience context",
+    summaryPriority: 185,
+    includeSummary: false,
+    nodeId: "resilience_node",
+    nodeType: "resilience",
+    nodeLabel: "Resilience",
+    signals: ["resilience", "recoverability", "governance"],
+  },
+  {
+    key: "compareGovernanceSemanticRecoverability",
+    summaryId: "recoverability",
+    summaryTitle: "Recoverability",
+    summaryShortDescription: "Recoverability context",
+    summaryPriority: 190,
+    includeSummary: false,
+    nodeId: "recoverability_node",
+    nodeType: "recoverability",
+    nodeLabel: "Recoverability",
+    signals: ["recoverability", "continuity", "governance"],
+  },
+  {
+    key: "compareGovernanceSemanticObservabilityContinuity",
+    summaryId: "continuity",
+    summaryTitle: "Continuity",
+    summaryShortDescription: "Observability continuity context",
+    summaryPriority: 195,
+    includeSummary: false,
+    nodeId: "continuity_node",
+    nodeType: "continuity",
+    nodeLabel: "Continuity",
+    signals: ["continuity", "observability", "governance"],
   },
   {
     key: "compareGovernanceSemanticSurvivability",
@@ -405,7 +558,7 @@ function toFixtureMetadata(
   rawMetadata: Record<string, unknown>,
   warnings: InventoryIntegrityGraphAdapterWarning[],
 ): InventoryIntegrityGraphAdapterFixtureMetadata {
-  return {
+  const metadata: InventoryIntegrityGraphAdapterFixtureMetadata = {
     compareSeverity: readMetadataField(rawMetadata.compareSeverity, "compareSeverity", warnings),
     compareRisk: readMetadataField(rawMetadata.compareRisk, "compareRisk", warnings),
     compareEvidence: readMetadataField(rawMetadata.compareEvidence, "compareEvidence", warnings),
@@ -427,6 +580,75 @@ function toFixtureMetadata(
     compareInterpretationStability: readMetadataField(
       rawMetadata.compareInterpretationStability,
       "compareInterpretationStability",
+      warnings,
+    ),
+    compareOwnership: readMetadataField(
+      rawMetadata.compareOwnership ?? rawMetadata.governanceSemanticOwnership,
+      "compareOwnership",
+      warnings,
+    ),
+    compareOwnerActionability: readMetadataField(
+      rawMetadata.compareOwnerActionability ??
+        rawMetadata.governanceSemanticActionability,
+      "compareOwnerActionability",
+      warnings,
+    ),
+    compareOperatorGuidance: readMetadataField(
+      rawMetadata.compareOperatorGuidance ?? rawMetadata.governanceSemanticGuidance,
+      "compareOperatorGuidance",
+      warnings,
+    ),
+    compareOperatorMessage: readMetadataField(
+      rawMetadata.compareOperatorMessage ?? rawMetadata.governanceSemanticMessage,
+      "compareOperatorMessage",
+      warnings,
+    ),
+    compareOperatorSummary: readMetadataField(
+      rawMetadata.compareOperatorSummary ?? rawMetadata.governanceSemanticSummary,
+      "compareOperatorSummary",
+      warnings,
+    ),
+    compareOperatorTimeline: readMetadataField(
+      rawMetadata.compareOperatorTimeline ?? rawMetadata.governanceSemanticTimeline,
+      "compareOperatorTimeline",
+      warnings,
+    ),
+    compareGovernanceAuditTrail: readMetadataField(
+      rawMetadata.compareGovernanceAuditTrail ?? rawMetadata.auditTrail,
+      "compareGovernanceAuditTrail",
+      warnings,
+    ),
+    compareGovernanceExplainability: readMetadataField(
+      rawMetadata.compareGovernanceExplainability ?? rawMetadata.explainability,
+      "compareGovernanceExplainability",
+      warnings,
+    ),
+    compareGovernanceReasoningCoherence: readMetadataField(
+      rawMetadata.compareGovernanceReasoningCoherence ??
+        rawMetadata.reasoningCoherence,
+      "compareGovernanceReasoningCoherence",
+      warnings,
+    ),
+    compareGovernanceSemanticDrift: readMetadataField(
+      rawMetadata.compareGovernanceSemanticDrift ?? rawMetadata.semanticDrift,
+      "compareGovernanceSemanticDrift",
+      warnings,
+    ),
+    compareGovernanceSemanticResilience: readMetadataField(
+      rawMetadata.compareGovernanceSemanticResilience ?? rawMetadata.resilience,
+      "compareGovernanceSemanticResilience",
+      warnings,
+    ),
+    compareGovernanceSemanticRecoverability: readMetadataField(
+      rawMetadata.compareGovernanceSemanticRecoverability ??
+        rawMetadata.recoverability,
+      "compareGovernanceSemanticRecoverability",
+      warnings,
+    ),
+    compareGovernanceSemanticObservabilityContinuity: readMetadataField(
+      rawMetadata.compareGovernanceSemanticObservabilityContinuity ??
+        rawMetadata.continuity,
+      "compareGovernanceSemanticObservabilityContinuity",
       warnings,
     ),
     compareGovernanceSemanticSurvivability: readMetadataField(
@@ -454,6 +676,9 @@ function toFixtureMetadata(
       warnings,
     ),
   };
+
+  appendCoverageWarnings(metadata, warnings);
+  return metadata;
 }
 
 function createMappingContext(
@@ -505,8 +730,7 @@ function mapSummaries(
   const metadata = input.metadata;
 
   return {
-    summaries: MAPPING_SPECS.filter((spec) => spec.key !== "compareProjectionFreshness")
-      .filter((spec) => spec.key !== "compareTruthAggregationQuality")
+    summaries: MAPPING_SPECS.filter((spec) => spec.includeSummary !== false)
       .map((spec) => createSummary(spec, metadata)),
     warnings: [],
   };
@@ -579,6 +803,51 @@ function mapEdges(
       source: "compareConfidence",
     }),
     createEdge({
+      id: "edge_ownership_to_actionability",
+      from: "ownership_node",
+      to: "actionability_node",
+      type: "ownership_actionability_relation",
+      label: "Ownership to Actionability",
+      displayLabel: "Ownership Boundary",
+      semanticCategory: "boundary_relation",
+      pathMeaning:
+        "Ownership metadata constrains how actionability is read.",
+      description:
+        "Ownership and actionability are read-only governance context, not assignment or action workflow.",
+      severity: edgeSeverity(metadata.compareOwnership),
+      source: "compareOwnership",
+    }),
+    createEdge({
+      id: "edge_actionability_to_operator_guidance",
+      from: "actionability_node",
+      to: "operator_guidance_node",
+      type: "actionability_operator_guidance_relation",
+      label: "Actionability to Guidance",
+      displayLabel: "Guidance Context",
+      semanticCategory: "boundary_relation",
+      pathMeaning:
+        "Actionability caveat informs operator guidance wording.",
+      description:
+        "This relation is semantic guidance context only and does not create an operator task.",
+      severity: edgeSeverity(metadata.compareOwnerActionability),
+      source: "compareOwnerActionability",
+    }),
+    createEdge({
+      id: "edge_operator_guidance_to_operator_summary",
+      from: "operator_guidance_node",
+      to: "operator_summary_node",
+      type: "operator_guidance_summary_relation",
+      label: "Guidance to Summary",
+      displayLabel: "Operator Summary Context",
+      semanticCategory: "support_relation",
+      pathMeaning:
+        "Operator guidance supports the compact operator summary interpretation.",
+      description:
+        "Operator metadata is projected for display only, without workflow execution.",
+      severity: edgeSeverity(metadata.compareOperatorGuidance),
+      source: "compareOperatorGuidance",
+    }),
+    createEdge({
       id: "edge_severity_to_risk",
       from: "severity_node",
       to: "risk_node",
@@ -604,6 +873,98 @@ function mapEdges(
         "Risk metadata is read before lifecycle survivability.",
       severity: edgeSeverity(metadata.compareRisk),
       source: "compareRisk",
+    }),
+    createEdge({
+      id: "edge_evidence_to_audit_explainability",
+      from: "evidence_node",
+      to: "audit_explainability_node",
+      type: "evidence_audit_explainability_relation",
+      label: "Evidence to Audit",
+      displayLabel: "Audit Support",
+      semanticCategory: "support_relation",
+      pathMeaning:
+        "Evidence metadata supports audit and explainability interpretation.",
+      description:
+        "Evidence detail is read as audit support context only.",
+      severity: edgeSeverity(metadata.compareEvidence),
+      source: "compareEvidence",
+    }),
+    createEdge({
+      id: "edge_audit_explainability_to_reasoning_coherence",
+      from: "audit_explainability_node",
+      to: "reasoning_coherence_node",
+      type: "audit_explainability_reasoning_relation",
+      label: "Audit to Reasoning",
+      displayLabel: "Reasoning Coherence",
+      semanticCategory: "support_relation",
+      pathMeaning:
+        "Audit and explainability context supports reasoning coherence interpretation.",
+      description:
+        "This relation exposes reasoning caveats; it does not approve or execute a workflow.",
+      severity: edgeSeverity(metadata.compareGovernanceAuditTrail),
+      source: "compareGovernanceAuditTrail",
+    }),
+    createEdge({
+      id: "edge_drift_to_resilience",
+      from: "drift_node",
+      to: "resilience_node",
+      type: "drift_resilience_relation",
+      label: "Drift to Resilience",
+      displayLabel: "Resilience Caveat",
+      semanticCategory: "lifecycle_propagation",
+      pathMeaning:
+        "Semantic drift constrains resilience interpretation.",
+      description:
+        "Drift is projected as a warning-level semantic caveat when present.",
+      severity: edgeSeverity(metadata.compareGovernanceSemanticDrift),
+      source: "compareGovernanceSemanticDrift",
+    }),
+    createEdge({
+      id: "edge_resilience_to_recoverability",
+      from: "resilience_node",
+      to: "recoverability_node",
+      type: "resilience_recoverability_relation",
+      label: "Resilience to Recoverability",
+      displayLabel: "Recoverability Context",
+      semanticCategory: "lifecycle_propagation",
+      pathMeaning:
+        "Resilience metadata informs recoverability interpretation.",
+      description:
+        "Recoverability remains semantic display context, not a repair function.",
+      severity: edgeSeverity(metadata.compareGovernanceSemanticResilience),
+      source: "compareGovernanceSemanticResilience",
+    }),
+    createEdge({
+      id: "edge_recoverability_to_continuity",
+      from: "recoverability_node",
+      to: "continuity_node",
+      type: "recoverability_continuity_relation",
+      label: "Recoverability to Continuity",
+      displayLabel: "Continuity Context",
+      semanticCategory: "lifecycle_propagation",
+      pathMeaning:
+        "Recoverability metadata informs observability continuity interpretation.",
+      description:
+        "Continuity is projected as an observability caveat only.",
+      severity: edgeSeverity(metadata.compareGovernanceSemanticRecoverability),
+      source: "compareGovernanceSemanticRecoverability",
+    }),
+    createEdge({
+      id: "edge_continuity_to_stability",
+      from: "continuity_node",
+      to: "stability_node",
+      type: "continuity_stability_relation",
+      label: "Continuity to Stability",
+      displayLabel: "Stability Context",
+      semanticCategory: "convergence_path",
+      pathMeaning:
+        "Observability continuity constrains stability interpretation.",
+      description:
+        "This is a semantic relation and never a monitoring or recovery workflow route.",
+      severity: edgeSeverity(
+        metadata.compareGovernanceSemanticObservabilityContinuity,
+      ),
+      source: "compareGovernanceSemanticObservabilityContinuity",
     }),
     createEdge({
       id: "edge_survivability_to_sustainability",
@@ -716,7 +1077,14 @@ function mapSeverity(value: string): InventoryIntegrityGraphSeverity {
       "escalation_required",
       "negative_projection",
       "negative_truth",
+      "risk_critical",
       "unrecoverable",
+      "nonrecoverable_semantics",
+      "collapsed_resilience",
+      "severely_drifting",
+      "contradictory_reasoning",
+      "not_explainable",
+      "audit_missing",
       "unsustainable",
       "unmaintainable",
       "unevolvable",
@@ -730,10 +1098,28 @@ function mapSeverity(value: string): InventoryIntegrityGraphSeverity {
       "warning",
       "review_required",
       "fragile",
+      "fragile_reasoning",
+      "fragile_resilience",
       "limited",
       "degraded",
+      "drift",
+      "drifting_semantics",
+      "slightly_drifting",
       "stale",
       "partial",
+      "partially_coherent",
+      "partially_explainable",
+      "partially_resilient",
+      "partially_recoverable",
+      "partially_continuous",
+      "weakly_explainable",
+      "audit_partial",
+      "audit_weak",
+      "risk_high",
+      "risk_medium",
+      "confidence_low",
+      "confidence_blocked",
+      "freshness_stale",
       "unverified",
       "unavailable",
       "unknown",
@@ -746,6 +1132,14 @@ function mapSeverity(value: string): InventoryIntegrityGraphSeverity {
   if (
     [
       "stable",
+      "coherent",
+      "coherent_reasoning",
+      "explainable",
+      "recoverable",
+      "recoverable_semantics",
+      "resilient_semantics",
+      "continuous_observability",
+      "stable_semantics",
       "maintainable",
       "evolvable",
       "healthy",
@@ -754,6 +1148,10 @@ function mapSeverity(value: string): InventoryIntegrityGraphSeverity {
       "sufficient",
       "aligned",
       "ready",
+      "risk_low",
+      "confidence_high",
+      "freshness_current",
+      "audit_traceable",
     ].includes(normalized)
   ) {
     return "stable";
@@ -795,6 +1193,44 @@ function hasMissingFixtureValues(
   return MAPPING_SPECS.some((spec) => !metadata[spec.key]?.trim());
 }
 
+function appendCoverageWarnings(
+  metadata: InventoryIntegrityGraphAdapterFixtureMetadata,
+  warnings: InventoryIntegrityGraphAdapterWarning[],
+): void {
+  if (
+    !metadata.compareOwnership?.trim() ||
+    !metadata.compareOwnerActionability?.trim()
+  ) {
+    warnings.push("incomplete_fixture", "missing_value");
+  }
+
+  if (
+    !metadata.compareOperatorGuidance?.trim() ||
+    !metadata.compareOperatorMessage?.trim() ||
+    !metadata.compareOperatorSummary?.trim() ||
+    !metadata.compareOperatorTimeline?.trim()
+  ) {
+    warnings.push("incomplete_fixture", "missing_value");
+  }
+
+  if (
+    !metadata.compareGovernanceAuditTrail?.trim() ||
+    !metadata.compareGovernanceExplainability?.trim() ||
+    !metadata.compareGovernanceReasoningCoherence?.trim()
+  ) {
+    warnings.push("incomplete_fixture", "missing_value");
+  }
+
+  if (
+    !metadata.compareGovernanceSemanticDrift?.trim() ||
+    !metadata.compareGovernanceSemanticResilience?.trim() ||
+    !metadata.compareGovernanceSemanticRecoverability?.trim() ||
+    !metadata.compareGovernanceSemanticObservabilityContinuity?.trim()
+  ) {
+    warnings.push("incomplete_fixture", "missing_value");
+  }
+}
+
 function isFixtureMetadata(
   metadata: unknown,
 ): metadata is InventoryIntegrityGraphAdapterFixtureMetadata {
@@ -833,6 +1269,18 @@ function readMetadataField(
     readString(value.readiness) ??
     readString(value.priority) ??
     readString(value.operatorSummary) ??
+    readString(value.operatorGuidance) ??
+    readString(value.operatorMessage) ??
+    readString(value.operatorTimeline) ??
+    readString(value.ownership) ??
+    readString(value.ownerActionability) ??
+    readString(value.governanceAuditTrail) ??
+    readString(value.governanceExplainability) ??
+    readString(value.governanceReasoningCoherence) ??
+    readString(value.governanceSemanticDrift) ??
+    readString(value.governanceSemanticResilience) ??
+    readString(value.governanceSemanticRecoverability) ??
+    readString(value.governanceSemanticObservabilityContinuity) ??
     readString(value.compareConfidence) ??
     readString(value.projectionFreshness) ??
     readString(value.truthAggregationQuality) ??
