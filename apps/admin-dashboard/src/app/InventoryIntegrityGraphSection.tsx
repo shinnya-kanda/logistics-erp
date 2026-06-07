@@ -13,7 +13,7 @@ import {
 import type { InventoryIntegrityGraphAdapterWarning } from "./inventoryIntegrityGraphAdapterTypes";
 import {
   getInventoryIntegrityGraphDataSourceOption,
-  inventoryIntegrityGraphDataSourceOptions,
+  getVisibleInventoryIntegrityGraphDataSourceOptions,
 } from "./inventoryIntegrityGraphDataSourceOptions";
 import type { InventoryIntegrityGraphDataSourceMode } from "./inventoryIntegrityGraphDataSourceTypes";
 import { inventoryIntegrityGraphMockData } from "./inventoryIntegrityGraphMockData";
@@ -598,10 +598,17 @@ export function InventoryIntegrityGraphSection() {
     () => getInventoryIntegrityGraphDataSourceOption(dataSourceMode),
     [dataSourceMode],
   );
+  const visibleDataSourceOptions = useMemo(
+    () => getVisibleInventoryIntegrityGraphDataSourceOptions(),
+    [],
+  );
   const isFallbackUnavailable = dataSourceMode === "fallback_unavailable";
   const isRealCompareGuarded = dataSourceMode === "real_compare_readonly";
   const isUnavailableProjection = isFallbackUnavailable || isRealCompareGuarded;
   const isCompareFixture = dataSourceMode === "compare_fixture";
+  const shouldShowRealCompareGuardedDisclosure =
+    isRealCompareGuarded ||
+    visibleDataSourceOptions.some((option) => option.id === "real_compare_readonly");
   const projectionSteps = useMemo(
     () => graphSourceProjectionSteps(dataSourceMode),
     [dataSourceMode],
@@ -886,7 +893,7 @@ export function InventoryIntegrityGraphSection() {
         <div style={styles.sourcePanel} aria-label="Graph source mode">
           <strong>Graph Source / グラフソース</strong>
           <div style={styles.sourceControls}>
-            {inventoryIntegrityGraphDataSourceOptions.map((option) => {
+            {visibleDataSourceOptions.map((option) => {
               const isDisabled = option.isGuarded && option.isEnabled === false;
 
               return (
@@ -927,13 +934,17 @@ export function InventoryIntegrityGraphSection() {
           <span style={styles.badge}>
             Live Data: {selectedSourceOption.isLiveData ? "yes" : "no"}
           </span>
-          <span style={styles.badge}>
-            Real Compare Readonly: Guarded / 未有効
-          </span>
-          <span style={styles.badge}>
-            Validation Gate Required / 検証ゲート必須
-          </span>
-          <span style={styles.badge}>No Live Fetch / ライブ取得なし</span>
+          {shouldShowRealCompareGuardedDisclosure ? (
+            <>
+              <span style={styles.badge}>
+                Real Compare Readonly: Guarded / 未有効
+              </span>
+              <span style={styles.badge}>
+                Validation Gate Required / 検証ゲート必須
+              </span>
+              <span style={styles.badge}>No Live Fetch / ライブ取得なし</span>
+            </>
+          ) : null}
           {dataSourceMode === "adapter_fixture" ? (
             <>
               <span style={styles.badge}>Not Live Compare Data / 実比較データではありません</span>
@@ -975,19 +986,21 @@ export function InventoryIntegrityGraphSection() {
       </div>
       <BoundaryBadges />
 
-      <section style={styles.keyboardHelp} aria-label="Real compare guarded disclosure">
-        <strong>Guarded Disclosure / ガード中ソース開示:</strong>{" "}
-        real_compare_readonly is guarded and not enabled in this phase. /
-        実比較データ（読み取り専用）は現在ガード中で、このフェーズでは有効化されていません。
-        <div style={styles.badgeRow}>
-          <span style={styles.badge}>Guarded Source / ガード中ソース</span>
-          <span style={styles.badge}>Not Enabled / 未有効</span>
-          <span style={styles.badge}>No Live Fetch / ライブ取得なし</span>
-          <span style={styles.badge}>No API / API 接続なし</span>
-          <span style={styles.badge}>No DB / DB 接続なし</span>
-          <span style={styles.badge}>No Mutation / データ変更なし</span>
-        </div>
-      </section>
+      {shouldShowRealCompareGuardedDisclosure ? (
+        <section style={styles.keyboardHelp} aria-label="Real compare guarded disclosure">
+          <strong>Guarded Disclosure / ガード中ソース開示:</strong>{" "}
+          real_compare_readonly is guarded and not enabled in this phase. /
+          実比較データ（読み取り専用）は現在ガード中で、このフェーズでは有効化されていません。
+          <div style={styles.badgeRow}>
+            <span style={styles.badge}>Guarded Source / ガード中ソース</span>
+            <span style={styles.badge}>Not Enabled / 未有効</span>
+            <span style={styles.badge}>No Live Fetch / ライブ取得なし</span>
+            <span style={styles.badge}>No API / API 接続なし</span>
+            <span style={styles.badge}>No DB / DB 接続なし</span>
+            <span style={styles.badge}>No Mutation / データ変更なし</span>
+          </div>
+        </section>
+      ) : null}
 
       {isCompareFixture ? (
         <section

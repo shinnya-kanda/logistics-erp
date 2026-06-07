@@ -24,5 +24,5 @@ export interface InventoryIntegrityGraphDataSourceOption {
   readonly isEnabled?: boolean;
 }
 
-// B77-46 exposes real_compare_readonly as a guarded disabled mode only.
+// B77-47 keeps real_compare_readonly typed, guarded, and hidden behind a false flag.
 // It must not fetch or load live compare data until a later validation gate passes.

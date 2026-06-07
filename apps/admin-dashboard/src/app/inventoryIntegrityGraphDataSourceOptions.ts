@@ -2,6 +2,7 @@ import type {
   InventoryIntegrityGraphDataSourceMode,
   InventoryIntegrityGraphDataSourceOption,
 } from "./inventoryIntegrityGraphDataSourceTypes";
+import { ENABLE_REAL_COMPARE_READONLY_GRAPH_SOURCE } from "./inventoryIntegrityGraphFeatureFlags";
 
 export const inventoryIntegrityGraphDataSourceOptions: readonly InventoryIntegrityGraphDataSourceOption[] = [
   {
@@ -66,4 +67,14 @@ export function getInventoryIntegrityGraphDataSourceOption(
   );
 }
 
-// real_compare_readonly is intentionally exposed as guarded and disabled in B77-46.
+export function getVisibleInventoryIntegrityGraphDataSourceOptions(): readonly InventoryIntegrityGraphDataSourceOption[] {
+  if (ENABLE_REAL_COMPARE_READONLY_GRAPH_SOURCE) {
+    return inventoryIntegrityGraphDataSourceOptions;
+  }
+
+  return inventoryIntegrityGraphDataSourceOptions.filter(
+    (option) => option.id !== "real_compare_readonly",
+  );
+}
+
+// real_compare_readonly is defined, but hidden unless the B77-47 flag is enabled.
