@@ -28,8 +28,9 @@ export const inventoryIntegrityGraphDataSourceOptions: readonly InventoryIntegri
     label: "Graph Unavailable / グラフ利用不可",
     shortLabel: "Fallback",
     trustLevel: "Safety fallback",
-    disclosure: "Fallback graph state",
-    caveat: "Adapter Graph Unavailable / アダプタグラフ利用不可",
+    disclosure: "Unavailable Graph Projection",
+    caveat:
+      "Not live compare data / 実比較データではありません。Not healthy graph / 正常グラフではありません。",
     isLiveData: false,
   },
 ];

@@ -52,6 +52,92 @@ const MOCK_PROJECTION_STEPS = [
   "Graph UI Rendering",
 ] as const;
 
+type WarningDisplay = {
+  readonly label: string;
+  readonly cause: string;
+};
+
+const WARNING_DISPLAY_LABELS: Record<
+  InventoryIntegrityGraphAdapterWarning,
+  WarningDisplay
+> = {
+  missing_compare_response: {
+    label: "missing compare response / 比較レスポンス不足",
+    cause: "Compare response was not available for graph projection.",
+  },
+  missing_metadata: {
+    label: "missing metadata / メタデータ不足",
+    cause: "Metadata required for graph projection was not present.",
+  },
+  missing_value: {
+    label: "missing value / 値不足",
+    cause: "Expected semantic value was not present.",
+  },
+  missing_summary: {
+    label: "missing summary / 要約不足",
+    cause: "Summary projection could not be read safely.",
+  },
+  missing_node: {
+    label: "missing node / ノード不足",
+    cause: "Node projection could not be read safely.",
+  },
+  missing_edge: {
+    label: "missing edge / 関係線不足",
+    cause: "Edge projection could not be read safely.",
+  },
+  missing_reason: {
+    label: "missing reason / 理由不足",
+    cause: "Reason text was not available.",
+  },
+  missing_source: {
+    label: "missing source / 根拠不足",
+    cause: "Source metadata was not available.",
+  },
+  missing_signals: {
+    label: "missing signals / シグナル不足",
+    cause: "Signal list was not available.",
+  },
+  incomplete_relation: {
+    label: "incomplete relation / 不完全な関係",
+    cause: "Graph relation could not be completed safely.",
+  },
+  incomplete_fixture: {
+    label: "incomplete fixture / 不完全なフィクスチャ",
+    cause: "Fixture metadata is partial.",
+  },
+  unsupported_metadata_shape: {
+    label: "unsupported metadata shape / 未対応のメタデータ形式",
+    cause: "Metadata shape was not supported by this projection.",
+  },
+  extracted_compare_fixture_metadata: {
+    label: "extracted compare fixture metadata / 比較フィクスチャメタデータ抽出済み",
+    cause: "Fixture metadata was read for adapter verification only.",
+  },
+  normalized_non_string_metadata: {
+    label: "normalized non-string metadata / 非文字列メタデータ正規化",
+    cause: "Object metadata was normalized into display text.",
+  },
+  fallback_used: {
+    label: "fallback used / フォールバック使用",
+    cause: "Unavailable projection was selected for safe display.",
+  },
+  graph_unavailable: {
+    label: "graph unavailable / グラフ利用不可",
+    cause: "Healthy graph data is not available.",
+  },
+  adapter_unavailable: {
+    label: "adapter unavailable / アダプタ利用不可",
+    cause: "Adapter projection could not continue safely.",
+  },
+};
+
+const FALLBACK_UNAVAILABLE_REASONS: readonly InventoryIntegrityGraphAdapterWarning[] = [
+  "missing_metadata",
+  "unsupported_metadata_shape",
+  "adapter_unavailable",
+  "fallback_used",
+];
+
 function selectGraphData(
   mode: InventoryIntegrityGraphDataSourceMode,
 ): InventoryIntegrityGraphData {
@@ -147,6 +233,19 @@ const styles: Record<string, CSSProperties> = {
     color: "#37474f",
     lineHeight: 1.6,
     fontSize: "0.88rem",
+  },
+  unavailablePanel: {
+    margin: "1rem 0",
+    padding: "1rem",
+    border: "2px solid #ef6c00",
+    borderRadius: "12px",
+    background: "#fff7ed",
+    color: "#4e342e",
+  },
+  unavailableTitle: {
+    margin: "0 0 0.45rem",
+    color: "#bf360c",
+    fontSize: "1.05rem",
   },
   readOnlyBadge: {
     borderColor: "#0d47a1",
@@ -417,6 +516,7 @@ export function InventoryIntegrityGraphSection() {
     () => getInventoryIntegrityGraphDataSourceOption(dataSourceMode),
     [dataSourceMode],
   );
+  const isFallbackUnavailable = dataSourceMode === "fallback_unavailable";
   const projectionSteps = useMemo(
     () => graphSourceProjectionSteps(dataSourceMode),
     [dataSourceMode],
@@ -477,6 +577,34 @@ export function InventoryIntegrityGraphSection() {
         ["Disclosure", selectedSourceOption.disclosure],
         ["Caveat", selectedSourceOption.caveat],
         ["Projection", projectionSteps.join(" -> ")],
+        ...(isFallbackUnavailable
+          ? ([
+              [
+                "Unavailable State",
+                "This graph is an unavailable projection. / このグラフは利用不可状態の投影です。",
+              ],
+              [
+                "Live Compare Data",
+                "It is not live compare data. / 実比較データではありません。",
+              ],
+              [
+                "Workflow Action",
+                "No workflow action is available. / 実行操作はありません。",
+              ],
+              [
+                "Warning Causes",
+                FALLBACK_UNAVAILABLE_REASONS.map(
+                  (warning) => WARNING_DISPLAY_LABELS[warning].label,
+                ).join(", "),
+              ],
+              [
+                "Cause Detail",
+                FALLBACK_UNAVAILABLE_REASONS.map(
+                  (warning) => WARNING_DISPLAY_LABELS[warning].cause,
+                ).join(" / "),
+              ],
+            ] as const)
+          : []),
         ["境界 / Boundary", graphData.metadata.readOnlyBoundary],
       ];
     }
@@ -518,6 +646,7 @@ export function InventoryIntegrityGraphSection() {
     activeInspectorTab,
     dataSourceMode,
     graphData.metadata.readOnlyBoundary,
+    isFallbackUnavailable,
     projectionSteps,
     selectedSourceOption,
     selectedEdge,
@@ -634,13 +763,50 @@ export function InventoryIntegrityGraphSection() {
           ) : null}
           {dataSourceMode === "fallback_unavailable" ? (
             <>
-              <span style={styles.badge}>Safety Fallback Active</span>
-              <span style={styles.badge}>Unavailable Graph Projection</span>
+              <span style={styles.badge}>Safety Fallback Active / 安全側フォールバック中</span>
+              <span style={styles.badge}>Graph Unavailable / グラフ利用不可</span>
+              <span style={styles.badge}>Unavailable Projection / 利用不可状態の投影</span>
             </>
           ) : null}
         </div>
       </div>
       <BoundaryBadges />
+
+      {isFallbackUnavailable ? (
+        <section style={styles.unavailablePanel} aria-labelledby="graph-unavailable-heading">
+          <h3 id="graph-unavailable-heading" style={styles.unavailableTitle}>
+            Graph Unavailable / グラフ利用不可
+          </h3>
+          <div style={styles.badgeRow}>
+            <span style={styles.badge}>
+              Safety Fallback Active / 安全側フォールバック中
+            </span>
+            <span style={styles.badge}>
+              Unavailable Projection / 利用不可状態の投影
+            </span>
+            <span style={styles.badge}>
+              Not Live Compare Data / 実比較データではありません
+            </span>
+            <span style={styles.badge}>
+              No Execution Action / 実行操作はありません
+            </span>
+          </div>
+          <p style={styles.lead}>
+            This graph is an unavailable projection. It is not live compare data.
+            No workflow action is available. / このグラフは利用不可状態の投影です。
+            実比較データではありません。実行操作はありません。
+          </p>
+          <ul style={styles.compactList} aria-label="Unavailable graph reasons">
+            {FALLBACK_UNAVAILABLE_REASONS.map((warning) => (
+              <li key={warning}>
+                <span style={styles.badge} title={WARNING_DISPLAY_LABELS[warning].cause}>
+                  {WARNING_DISPLAY_LABELS[warning].label}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       <p style={styles.keyboardHelp}>
         キーボード操作 / Keyboard navigation: Tab で移動し、Enter または Space
@@ -678,11 +844,13 @@ export function InventoryIntegrityGraphSection() {
           <ul style={styles.compactList} aria-label="Adapter warning list">
             {sourceWarnings.map((warning) => (
               <li key={warning}>
-                <span style={styles.badge}>{warning}</span>
+                <span style={styles.badge} title={WARNING_DISPLAY_LABELS[warning].cause}>
+                  {WARNING_DISPLAY_LABELS[warning].label}
+                </span>
               </li>
             ))}
           </ul>
-          表示上の注意情報のみで、retry・修復・同期・実行操作はありません。
+          表示上の注意情報のみです。No workflow action is available / 実行操作はありません。
         </div>
       ) : null}
 
@@ -724,6 +892,9 @@ export function InventoryIntegrityGraphSection() {
           <p style={styles.lead}>
             {graphSourceDisplayLabel(dataSourceMode)} の summary を表示します。クリックは local
             state の表示切替のみです。
+            {isFallbackUnavailable
+              ? " Unavailable placeholder summary / 利用不可 placeholder 要約として表示しています。"
+              : ""}
           </p>
           <div style={styles.cardGrid}>
             {orderedSummaries.map((card) => (
@@ -818,6 +989,9 @@ export function InventoryIntegrityGraphSection() {
               <p style={styles.lead}>
                 選択中 graph source の metadata を確認します。理由・根拠・シグナルをここで読みます。
                 切替は表示変更のみです。
+                {isFallbackUnavailable
+                  ? " fallback_unavailable は正常データではなく、利用不可状態の説明です。"
+                  : ""}
               </p>
             </div>
             <BoundaryBadges />
