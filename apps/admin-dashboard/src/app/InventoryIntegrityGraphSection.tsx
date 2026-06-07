@@ -6,7 +6,10 @@ import {
   createUnavailableGraphData,
   extractGraphFixtureMetadata,
 } from "./inventoryIntegrityGraphAdapter";
-import { sampleInventoryIntegrityCompareResponseFixture } from "./inventoryIntegrityGraphAdapterFixtures";
+import {
+  inventoryIntegrityCompareContractValidationFixtures,
+  sampleInventoryIntegrityCompareResponseFixture,
+} from "./inventoryIntegrityGraphAdapterFixtures";
 import type { InventoryIntegrityGraphAdapterWarning } from "./inventoryIntegrityGraphAdapterTypes";
 import {
   getInventoryIntegrityGraphDataSourceOption,
@@ -41,6 +44,13 @@ const ADAPTER_FIXTURE_PROJECTION_STEPS = [
   "Graph UI Rendering",
 ] as const;
 
+const COMPARE_FIXTURE_PROJECTION_STEPS = [
+  "Contract Validation Fixture",
+  "buildInventoryIntegrityGraphData",
+  "InventoryIntegrityGraphData",
+  "Graph UI Rendering",
+] as const;
+
 const FALLBACK_PROJECTION_STEPS = [
   "createUnavailableGraphData()",
   "Unavailable Graph Projection",
@@ -51,6 +61,9 @@ const MOCK_PROJECTION_STEPS = [
   "inventoryIntegrityGraphMockData",
   "Graph UI Rendering",
 ] as const;
+
+type CompareContractFixtureId =
+  (typeof inventoryIntegrityCompareContractValidationFixtures)[number]["id"];
 
 type WarningDisplay = {
   readonly label: string;
@@ -140,9 +153,14 @@ const FALLBACK_UNAVAILABLE_REASONS: readonly InventoryIntegrityGraphAdapterWarni
 
 function selectGraphData(
   mode: InventoryIntegrityGraphDataSourceMode,
+  compareFixtureGraphData: InventoryIntegrityGraphData,
 ): InventoryIntegrityGraphData {
   if (mode === "adapter_fixture") {
     return adapterGraphResult.graphData;
+  }
+
+  if (mode === "compare_fixture") {
+    return compareFixtureGraphData;
   }
 
   if (mode === "fallback_unavailable") {
@@ -154,9 +172,14 @@ function selectGraphData(
 
 function graphSourceWarnings(
   mode: InventoryIntegrityGraphDataSourceMode,
+  compareFixtureWarnings: readonly InventoryIntegrityGraphAdapterWarning[],
 ): readonly InventoryIntegrityGraphAdapterWarning[] {
   if (mode === "adapter_fixture") {
     return adapterGraphResult.warnings;
+  }
+
+  if (mode === "compare_fixture") {
+    return compareFixtureWarnings;
   }
 
   if (mode === "fallback_unavailable") {
@@ -176,6 +199,10 @@ function graphSourceProjectionSteps(
 ): readonly string[] {
   if (mode === "adapter_fixture") {
     return ADAPTER_FIXTURE_PROJECTION_STEPS;
+  }
+
+  if (mode === "compare_fixture") {
+    return COMPARE_FIXTURE_PROJECTION_STEPS;
   }
 
   if (mode === "fallback_unavailable") {
@@ -502,21 +529,50 @@ function BoundaryBadges() {
 }
 
 export function InventoryIntegrityGraphSection() {
+  const defaultCompareFixtureId =
+    inventoryIntegrityCompareContractValidationFixtures[0]?.id ?? "full_metadata";
+  const [selectedCompareFixtureId, setSelectedCompareFixtureId] =
+    useState<CompareContractFixtureId>(defaultCompareFixtureId);
+  const selectedCompareFixture = useMemo(
+    () =>
+      inventoryIntegrityCompareContractValidationFixtures.find(
+        (fixture) => fixture.id === selectedCompareFixtureId,
+      ) ?? null,
+    [selectedCompareFixtureId],
+  );
+  const compareFixtureGraphResult = useMemo(() => {
+    if (!selectedCompareFixture) {
+      return {
+        graphData: createUnavailableGraphData(),
+        warnings: [
+          "adapter_unavailable",
+          "fallback_used",
+          "graph_unavailable",
+        ] as const satisfies readonly InventoryIntegrityGraphAdapterWarning[],
+      };
+    }
+
+    return buildInventoryIntegrityGraphData({
+      compareResponse: selectedCompareFixture.response,
+      sourceKind: "graph_adapter_fixture",
+    });
+  }, [selectedCompareFixture]);
   const [dataSourceMode, setDataSourceMode] =
     useState<InventoryIntegrityGraphDataSourceMode>("mock");
   const graphData = useMemo(
-    () => selectGraphData(dataSourceMode),
-    [dataSourceMode],
+    () => selectGraphData(dataSourceMode, compareFixtureGraphResult.graphData),
+    [compareFixtureGraphResult.graphData, dataSourceMode],
   );
   const sourceWarnings = useMemo(
-    () => graphSourceWarnings(dataSourceMode),
-    [dataSourceMode],
+    () => graphSourceWarnings(dataSourceMode, compareFixtureGraphResult.warnings),
+    [compareFixtureGraphResult.warnings, dataSourceMode],
   );
   const selectedSourceOption = useMemo(
     () => getInventoryIntegrityGraphDataSourceOption(dataSourceMode),
     [dataSourceMode],
   );
   const isFallbackUnavailable = dataSourceMode === "fallback_unavailable";
+  const isCompareFixture = dataSourceMode === "compare_fixture";
   const projectionSteps = useMemo(
     () => graphSourceProjectionSteps(dataSourceMode),
     [dataSourceMode],
@@ -577,6 +633,21 @@ export function InventoryIntegrityGraphSection() {
         ["Disclosure", selectedSourceOption.disclosure],
         ["Caveat", selectedSourceOption.caveat],
         ["Projection", projectionSteps.join(" -> ")],
+        ...(isCompareFixture
+          ? ([
+              ["Compare Fixture", selectedCompareFixture?.label ?? "fixture unavailable"],
+              [
+                "Fixture Purpose",
+                selectedCompareFixture?.purpose ?? "Fixture metadata is unavailable.",
+              ],
+              [
+                "Expected Behavior",
+                selectedCompareFixture?.expectedBehavior ??
+                  "Adapter should fall back safely when fixture is unavailable.",
+              ],
+              ["Fixture Mode", "Contract Validation Fixture / Shape Verification Only"],
+            ] as const)
+          : []),
         ...(isFallbackUnavailable
           ? ([
               [
@@ -646,8 +717,10 @@ export function InventoryIntegrityGraphSection() {
     activeInspectorTab,
     dataSourceMode,
     graphData.metadata.readOnlyBoundary,
+    isCompareFixture,
     isFallbackUnavailable,
     projectionSteps,
+    selectedCompareFixture,
     selectedSourceOption,
     selectedEdge,
     selectedEdgeFromLabel,
@@ -657,13 +730,45 @@ export function InventoryIntegrityGraphSection() {
   ]);
 
   function selectDataSourceMode(nextMode: InventoryIntegrityGraphDataSourceMode) {
-    const nextGraphData = selectGraphData(nextMode);
+    const nextGraphData = selectGraphData(
+      nextMode,
+      compareFixtureGraphResult.graphData,
+    );
     setDataSourceMode(nextMode);
     setActiveViewMode("overview");
     setSelectedSummaryId(nextGraphData.defaultSummaryId);
     setSelectedNodeId(nextGraphData.defaultNodeId);
     setSelectedEdgeId(nextGraphData.defaultEdgeId);
     setHighlightedPathId(nextGraphData.defaultHighlightedPathId);
+    setActiveInspectorTab("summary");
+  }
+
+  function selectCompareFixture(nextFixtureId: CompareContractFixtureId) {
+    const nextFixture =
+      inventoryIntegrityCompareContractValidationFixtures.find(
+        (fixture) => fixture.id === nextFixtureId,
+      ) ?? null;
+    const nextGraphResult = nextFixture
+      ? buildInventoryIntegrityGraphData({
+          compareResponse: nextFixture.response,
+          sourceKind: "graph_adapter_fixture",
+        })
+      : {
+          graphData: createUnavailableGraphData(),
+          warnings: [
+            "adapter_unavailable",
+            "fallback_used",
+            "graph_unavailable",
+          ] as const satisfies readonly InventoryIntegrityGraphAdapterWarning[],
+        };
+
+    setSelectedCompareFixtureId(nextFixtureId);
+    setDataSourceMode("compare_fixture");
+    setActiveViewMode("overview");
+    setSelectedSummaryId(nextGraphResult.graphData.defaultSummaryId);
+    setSelectedNodeId(nextGraphResult.graphData.defaultNodeId);
+    setSelectedEdgeId(nextGraphResult.graphData.defaultEdgeId);
+    setHighlightedPathId(nextGraphResult.graphData.defaultHighlightedPathId);
     setActiveInspectorTab("summary");
   }
 
@@ -761,6 +866,17 @@ export function InventoryIntegrityGraphSection() {
               </span>
             </>
           ) : null}
+          {isCompareFixture ? (
+            <>
+              <span style={styles.badge}>Compare Fixture Mode</span>
+              <span style={styles.badge}>Contract Validation Fixture</span>
+              <span style={styles.badge}>Shape Verification Only</span>
+              <span style={styles.badge}>Not Live Compare Data / 実比較データではありません</span>
+              <span style={styles.badge}>
+                Selected Fixture: {selectedCompareFixture?.label ?? "unavailable"}
+              </span>
+            </>
+          ) : null}
           {dataSourceMode === "fallback_unavailable" ? (
             <>
               <span style={styles.badge}>Safety Fallback Active / 安全側フォールバック中</span>
@@ -771,6 +887,62 @@ export function InventoryIntegrityGraphSection() {
         </div>
       </div>
       <BoundaryBadges />
+
+      {isCompareFixture ? (
+        <section
+          style={styles.keyboardHelp}
+          aria-labelledby="compare-fixture-selector-heading"
+        >
+          <h3 id="compare-fixture-selector-heading" style={styles.unavailableTitle}>
+            Compare Fixture Mode / 比較レスポンスフィクスチャ
+          </h3>
+          <div style={styles.badgeRow}>
+            <span style={styles.badge}>Contract Validation Fixture</span>
+            <span style={styles.badge}>Shape Verification Only</span>
+            <span style={styles.badge}>Not Live Compare Data / 実比較データではありません</span>
+            <span style={styles.badge}>No API / API 接続なし</span>
+            <span style={styles.badge}>No DB / DB 接続なし</span>
+            <span style={styles.badge}>No Mutation / データ変更なし</span>
+          </div>
+          <p style={styles.lead}>
+            contract validation fixture を graph adapter に渡し、Graph UI で表示確認します。
+            fetch、route call、Supabase、DB、workflow execution は行いません。
+          </p>
+          <div style={styles.sourceControls} aria-label="Compare fixture selector">
+            {inventoryIntegrityCompareContractValidationFixtures.map((fixture) => (
+              <button
+                key={fixture.id}
+                type="button"
+                className="inventory-graph-focusable"
+                style={{
+                  ...styles.filterButton,
+                  width: "auto",
+                  marginTop: 0,
+                  ...(selectedCompareFixtureId === fixture.id
+                    ? styles.activeFilterButton
+                    : {}),
+                }}
+                onClick={() => selectCompareFixture(fixture.id)}
+                aria-pressed={selectedCompareFixtureId === fixture.id}
+                aria-label={`Compare fixture を ${fixture.label} に切替 / Change compare fixture to ${fixture.label}. Display-only. No API. No execution action.`}
+                title={fixture.expectedBehavior}
+              >
+                {fixture.label}
+              </button>
+            ))}
+          </div>
+          <div style={styles.badgeRow}>
+            <span style={styles.badge}>
+              Selected Fixture: {selectedCompareFixture?.label ?? "unavailable"}
+            </span>
+            <span style={styles.badge}>
+              Expected Behavior:{" "}
+              {selectedCompareFixture?.expectedBehavior ??
+                "Fallback unavailable projection should be used."}
+            </span>
+          </div>
+        </section>
+      ) : null}
 
       {isFallbackUnavailable ? (
         <section style={styles.unavailablePanel} aria-labelledby="graph-unavailable-heading">
