@@ -22,7 +22,9 @@ export interface InventoryIntegrityGraphDataSourceOption {
   readonly isLiveData: boolean;
   readonly isGuarded?: boolean;
   readonly isEnabled?: boolean;
+  readonly isAdminOnly?: boolean;
+  readonly adminDisclosure?: string;
 }
 
-// B77-47 keeps real_compare_readonly typed, guarded, and hidden behind a false flag.
-// It must not fetch or load live compare data until a later validation gate passes.
+// B77-49 keeps real_compare_readonly typed, guarded, and hidden behind false flags.
+// It must not fetch or load live compare data until later admin and validation gates pass.

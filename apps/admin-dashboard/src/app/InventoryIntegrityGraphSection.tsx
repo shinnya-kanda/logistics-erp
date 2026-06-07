@@ -59,6 +59,7 @@ const FALLBACK_PROJECTION_STEPS = [
 
 const REAL_COMPARE_GUARDED_PROJECTION_STEPS = [
   "real_compare_readonly guarded source",
+  "Admin Only Guard Required",
   "Validation Gate Required",
   "createUnavailableGraphData()",
   "fallback_unavailable",
@@ -668,6 +669,16 @@ export function InventoryIntegrityGraphSection() {
         ["Trust Level", selectedSourceOption.trustLevel],
         ["Disclosure", selectedSourceOption.disclosure],
         ["Caveat", selectedSourceOption.caveat],
+        ...(selectedSourceOption.isAdminOnly
+          ? ([
+              ["Admin Only", "Admin Only / 管理者限定"],
+              [
+                "Admin Disclosure",
+                selectedSourceOption.adminDisclosure ??
+                  "Static admin guard required. / static admin guard が必要です。",
+              ],
+            ] as const)
+          : []),
         ["Projection", projectionSteps.join(" -> ")],
         ...(isCompareFixture
           ? ([
@@ -714,6 +725,10 @@ export function InventoryIntegrityGraphSection() {
           : []),
         ...(isRealCompareGuarded
           ? ([
+              [
+                "Admin Only",
+                "Admin Only / 管理者限定。Static admin guard visibility only. Auth / role implementation is not included.",
+              ],
               [
                 "Guarded Source",
                 "real_compare_readonly is guarded and not enabled in this phase. / 実比較データ（読み取り専用）は現在ガード中で、このフェーズでは有効化されていません。",
@@ -914,10 +929,10 @@ export function InventoryIntegrityGraphSection() {
                   aria-pressed={dataSourceMode === option.id}
                   aria-label={
                     isDisabled
-                      ? `${option.label} は Guarded / 未有効です。Validation Gate Required. No Live Fetch. No API. No execution action.`
+                      ? `${option.label} は Guarded / 未有効です。Admin Only. Validation Gate Required. No Live Fetch. No API. No execution action.`
                       : `Graph source を ${option.label} に切替 / Change graph source to ${option.label}. Display-only Toggle. No API. No execution action.`
                   }
-                  title={`${option.trustLevel}. ${option.disclosure}. ${option.caveat}`}
+                  title={`${option.trustLevel}. ${option.disclosure}. ${option.caveat}${option.adminDisclosure ? ` ${option.adminDisclosure}` : ""}`}
                 >
                   {option.shortLabel}
                 </button>
@@ -930,12 +945,18 @@ export function InventoryIntegrityGraphSection() {
           <span style={styles.badge}>Trust: {selectedSourceOption.trustLevel}</span>
           <span style={styles.badge}>{selectedSourceOption.disclosure}</span>
           <span style={styles.badge}>{selectedSourceOption.caveat}</span>
+          {selectedSourceOption.isAdminOnly ? (
+            <span style={styles.badge}>
+              {selectedSourceOption.adminDisclosure ?? "Admin Only / 管理者限定"}
+            </span>
+          ) : null}
           <span style={styles.badge}>Display-only Toggle / 表示切替のみ</span>
           <span style={styles.badge}>
             Live Data: {selectedSourceOption.isLiveData ? "yes" : "no"}
           </span>
           {shouldShowRealCompareGuardedDisclosure ? (
             <>
+              <span style={styles.badge}>Admin Only / 管理者限定</span>
               <span style={styles.badge}>
                 Real Compare Readonly: Guarded / 未有効
               </span>
@@ -974,6 +995,7 @@ export function InventoryIntegrityGraphSection() {
           ) : null}
           {isRealCompareGuarded ? (
             <>
+              <span style={styles.badge}>Admin Only / 管理者限定</span>
               <span style={styles.badge}>Guarded Source / ガード中ソース</span>
               <span style={styles.badge}>Not Enabled / 未有効</span>
               <span style={styles.badge}>No Live Fetch / ライブ取得なし</span>
@@ -992,6 +1014,7 @@ export function InventoryIntegrityGraphSection() {
           real_compare_readonly is guarded and not enabled in this phase. /
           実比較データ（読み取り専用）は現在ガード中で、このフェーズでは有効化されていません。
           <div style={styles.badgeRow}>
+            <span style={styles.badge}>Admin Only / 管理者限定</span>
             <span style={styles.badge}>Guarded Source / ガード中ソース</span>
             <span style={styles.badge}>Not Enabled / 未有効</span>
             <span style={styles.badge}>No Live Fetch / ライブ取得なし</span>
@@ -1078,6 +1101,7 @@ export function InventoryIntegrityGraphSection() {
             </span>
             {isRealCompareGuarded ? (
               <>
+                <span style={styles.badge}>Admin Only / 管理者限定</span>
                 <span style={styles.badge}>Guarded Source / ガード中ソース</span>
                 <span style={styles.badge}>Not Enabled / 未有効</span>
                 <span style={styles.badge}>No Live Fetch / ライブ取得なし</span>
