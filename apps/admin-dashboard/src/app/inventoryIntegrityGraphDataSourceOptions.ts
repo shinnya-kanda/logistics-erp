@@ -24,6 +24,16 @@ export const inventoryIntegrityGraphDataSourceOptions: readonly InventoryIntegri
     isLiveData: false,
   },
   {
+    id: "compare_fixture",
+    label: "Compare Fixture / 比較レスポンスフィクスチャ",
+    shortLabel: "Compare Fixture",
+    trustLevel: "Shape verification only",
+    disclosure: "Contract validation fixture",
+    caveat:
+      "Not live compare data. Used for adapter contract validation only. / 実比較データではありません。アダプタ契約検証用のみ。",
+    isLiveData: false,
+  },
+  {
     id: "fallback_unavailable",
     label: "Graph Unavailable / グラフ利用不可",
     shortLabel: "Fallback",

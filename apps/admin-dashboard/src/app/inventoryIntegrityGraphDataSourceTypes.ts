@@ -1,11 +1,13 @@
 export type InventoryIntegrityGraphDataSourceMode =
   | "mock"
   | "adapter_fixture"
+  | "compare_fixture"
   | "fallback_unavailable";
 
 export type InventoryIntegrityGraphDataSourceTrustLevel =
   | "Demo only"
   | "Adapter verification only"
+  | "Shape verification only"
   | "Safety fallback";
 
 export interface InventoryIntegrityGraphDataSourceOption {
