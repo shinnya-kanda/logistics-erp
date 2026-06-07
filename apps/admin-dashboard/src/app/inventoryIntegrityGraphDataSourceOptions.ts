@@ -34,6 +34,18 @@ export const inventoryIntegrityGraphDataSourceOptions: readonly InventoryIntegri
     isLiveData: false,
   },
   {
+    id: "real_compare_readonly",
+    label: "Real Compare Readonly / 実比較データ（読み取り専用）",
+    shortLabel: "Real Compare",
+    trustLevel: "Guarded live source",
+    disclosure: "Guarded source mode. Not enabled in this phase.",
+    caveat:
+      "Requires validation gate. Falls back to unavailable graph. / 検証ゲート必須。利用不可グラフへフォールバックします。",
+    isLiveData: false,
+    isGuarded: true,
+    isEnabled: false,
+  },
+  {
     id: "fallback_unavailable",
     label: "Graph Unavailable / グラフ利用不可",
     shortLabel: "Fallback",
@@ -54,4 +66,4 @@ export function getInventoryIntegrityGraphDataSourceOption(
   );
 }
 
-// Future candidate only. B77-37 intentionally does not expose real_compare_readonly.
+// real_compare_readonly is intentionally exposed as guarded and disabled in B77-46.

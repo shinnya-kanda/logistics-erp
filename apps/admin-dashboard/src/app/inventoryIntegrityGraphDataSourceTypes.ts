@@ -2,12 +2,14 @@ export type InventoryIntegrityGraphDataSourceMode =
   | "mock"
   | "adapter_fixture"
   | "compare_fixture"
+  | "real_compare_readonly"
   | "fallback_unavailable";
 
 export type InventoryIntegrityGraphDataSourceTrustLevel =
   | "Demo only"
   | "Adapter verification only"
   | "Shape verification only"
+  | "Guarded live source"
   | "Safety fallback";
 
 export interface InventoryIntegrityGraphDataSourceOption {
@@ -18,7 +20,9 @@ export interface InventoryIntegrityGraphDataSourceOption {
   readonly disclosure: string;
   readonly caveat: string;
   readonly isLiveData: boolean;
+  readonly isGuarded?: boolean;
+  readonly isEnabled?: boolean;
 }
 
-// Future candidate only. B77-37 does not implement real compare data mode.
-// real_compare_readonly must remain behind a separate read-only integration gate.
+// B77-46 exposes real_compare_readonly as a guarded disabled mode only.
+// It must not fetch or load live compare data until a later validation gate passes.
