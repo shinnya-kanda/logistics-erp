@@ -131,6 +131,14 @@ export interface InventoryIntegrityCompareResponseFixture {
   readonly rawPayloadMetadata?: unknown;
 }
 
+export interface InventoryIntegrityGraphContractValidationFixture {
+  readonly id: string;
+  readonly label: string;
+  readonly purpose: string;
+  readonly expectedBehavior: string;
+  readonly response: unknown;
+}
+
 export interface InventoryIntegrityGraphAdapterInput {
   readonly compareResponse: unknown;
   readonly sourceKind?: InventoryIntegrityGraphAdapterSourceKind;
