@@ -44,6 +44,17 @@ export type RealCompareFixtureId =
   | "source_divergence"
   | "enum_drift";
 
+export type RealCompareFixtureName =
+  | "fullMetadataCompareResponseFixture"
+  | "missingMetadataCompareResponseFixture"
+  | "nestedMetadataCompareResponseFixture"
+  | "partialLifecycleCompareResponseFixture"
+  | "unsupportedShapeCompareResponseFixture"
+  | "driftedKeyCompareResponseFixture"
+  | "unavailableCompareResponseFixture"
+  | "sourceDivergenceCompareResponseFixture"
+  | "enumDriftCompareResponseFixture";
+
 export type RealCompareValidationResult = {
   readonly gateId: RealCompareValidationGateId;
   readonly status: RealCompareValidationStatus;
@@ -71,11 +82,20 @@ export type RealCompareGuardedAvailability = {
   readonly validation?: RealCompareValidationSummary;
 };
 
+export type RealCompareExpectedGateOutcome = {
+  readonly gateId: RealCompareValidationGateId;
+  readonly expectedStatus: RealCompareValidationStatus;
+  readonly expectedSeverity: RealCompareValidationSeverity;
+  readonly expectedBlocking: boolean;
+  readonly reason: string;
+};
+
 export type RealCompareValidationFixtureMapping = {
   readonly fixtureId: RealCompareFixtureId;
-  readonly primaryGateId: RealCompareValidationGateId;
-  readonly secondaryGateIds: readonly RealCompareValidationGateId[];
-  readonly expectedStatus: RealCompareValidationStatus;
-  readonly expectedFallbackRequired: boolean;
+  readonly fixtureName: RealCompareFixtureName;
+  readonly description: string;
+  readonly expectedOutcomes: readonly RealCompareExpectedGateOutcome[];
+  readonly expectedReadOnlyGraphAvailability: boolean;
+  readonly expectedBlockingFailure: boolean;
   readonly readOnlyPurpose: string;
 };
