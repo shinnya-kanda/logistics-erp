@@ -57,6 +57,14 @@ const FALLBACK_PROJECTION_STEPS = [
   "Graph UI Rendering",
 ] as const;
 
+const REAL_COMPARE_GUARDED_PROJECTION_STEPS = [
+  "real_compare_readonly guarded source",
+  "Validation Gate Required",
+  "createUnavailableGraphData()",
+  "fallback_unavailable",
+  "Graph UI Rendering",
+] as const;
+
 const MOCK_PROJECTION_STEPS = [
   "inventoryIntegrityGraphMockData",
   "Graph UI Rendering",
@@ -167,6 +175,10 @@ function selectGraphData(
     return fallbackGraphData;
   }
 
+  if (mode === "real_compare_readonly") {
+    return fallbackGraphData;
+  }
+
   return inventoryIntegrityGraphMockData;
 }
 
@@ -183,6 +195,10 @@ function graphSourceWarnings(
   }
 
   if (mode === "fallback_unavailable") {
+    return ["adapter_unavailable", "fallback_used", "graph_unavailable"];
+  }
+
+  if (mode === "real_compare_readonly") {
     return ["adapter_unavailable", "fallback_used", "graph_unavailable"];
   }
 
@@ -207,6 +223,10 @@ function graphSourceProjectionSteps(
 
   if (mode === "fallback_unavailable") {
     return FALLBACK_PROJECTION_STEPS;
+  }
+
+  if (mode === "real_compare_readonly") {
+    return REAL_COMPARE_GUARDED_PROJECTION_STEPS;
   }
 
   return MOCK_PROJECTION_STEPS;
@@ -403,6 +423,13 @@ const styles: Record<string, CSSProperties> = {
     background: "#e3f2fd",
     color: "#0d47a1",
   },
+  disabledFilterButton: {
+    borderColor: "#b0bec5",
+    background: "#eceff1",
+    color: "#607d8b",
+    cursor: "not-allowed",
+    opacity: 0.7,
+  },
   inspectorGrid: {
     display: "grid",
     gap: "0.65rem",
@@ -572,6 +599,8 @@ export function InventoryIntegrityGraphSection() {
     [dataSourceMode],
   );
   const isFallbackUnavailable = dataSourceMode === "fallback_unavailable";
+  const isRealCompareGuarded = dataSourceMode === "real_compare_readonly";
+  const isUnavailableProjection = isFallbackUnavailable || isRealCompareGuarded;
   const isCompareFixture = dataSourceMode === "compare_fixture";
   const projectionSteps = useMemo(
     () => graphSourceProjectionSteps(dataSourceMode),
@@ -676,6 +705,30 @@ export function InventoryIntegrityGraphSection() {
               ],
             ] as const)
           : []),
+        ...(isRealCompareGuarded
+          ? ([
+              [
+                "Guarded Source",
+                "real_compare_readonly is guarded and not enabled in this phase. / 実比較データ（読み取り専用）は現在ガード中で、このフェーズでは有効化されていません。",
+              ],
+              [
+                "Validation Gate",
+                "Validation Gate Required / 検証ゲート必須",
+              ],
+              [
+                "Live Fetch",
+                "No Live Fetch / ライブ取得なし",
+              ],
+              [
+                "Fallback Behavior",
+                "Guarded selection falls back to unavailable graph data.",
+              ],
+              [
+                "Workflow Action",
+                "No workflow action is available. / 実行操作はありません。",
+              ],
+            ] as const)
+          : []),
         ["境界 / Boundary", graphData.metadata.readOnlyBoundary],
       ];
     }
@@ -719,6 +772,7 @@ export function InventoryIntegrityGraphSection() {
     graphData.metadata.readOnlyBoundary,
     isCompareFixture,
     isFallbackUnavailable,
+    isRealCompareGuarded,
     projectionSteps,
     selectedCompareFixture,
     selectedSourceOption,
@@ -730,6 +784,11 @@ export function InventoryIntegrityGraphSection() {
   ]);
 
   function selectDataSourceMode(nextMode: InventoryIntegrityGraphDataSourceMode) {
+    const nextSourceOption = getInventoryIntegrityGraphDataSourceOption(nextMode);
+    if (nextSourceOption.isGuarded && nextSourceOption.isEnabled === false) {
+      return;
+    }
+
     const nextGraphData = selectGraphData(
       nextMode,
       compareFixtureGraphResult.graphData,
@@ -827,25 +886,36 @@ export function InventoryIntegrityGraphSection() {
         <div style={styles.sourcePanel} aria-label="Graph source mode">
           <strong>Graph Source / グラフソース</strong>
           <div style={styles.sourceControls}>
-            {inventoryIntegrityGraphDataSourceOptions.map((option) => (
-              <button
-                key={option.id}
-                type="button"
-                className="inventory-graph-focusable"
-                style={{
-                  ...styles.filterButton,
-                  width: "auto",
-                  marginTop: 0,
-                  ...(dataSourceMode === option.id ? styles.activeFilterButton : {}),
-                }}
-                onClick={() => selectDataSourceMode(option.id)}
-                aria-pressed={dataSourceMode === option.id}
-                aria-label={`Graph source を ${option.label} に切替 / Change graph source to ${option.label}. Display-only Toggle. No API. No execution action.`}
-                title={`${option.trustLevel}. ${option.disclosure}. ${option.caveat}`}
-              >
-                {option.shortLabel}
-              </button>
-            ))}
+            {inventoryIntegrityGraphDataSourceOptions.map((option) => {
+              const isDisabled = option.isGuarded && option.isEnabled === false;
+
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  className="inventory-graph-focusable"
+                  style={{
+                    ...styles.filterButton,
+                    width: "auto",
+                    marginTop: 0,
+                    ...(dataSourceMode === option.id ? styles.activeFilterButton : {}),
+                    ...(isDisabled ? styles.disabledFilterButton : {}),
+                  }}
+                  onClick={() => selectDataSourceMode(option.id)}
+                  disabled={isDisabled}
+                  aria-disabled={isDisabled}
+                  aria-pressed={dataSourceMode === option.id}
+                  aria-label={
+                    isDisabled
+                      ? `${option.label} は Guarded / 未有効です。Validation Gate Required. No Live Fetch. No API. No execution action.`
+                      : `Graph source を ${option.label} に切替 / Change graph source to ${option.label}. Display-only Toggle. No API. No execution action.`
+                  }
+                  title={`${option.trustLevel}. ${option.disclosure}. ${option.caveat}`}
+                >
+                  {option.shortLabel}
+                </button>
+              );
+            })}
           </div>
           <span style={styles.badge}>
             Data Source Mode / データソースモード: {selectedSourceOption.label}
@@ -857,6 +927,13 @@ export function InventoryIntegrityGraphSection() {
           <span style={styles.badge}>
             Live Data: {selectedSourceOption.isLiveData ? "yes" : "no"}
           </span>
+          <span style={styles.badge}>
+            Real Compare Readonly: Guarded / 未有効
+          </span>
+          <span style={styles.badge}>
+            Validation Gate Required / 検証ゲート必須
+          </span>
+          <span style={styles.badge}>No Live Fetch / ライブ取得なし</span>
           {dataSourceMode === "adapter_fixture" ? (
             <>
               <span style={styles.badge}>Not Live Compare Data / 実比較データではありません</span>
@@ -884,9 +961,33 @@ export function InventoryIntegrityGraphSection() {
               <span style={styles.badge}>Unavailable Projection / 利用不可状態の投影</span>
             </>
           ) : null}
+          {isRealCompareGuarded ? (
+            <>
+              <span style={styles.badge}>Guarded Source / ガード中ソース</span>
+              <span style={styles.badge}>Not Enabled / 未有効</span>
+              <span style={styles.badge}>No Live Fetch / ライブ取得なし</span>
+              <span style={styles.badge}>
+                Validation Gate Required / 検証ゲート必須
+              </span>
+            </>
+          ) : null}
         </div>
       </div>
       <BoundaryBadges />
+
+      <section style={styles.keyboardHelp} aria-label="Real compare guarded disclosure">
+        <strong>Guarded Disclosure / ガード中ソース開示:</strong>{" "}
+        real_compare_readonly is guarded and not enabled in this phase. /
+        実比較データ（読み取り専用）は現在ガード中で、このフェーズでは有効化されていません。
+        <div style={styles.badgeRow}>
+          <span style={styles.badge}>Guarded Source / ガード中ソース</span>
+          <span style={styles.badge}>Not Enabled / 未有効</span>
+          <span style={styles.badge}>No Live Fetch / ライブ取得なし</span>
+          <span style={styles.badge}>No API / API 接続なし</span>
+          <span style={styles.badge}>No DB / DB 接続なし</span>
+          <span style={styles.badge}>No Mutation / データ変更なし</span>
+        </div>
+      </section>
 
       {isCompareFixture ? (
         <section
@@ -944,7 +1045,7 @@ export function InventoryIntegrityGraphSection() {
         </section>
       ) : null}
 
-      {isFallbackUnavailable ? (
+      {isUnavailableProjection ? (
         <section style={styles.unavailablePanel} aria-labelledby="graph-unavailable-heading">
           <h3 id="graph-unavailable-heading" style={styles.unavailableTitle}>
             Graph Unavailable / グラフ利用不可
@@ -962,11 +1063,24 @@ export function InventoryIntegrityGraphSection() {
             <span style={styles.badge}>
               No Execution Action / 実行操作はありません
             </span>
+            {isRealCompareGuarded ? (
+              <>
+                <span style={styles.badge}>Guarded Source / ガード中ソース</span>
+                <span style={styles.badge}>Not Enabled / 未有効</span>
+                <span style={styles.badge}>No Live Fetch / ライブ取得なし</span>
+                <span style={styles.badge}>
+                  Validation Gate Required / 検証ゲート必須
+                </span>
+              </>
+            ) : null}
           </div>
           <p style={styles.lead}>
             This graph is an unavailable projection. It is not live compare data.
             No workflow action is available. / このグラフは利用不可状態の投影です。
             実比較データではありません。実行操作はありません。
+            {isRealCompareGuarded
+              ? " real_compare_readonly is guarded and uses unavailable graph data in this phase."
+              : ""}
           </p>
           <ul style={styles.compactList} aria-label="Unavailable graph reasons">
             {FALLBACK_UNAVAILABLE_REASONS.map((warning) => (
@@ -1067,6 +1181,9 @@ export function InventoryIntegrityGraphSection() {
             {isFallbackUnavailable
               ? " Unavailable placeholder summary / 利用不可 placeholder 要約として表示しています。"
               : ""}
+            {isRealCompareGuarded
+              ? " real_compare_readonly は未有効のため、利用不可 graph data を表示しています。"
+              : ""}
           </p>
           <div style={styles.cardGrid}>
             {orderedSummaries.map((card) => (
@@ -1161,8 +1278,11 @@ export function InventoryIntegrityGraphSection() {
               <p style={styles.lead}>
                 選択中 graph source の metadata を確認します。理由・根拠・シグナルをここで読みます。
                 切替は表示変更のみです。
-                {isFallbackUnavailable
+                {isUnavailableProjection
                   ? " fallback_unavailable は正常データではなく、利用不可状態の説明です。"
+                  : ""}
+                {isRealCompareGuarded
+                  ? " real_compare_readonly はガード中で、ライブ取得は行いません。"
                   : ""}
               </p>
             </div>
