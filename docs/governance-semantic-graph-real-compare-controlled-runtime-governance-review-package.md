@@ -1,24 +1,23 @@
 # Governance Semantic Graph Real Compare Controlled Runtime Governance Review Package
 
-Phase B84-05 documentation.
+Phase B86-02 documentation.
 
-このドキュメントは、B84-03 Controlled Runtime Verification Execution Workbook と B84-04 Controlled Runtime Verification Review Workbook を前提に、Governance Reviewer および Final Decision Owner が使用する Governance Review Package を design-only で整理する。
+このドキュメントは、B86-01 Controlled Runtime Governance Review Readiness Package を前提に、Controlled Runtime Governance Review の実施内容、レビュー結果、指摘事項、推奨事項、Governance Decision を体系的に記録する Governance Review Package を design-only で定義する。
 
-B84-05 は Controlled Runtime Governance Review Package only である。runtime connection、runtime verification execution、runtime enablement execution、runtime spike execution、implementation change、test addition、route change、fetch adapter change、validation change、graph adapter change、projection change、presentation change、UI change、feature flag change、source option change、`real_compare_readonly` enablement、API execution、DB / Supabase access、adapter integration、mutation、logging implementation、telemetry implementation、production rollout、feature flag switching は行わない。
+B86-02 は Controlled Runtime Governance Review Package only である。runtime connection、runtime verification execution、runtime enablement execution、runtime spike execution、implementation change、test addition、route change、fetch adapter change、validation change、graph adapter change、projection change、presentation change、UI change、feature flag change、source option change、`real_compare_readonly` enablement、API execution、DB / Supabase access、adapter integration、mutation、logging implementation、telemetry implementation、production rollout、feature flag switching は行わない。
 
-この Package は Governance Review を支援する資料であり、Runtime Verification の実施、Runtime Verification の承認、Runtime Enablement、または Production Rollout を意味しない。
+この Package は Governance Review の記録テンプレートであり、Runtime Verification 実施や Runtime Enablement 承認を意味しない。Approved は Governance Review 完了のみを意味し、Runtime Verification 完了、Runtime Enablement 承認、または Production Release 承認ではない。
 
 ## 1. Scope
 
-B84-05 is Controlled Runtime Governance Review Package only.
+B86-02 is Controlled Runtime Governance Review Package only.
 
 Scope:
 
 - Governance Review 記録テンプレートを整理する。
-- Execution Workbook と Review Workbook の Evidence、Review、Consensus、Decision を一元的に整理する。
-- Governance Reviewer と Final Decision Owner が確認する最終レビュー資料テンプレートを整理する。
-- Governance Decision と Controlled Runtime Verification Candidate の判断材料を design-only で整理する。
-- B84-06 Controlled Runtime Governance Approval Package へ進む前に、governance review package の設計境界を固定する。
+- Governance Review Readiness Package を入力として、Governance Review Information、Governance Review Inputs、Governance Review Activities、Governance Findings、Governance Recommendations、Governance Decisions、Governance Sign-off、Governance Summary を整理する。
+- Governance Review 全体の実施内容、レビュー結果、指摘事項、推奨事項、Governance Decision を design-only で記録できる template を定義する。
+- B86-03 Controlled Runtime Governance Decision Package へ進む前に、governance review package の設計境界を固定する。
 
 Scope constraints:
 
@@ -48,9 +47,9 @@ Out of scope:
 
 Scope interpretation:
 
-- Governance Review Package means a consolidated review template for governance decision support.
-- Governance Review Package does not run verification.
-- Governance Review Package does not approve runtime verification start.
+- Governance Review Package means a future record template for Governance Review inputs, activities, findings, recommendations, decisions, sign-off, and summary.
+- Governance Review Package does not execute Controlled Runtime Verification.
+- Governance Review Package does not collect runtime evidence, implement storage, implement review workflow, or perform approval automation.
 - Governance Review Package does not connect route, transport, validation, graph, presentation, or UI behavior.
 - Governance Review Package does not authorize Runtime Enablement.
 
@@ -58,86 +57,86 @@ Scope interpretation:
 
 Package objectives:
 
+- governance review documentation
 - governance consistency
-- evidence consolidation
-- reviewer accountability
 - decision traceability
+- finding management
 - approval transparency
 - audit readiness
+
+### governance review documentation
+
+Objective:
+
+- Provide a consistent package for recording what was reviewed, which inputs were used, what activities occurred, what findings were raised, what recommendations were made, and what governance decision was recorded.
+- Preserve the distinction between Governance Review documentation and Runtime Verification execution.
+
+Expected posture:
+
+- Governance review documentation is record structure only.
+- It does not mean Runtime Verification has been performed.
 
 ### governance consistency
 
 Objective:
 
-- Keep governance review records consistent across evidence, review, consensus, risks, findings, and decisions.
-- Preserve read-only, guarded, disabled, non-live, no-mutation, and no-execution interpretation.
+- Keep governance review records comparable across review information, inputs, activities, findings, recommendations, decisions, sign-off, and summary.
+- Align governance review result vocabulary with B86-01 readiness and B85 verification review conventions.
 
 Expected posture:
 
-- Consistency is a package structure property.
-- Consistency does not mean Runtime Verification has been executed or approved.
-
-### evidence consolidation
-
-Objective:
-
-- Consolidate evidence references from Execution Workbook and Review Workbook into one governance review view.
-- Keep completeness, reviewer, result, and additional evidence needs visible.
-
-Expected posture:
-
-- Evidence consolidation is review metadata.
-- B84-05 does not collect runtime evidence, implement evidence storage, or add telemetry.
-
-### reviewer accountability
-
-Objective:
-
-- Preserve Technical Review, Architecture Review, and Governance Review accountability.
-- Keep reviewer recommendations separate from Final Decision Owner judgment.
-
-Expected posture:
-
-- Accountability is review accountability only.
-- Reviewer accountability does not transfer feature flag, source option, DB, UI, adapter, or mutation authority.
+- Governance consistency is package structure.
+- B86-02 does not implement workflow, automation, review routing, approval routing, or runtime activity.
 
 ### decision traceability
 
 Objective:
 
-- Link Execution Workbook records and Review Workbook outcomes to Governance Findings, Outstanding Risks, Final Governance Assessment, and Governance Decision Summary.
-- Preserve why a governance decision is passed, passed with conditions, rework required, or stopped.
+- Link Governance Review Inputs, Review Activities, Findings, Recommendations, Decisions, Sign-off, and Governance Summary.
+- Preserve evidence references, decision ownership, outstanding conditions, and next action for later Governance Decision packaging.
 
 Expected posture:
 
-- Traceability is document-level structure.
-- Traceability does not create approval workflow, audit log implementation, automation, or runtime collection.
+- Decision traceability is document-level structure.
+- It does not create audit log implementation, persistent storage, telemetry, or runtime collection.
+
+### finding management
+
+Objective:
+
+- Record findings with category, severity, supporting evidence, owner, and status.
+- Keep open, accepted, deferred, and resolved findings visible without turning them into repair instructions.
+
+Expected posture:
+
+- Finding management is review metadata.
+- It does not trigger implementation, retry, repair, correction, rebuild, replay, sync, or workflow behavior.
 
 ### approval transparency
 
 Objective:
 
-- Make review outcome, decision owner, supporting evidence, conditions, and next action explicit.
-- Prevent approval wording from implying Runtime Enablement or Production Rollout.
+- Make governance decisions, outstanding conditions, decision owner, supporting evidence, sign-off, and next action visible before Governance Decision packaging.
+- Prevent approval wording from implying Runtime Verification completion, Runtime Enablement approval, or Production Release.
 
 Expected posture:
 
 - Approval transparency is review clarity.
-- B84-05 does not approve runtime verification execution or runtime enablement.
+- It does not transfer authority to change feature flags, source options, route, adapters, validation, projection, presentation, UI, DB, or mutation behavior.
 
 ### audit readiness
 
 Objective:
 
-- Make future governance records understandable for audit-style follow-up.
-- Preserve which artifacts were reviewed, which evidence was consolidated, which risks remained, and what decision was recorded.
+- Make future Governance Review records understandable for audit-style follow-up.
+- Preserve which inputs were reviewed, which activities occurred, which evidence supported findings, which recommendations were issued, which decisions were recorded, and which reviewers signed off.
 
 Expected posture:
 
 - Audit readiness is documentation readiness.
 - It is not audit log, logging, telemetry, persistent storage, or production rollout.
 
-This Package supports Governance Review. It does not mean Runtime Verification or Runtime Enablement is approved.
+This Package is a template for recording Governance Review. It does not mean Runtime Verification was performed or Runtime Enablement is approved.
 
 ## 3. Package Structure
 
@@ -145,31 +144,31 @@ Package sections:
 
 - Package Header
 - Governance Review Information
-- Evidence Consolidation
-- Review Consolidation
-- Consensus Summary
+- Governance Review Inputs
+- Governance Review Activities
 - Governance Findings
-- Outstanding Risks
-- Final Governance Assessment
-- Governance Decision Summary
+- Governance Recommendations
+- Governance Decisions
+- Governance Sign-off
+- Governance Summary
 
 | Section | Purpose | Inputs | Outputs | Owner | Completion Condition |
 | --- | --- | --- | --- | --- | --- |
-| Package Header | Identify the package and accountable placeholders | Execution Workbook reference, Review Workbook reference, branch candidate, commit SHA candidate, reviewer placeholders | Package header record | Governance Review Coordinator | Package ID, Governance Review ID, workbook references, version, repository, branch, SHA, reviewers, and Final Decision Owner placeholders are filled |
-| Governance Review Information | Record governance scope, reviewed artifacts, status, timing, and outcome | B84-03 Execution Workbook, B84-04 Review Workbook, review scope, role assignment | Governance review information record | Governance Review Coordinator | Scope, artifacts, governance status, start/end placeholders, and review outcome are recorded |
-| Evidence Consolidation | Consolidate evidence categories and completeness | Execution Workbook evidence records, Review Workbook evidence review, B82 evidence model | Evidence consolidation table | Evidence Review Owner with Governance Reviewer | Every evidence category has ID, source workbook, reviewed status, reviewer, result, completeness, and additional evidence requirement |
-| Review Consolidation | Consolidate Technical, Architecture, and Governance Review outcomes | Reviewer findings, layer reviews, evidence review, consensus records | Review consolidation records | Governance Reviewer with Review Coordinator | Each review has summary, findings, risks, recommendation, and review result |
-| Consensus Summary | Summarize reviewer consensus and unresolved items | Review Workbook consensus records, reviewer findings, outstanding issues | Consensus summary | Review Coordinator with Final Decision Owner | Consensus status, agreed items, open items, resolution owner, and resolution status are recorded |
-| Governance Findings | Record governance findings that affect final decision support | Evidence Consolidation, Review Consolidation, Consensus Summary, safety constraints | Governance findings table | Governance Reviewer | Each finding has ID, description, severity, impact, recommendation, and owner |
-| Outstanding Risks | Record unresolved governance and safety risks | Governance Findings, Review Workbook outstanding issues, B83 risks | Risk register | Governance Reviewer with Architecture Reviewer | Each risk has ID, description, severity, mitigation, owner, and blocking status |
-| Final Governance Assessment | Summarize readiness and remaining risk posture | Evidence Consolidation, Review Consolidation, Consensus Summary, Findings, Risks | Final governance assessment | Final Decision Owner with Governance Reviewer | Overall assessment, evidence completeness, review completeness, governance readiness, remaining risks, and recommendation are recorded |
-| Governance Decision Summary | Record final governance review decision and next action | Final Governance Assessment, supporting evidence, consensus status, outstanding risks | Governance decision summary | Final Decision Owner | Governance Review Passed, Passed with Conditions, Rework Required, or Stopped is recorded with owner, evidence, and next action |
+| Package Header | Identify the governance review package and accountable placeholders | Governance Review Readiness Package, repository candidate, branch candidate, commit SHA candidate, governance reviewer placeholders | Package header record | Governance Coordinator | Package ID, Governance Review ID, repository, branch, SHA, version, date, coordinator, and reviewer placeholders are filled |
+| Governance Review Information | Record governance review scope, objective, date, status, and outcome | Governance Review Readiness decision, governance scope, reviewer assignment | Governance review information record | Governance Coordinator | Review Scope, Review Objective, Review Date, Review Status, and Review Outcome are recorded |
+| Governance Review Inputs | Record input artifacts and review status | Governance Review Readiness Package, Verification Review Package, Traceability Matrix, Evidence Register, Governance Approval Package | Governance review input table | Governance Coordinator with Evidence Owner | Each input has reference, version, status, and owner |
+| Governance Review Activities | Record governance review activities and results | Review inputs, evidence references, traceability records, risk records, decision material | Governance review activity table | Assigned Governance Reviewer | Governance Scope Review, Evidence Review, Traceability Review, Risk Review, and Decision Review have ID, scope, reviewer, result, and evidence reference |
+| Governance Findings | Record governance findings and status | Review Activities, Evidence Register, Traceability Matrix, safety constraints | Governance findings table | Finding Owner with Governance Reviewer | Each finding has ID, category, description, severity, supporting evidence, owner, and status |
+| Governance Recommendations | Record recommendations tied to findings | Governance Findings, reviewer notes, decision constraints | Recommendation table | Governance Reviewer with Recommendation Owner | Each recommendation has ID, related finding, priority, owner, and target completion |
+| Governance Decisions | Record governance decision candidates and next actions | Findings, recommendations, activity results, supporting evidence, outstanding conditions | Governance decision record | Decision Owner placeholder | Approved, Approved with Conditions, Rework Required, or Escalated can be recorded with evidence and next action |
+| Governance Sign-off | Record governance sign-off placeholders | Review Activities, Findings, Recommendations, Decisions | Sign-off table | Governance Chair, Governance Reviewer, and Observer | Required role placeholders, date placeholders, and remarks are recorded |
+| Governance Summary | Summarize final governance review result and next phase recommendation | All package sections | Governance summary record | Governance Coordinator with Governance Reviewer | Overall Governance Result, Findings Summary, Decision Summary, Outstanding Risks, and Recommendations are recorded |
 
 Structure interpretation:
 
 - Each section is a governance review record area, not a runtime procedure.
-- Completion of a section does not authorize downstream Runtime Enablement.
-- Missing evidence, unresolved consensus, governance findings, or safety risks must remain visible.
+- Completion of a section does not authorize Runtime Verification execution, Runtime Enablement, or Production Release.
+- Missing inputs, incomplete activities, unresolved findings, unsafe recommendations, missing sign-off, ambiguous decisions, or blocking risks must remain visible.
 
 ## 4. Package Header
 
@@ -179,318 +178,323 @@ Use placeholders only. Do not record real names in this design document.
 | --- | --- |
 | Package ID | `[governance-review-package-id-placeholder]` |
 | Governance Review ID | `[governance-review-id-placeholder]` |
-| Execution Workbook Reference | `[verification-execution-workbook-reference-placeholder]` |
-| Review Workbook Reference | `[verification-review-workbook-reference-placeholder]` |
-| Version | `[version-placeholder]` |
-| Date | `[YYYY-MM-DD]` |
 | Repository | `[repository-placeholder]` |
 | Branch | `[branch-placeholder]` |
 | Commit SHA | `[commit-sha-placeholder]` |
-| Governance Reviewer | `[governance-reviewer-placeholder]` |
-| Architecture Reviewer | `[architecture-reviewer-placeholder]` |
-| Final Decision Owner | `[final-decision-owner-placeholder]` |
+| Version | `[version-placeholder]` |
+| Date | `[YYYY-MM-DD]` |
+| Governance Coordinator | `[governance-coordinator-placeholder]` |
+| Governance Reviewers | `[governance-chair-placeholder] / [governance-reviewer-placeholder] / [observer-placeholder]` |
 
 Header rules:
 
 - Package ID identifies this governance review package template instance.
 - Governance Review ID identifies the later governance review event candidate.
-- Execution Workbook Reference points to the B84-03-style execution workbook being consolidated.
-- Review Workbook Reference points to the B84-04-style review workbook being consolidated.
 - Branch and Commit SHA are repository evidence references, not execution approval by themselves.
-- Reviewer placeholders preserve accountability without recording real names in this design document.
+- Version identifies the fixed package revision for later comparison.
+- Governance Coordinator coordinates governance review records only.
+- Governance Reviewers evaluate the recorded scope only and do not approve Runtime Enablement.
 
 ## 5. Governance Review Information
+
+Governance Review Information records review scope, objective, date, status, and outcome.
 
 | Field | Placeholder / Candidate Values |
 | --- | --- |
 | Review Scope | `[controlled-runtime-governance-review-scope-placeholder]` |
-| Reviewed Artifacts | `[execution-workbook-reference / review-workbook-reference / evidence-summary-reference / consensus-reference]` |
-| Governance Status | `[Not Started / In Review / Review Completed / Review Suspended]` |
-| Review Start | `[review-start-time-placeholder]` |
-| Review End | `[review-end-time-placeholder]` |
-| Review Outcome | `[governance-review-passed / governance-review-passed-with-conditions / governance-rework-required / governance-review-stopped / not-reviewed]` |
+| Review Objective | `[governance-review-objective-placeholder]` |
+| Review Date | `[YYYY-MM-DD]` |
+| Review Status | `[Planned / In Review / Completed / Rework Required / Closed]` |
+| Review Outcome | `[approved / approved-with-conditions / rework-required / escalated / not-reviewed]` |
 
-Governance Status candidates:
+Review Status candidates:
 
-- Not Started
+- Planned
 - In Review
-- Review Completed
-- Review Suspended
+- Completed
+- Rework Required
+- Closed
 
 Governance review information rules:
 
-- `Not Started` is the default package design posture.
-- `In Review`, `Review Completed`, and `Review Suspended` are future record values only.
-- B84-05 does not set an actual review start time or end time.
-- Review Outcome is governance review metadata only and does not authorize Runtime Enablement.
+- Planned is the default package design posture.
+- In Review, Completed, Rework Required, and Closed are future record values only.
+- Review Date is a record placeholder and does not imply a review occurred in B86-02.
+- Review Outcome is governance review metadata only and does not authorize Runtime Verification execution or Runtime Enablement.
 
-## 6. Evidence Consolidation
+## 6. Governance Review Inputs
 
-Evidence consolidation records combine references from the Execution Workbook and Review Workbook. B84-05 does not collect, execute, or validate runtime evidence.
+Governance Review Inputs record the artifacts used by Governance Review.
 
-| Evidence | Evidence ID | Source Workbook | Reviewed | Reviewer | Result | Completeness | Additional Evidence Required |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| Repository | `repo-evidence-[id]` | `[execution-workbook / review-workbook]` | `[yes / no / partial / not-reviewed]` | `[technical-reviewer-placeholder]` | `[accepted / accepted-with-conditions / rework-required / deferred]` | `[complete / partial / incomplete / not-reviewable]` | `[none / additional-repository-evidence-placeholder]` |
-| Build | `build-evidence-[id]` | `[execution-workbook / review-workbook]` | `[yes / no / partial / not-reviewed]` | `[technical-reviewer-placeholder]` | `[accepted / accepted-with-conditions / rework-required / deferred]` | `[complete / partial / incomplete / not-reviewable]` | `[none / additional-build-evidence-placeholder]` |
-| Test | `test-evidence-[id]` | `[execution-workbook / review-workbook / not-scoped-note]` | `[yes / no / partial / not-reviewed]` | `[technical-reviewer-placeholder]` | `[accepted / accepted-with-conditions / rework-required / deferred]` | `[complete / partial / incomplete / not-reviewable]` | `[none / additional-test-evidence-placeholder]` |
-| Route | `route-evidence-[id]` | `[execution-workbook / review-workbook]` | `[yes / no / partial / not-reviewed]` | `[route-boundary-reviewer-placeholder]` | `[accepted / accepted-with-conditions / rework-required / deferred]` | `[complete / partial / incomplete / not-reviewable]` | `[none / additional-route-evidence-placeholder]` |
-| Fetch Adapter | `fetch-adapter-evidence-[id]` | `[execution-workbook / review-workbook]` | `[yes / no / partial / not-reviewed]` | `[fetch-boundary-reviewer-placeholder]` | `[accepted / accepted-with-conditions / rework-required / deferred]` | `[complete / partial / incomplete / not-reviewable]` | `[none / additional-fetch-adapter-evidence-placeholder]` |
-| Validation | `validation-evidence-[id]` | `[execution-workbook / review-workbook]` | `[yes / no / partial / not-reviewed]` | `[validation-layer-reviewer-placeholder]` | `[accepted / accepted-with-conditions / rework-required / deferred]` | `[complete / partial / incomplete / not-reviewable]` | `[none / additional-validation-evidence-placeholder]` |
-| Graph Adapter | `graph-adapter-evidence-[id]` | `[execution-workbook / review-workbook]` | `[yes / no / partial / not-reviewed]` | `[graph-boundary-reviewer-placeholder]` | `[accepted / accepted-with-conditions / rework-required / deferred]` | `[complete / partial / incomplete / not-reviewable]` | `[none / additional-graph-adapter-evidence-placeholder]` |
-| Presentation | `presentation-evidence-[id]` | `[execution-workbook / review-workbook]` | `[yes / no / partial / not-reviewed]` | `[presentation-boundary-reviewer-placeholder]` | `[accepted / accepted-with-conditions / rework-required / deferred]` | `[complete / partial / incomplete / not-reviewable]` | `[none / additional-presentation-evidence-placeholder]` |
-| UI | `ui-evidence-[id]` | `[execution-workbook / review-workbook]` | `[yes / no / partial / not-reviewed]` | `[ui-boundary-reviewer-placeholder]` | `[accepted / accepted-with-conditions / rework-required / deferred]` | `[complete / partial / incomplete / not-reviewable]` | `[none / additional-ui-evidence-placeholder]` |
-| Safety | `safety-evidence-[id]` | `[execution-workbook / review-workbook]` | `[yes / no / partial / not-reviewed]` | `[governance-reviewer-placeholder]` | `[accepted / accepted-with-conditions / rework-required / deferred]` | `[complete / partial / incomplete / not-reviewable]` | `[none / additional-safety-evidence-placeholder]` |
-| Review | `review-evidence-[id]` | `[review-workbook]` | `[yes / no / partial / not-reviewed]` | `[final-decision-owner-placeholder]` | `[accepted / accepted-with-conditions / rework-required / deferred]` | `[complete / partial / incomplete / not-reviewable]` | `[none / additional-review-evidence-placeholder]` |
+| Input | Reference | Version | Status | Owner |
+| --- | --- | --- | --- | --- |
+| Governance Review Readiness Package | `[governance-review-readiness-package-reference-placeholder]` | `[governance-review-readiness-package-version-placeholder]` | `[available / partial / missing / not-reviewed]` | `[governance-coordinator-placeholder]` |
+| Verification Review Package | `[verification-review-package-reference-placeholder]` | `[verification-review-package-version-placeholder]` | `[available / partial / missing / not-reviewed]` | `[verification-review-owner-placeholder]` |
+| Verification Traceability Matrix | `[verification-traceability-matrix-reference-placeholder]` | `[traceability-matrix-version-placeholder]` | `[available / partial / missing / not-reviewed]` | `[traceability-owner-placeholder]` |
+| Evidence Register | `[evidence-register-reference-placeholder]` | `[evidence-register-version-placeholder]` | `[available / partial / missing / not-reviewed]` | `[evidence-owner-placeholder]` |
+| Governance Approval Package | `[governance-approval-package-reference-placeholder]` | `[governance-approval-package-version-placeholder]` | `[available / partial / missing / not-reviewed]` | `[governance-approval-owner-placeholder]` |
 
-Evidence consolidation rules:
+Governance review input rules:
 
-- Missing safety evidence cannot be accepted with conditions.
-- Incomplete evidence must stay visible in Final Governance Assessment.
-- Additional Evidence Required does not authorize runtime execution to collect the evidence in B84-05.
-- Consolidation does not rewrite Execution Workbook or Review Workbook records.
+- Missing Governance Review Readiness Package blocks package completion.
+- Missing Evidence Register or Traceability Matrix blocks Approved.
+- Missing Verification Review Package blocks Approved and Approved with Conditions.
+- Partial inputs must be carried to Governance Findings or Governance Decisions.
+- Governance Review Inputs do not authorize runtime execution to fill gaps.
 
-## 7. Review Consolidation
+## 7. Governance Review Activities
 
-Review consolidation summarizes reviewer decisions for governance review.
+Governance Review Activities record what was reviewed and the result.
 
-Review Result candidates:
+| Activity | Activity ID | Scope | Reviewer | Result | Evidence Reference |
+| --- | --- | --- | --- | --- | --- |
+| Governance Scope Review | `governance-scope-review-activity-[id]` | `[scope / exclusions / review-boundary / non-enablement]` | `[governance-chair-placeholder]` | `[accepted / accepted-with-conditions / rework-required / not-reviewable / not-reviewed]` | `[governance-scope-evidence-reference-placeholder]` |
+| Evidence Review | `governance-evidence-review-activity-[id]` | `[repository / build / test / route / adapter / validation / presentation / ui / governance]` | `[governance-reviewer-placeholder]` | `[accepted / accepted-with-conditions / rework-required / not-reviewable / not-reviewed]` | `[evidence-register-reference-placeholder]` |
+| Traceability Review | `governance-traceability-review-activity-[id]` | `[baseline / observation / evidence / finding / review / governance links]` | `[traceability-reviewer-placeholder]` | `[accepted / accepted-with-conditions / rework-required / not-reviewable / not-reviewed]` | `[traceability-matrix-reference-placeholder]` |
+| Risk Review | `governance-risk-review-activity-[id]` | `[safety / governance / ownership / decision / production-risk]` | `[governance-reviewer-placeholder]` | `[accepted / accepted-with-conditions / rework-required / not-reviewable / not-reviewed]` | `[risk-evidence-reference-placeholder]` |
+| Decision Review | `governance-decision-review-activity-[id]` | `[decision-owner / supporting-evidence / outstanding-conditions / next-action]` | `[governance-chair-placeholder]` | `[accepted / accepted-with-conditions / rework-required / not-reviewable / not-reviewed]` | `[decision-evidence-reference-placeholder]` |
 
-- Accepted
-- Accepted with Conditions
-- Rework Required
-- Deferred
+Review activity rules:
 
-### Technical Review
-
-| Field | Record Placeholder |
-| --- | --- |
-| Summary | `[technical-review-summary-placeholder]` |
-| Findings | `[technical-review-findings-placeholder]` |
-| Risks | `[technical-review-risks-placeholder]` |
-| Recommendation | `[technical-review-recommendation-placeholder]` |
-| Review Result | `[Accepted / Accepted with Conditions / Rework Required / Deferred]` |
-
-### Architecture Review
-
-| Field | Record Placeholder |
-| --- | --- |
-| Summary | `[architecture-review-summary-placeholder]` |
-| Findings | `[architecture-review-findings-placeholder]` |
-| Risks | `[architecture-review-risks-placeholder]` |
-| Recommendation | `[architecture-review-recommendation-placeholder]` |
-| Review Result | `[Accepted / Accepted with Conditions / Rework Required / Deferred]` |
-
-### Governance Review
-
-| Field | Record Placeholder |
-| --- | --- |
-| Summary | `[governance-review-summary-placeholder]` |
-| Findings | `[governance-review-findings-placeholder]` |
-| Risks | `[governance-review-risks-placeholder]` |
-| Recommendation | `[governance-review-recommendation-placeholder]` |
-| Review Result | `[Accepted / Accepted with Conditions / Rework Required / Deferred]` |
-
-Review consolidation rules:
-
-- `Accepted` is valid only when evidence and safety posture are reviewable.
-- `Accepted with Conditions` may carry non-safety caveats only.
-- `Rework Required` does not trigger implementation in B84-05.
-- `Deferred` means governance review cannot decide from current materials.
+- Accepted is valid only when required evidence is reviewable and safety constraints are preserved.
+- Accepted with Conditions may carry non-safety caveats only.
+- Rework Required does not trigger implementation in B86-02.
+- Not Reviewable means evidence or scope is insufficient and must remain visible.
 - Any mutation, execution, enablement, production, or feature flag signal blocks Accepted.
 
-## 8. Consensus Summary
+## 8. Governance Findings
 
-Consensus Summary records agreement, open items, and resolution state.
+Governance Findings record issues raised during Governance Review.
 
-Consensus Status candidates:
+Finding Status candidates:
 
-- Full Consensus
-- Partial Consensus
-- No Consensus
+- Open
+- Accepted
+- Deferred
+- Resolved
 
-| Field | Record Placeholder |
-| --- | --- |
-| Consensus Status | `[Full Consensus / Partial Consensus / No Consensus]` |
-| Agreed Items | `[agreed-items-placeholder]` |
-| Open Items | `[open-items-placeholder]` |
-| Resolution Required | `[yes / no / not-reviewed]` |
-| Resolution Owner | `[resolution-owner-placeholder]` |
-| Resolution Status | `[not-started / in-review / resolved / unresolved / blocked]` |
-
-Consensus summary rules:
-
-- Full Consensus means reviewers agree on governance interpretation for the recorded scope only.
-- Partial Consensus must list open items and resolution requirements.
-- No Consensus blocks Governance Review Passed and requires Final Decision Owner attention.
-- Consensus does not override safety evidence gaps, stop findings, or blocking risks.
-
-## 9. Governance Findings
-
-Governance Findings record issues that affect governance interpretation or decision support.
-
-| Finding ID | Description | Severity | Impact | Recommendation | Owner |
-| --- | --- | --- | --- | --- | --- |
-| `finding-[id]` | `[finding-description-placeholder]` | `[critical / high / medium / low]` | `[finding-impact-placeholder]` | `[finding-recommendation-placeholder]` | `[finding-owner-placeholder]` |
+| Finding ID | Category | Description | Severity | Supporting Evidence | Owner | Status |
+| --- | --- | --- | --- | --- | --- | --- |
+| `governance-finding-[id]` | `[scope / evidence / traceability / risk / decision / safety / non-enablement]` | `[governance-finding-description-placeholder]` | `[critical / high / medium / low]` | `[governance-finding-supporting-evidence-placeholder]` | `[governance-finding-owner-placeholder]` | `[Open / Accepted / Deferred / Resolved]` |
+| `safety-finding-[id]` | `safety` | `[safety-finding-description-placeholder]` | `[critical / high / medium / low]` | `safety-evidence-[id]` | `[safety-finding-owner-placeholder]` | `[Open / Accepted / Deferred / Resolved]` |
+| `decision-finding-[id]` | `decision` | `[decision-finding-description-placeholder]` | `[critical / high / medium / low]` | `[decision-evidence-reference-placeholder]` | `[decision-finding-owner-placeholder]` | `[Open / Accepted / Deferred / Resolved]` |
 
 Governance finding rules:
 
-- Critical finding blocks Governance Review Passed.
-- Findings must preserve read-only, non-executing interpretation.
-- Recommendation is review guidance only and does not authorize implementation or runtime execution.
-- Finding Owner is review owner only and does not receive runtime operation authority.
+- Critical safety findings block Approved and Approved with Conditions.
+- Open findings must be carried to Governance Decisions.
+- Deferred findings must preserve reason, owner, and governance decision impact.
+- Resolved findings must remain traceable to evidence and sign-off.
+- Findings do not authorize implementation, runtime execution, or feature flag changes.
 
-## 10. Outstanding Risks
+## 9. Governance Recommendations
 
-Outstanding Risks keep unresolved governance, evidence, ownership, consensus, and safety risks visible.
+Governance Recommendations record reviewer guidance tied to findings.
 
-| Risk ID | Description | Severity | Mitigation | Owner | Blocking / Non-blocking |
+| Recommendation ID | Related Finding | Recommendation | Priority | Owner | Target Completion |
 | --- | --- | --- | --- | --- | --- |
-| `risk-[id]` | `[risk-description-placeholder]` | `[critical / high / medium / low]` | `[risk-mitigation-placeholder]` | `[risk-owner-placeholder]` | `[blocking / non-blocking]` |
+| `governance-recommendation-[id]` | `governance-finding-[id]` | `[governance-recommendation-placeholder]` | `[critical / high / medium / low]` | `[governance-recommendation-owner-placeholder]` | `[target-completion-placeholder]` |
+| `safety-recommendation-[id]` | `safety-finding-[id]` | `[safety-recommendation-placeholder]` | `[critical / high / medium / low]` | `[safety-recommendation-owner-placeholder]` | `[target-completion-placeholder]` |
+| `decision-recommendation-[id]` | `decision-finding-[id]` | `[decision-recommendation-placeholder]` | `[critical / high / medium / low]` | `[decision-recommendation-owner-placeholder]` | `[target-completion-placeholder]` |
 
-Risk rules:
+Recommendation rules:
 
-- Critical safety risk is always blocking.
-- Missing safety evidence is always blocking.
-- Non-blocking risks must be explicitly classified as non-safety.
-- Mitigation is a governance review note only and does not authorize implementation, runtime execution, or workflow behavior.
+- Recommendation is governance review guidance only.
+- Recommendation does not authorize implementation, runtime execution, adapter integration, UI wiring, feature flag change, source option change, DB access, logging implementation, telemetry implementation, or production rollout.
+- Critical safety recommendations must be carried as outstanding conditions until reviewed.
+- Target Completion is a review planning placeholder and does not implement scheduling or workflow.
 
-## 11. Final Governance Assessment
-
-| Field | Record Placeholder |
-| --- | --- |
-| Overall Assessment | `[overall-assessment-placeholder]` |
-| Evidence Completeness | `[complete / partial / incomplete / not-reviewable]` |
-| Review Completeness | `[complete / partial / blocked / not-reviewed]` |
-| Governance Readiness | `[ready-for-approval-package-design / conditionally-ready-for-approval-package-design / not-ready / stopped]` |
-| Remaining Risks | `[remaining-risks-placeholder]` |
-| Recommendation | `[governance-review-passed / governance-review-passed-with-conditions / governance-rework-required / governance-review-stopped / not-reviewed]` |
-
-Final governance assessment rules:
-
-- Overall Assessment must not hide stop, disagreement, incomplete evidence, governance findings, or safety risks.
-- Evidence Completeness must remain incomplete when evidence is missing.
-- Review Completeness must remain partial or blocked when consensus is incomplete.
-- Governance Readiness is readiness for the next design package only.
-- Recommendation is governance review metadata only.
-
-## 12. Governance Decision Summary
+## 10. Governance Decisions
 
 Decision candidates:
 
-- Governance Review Passed
-- Governance Review Passed with Conditions
-- Governance Rework Required
-- Governance Review Stopped
+- Approved
+- Approved with Conditions
+- Rework Required
+- Escalated
 
-### Governance Review Passed
+### Approved
+
+Decision ID:
+
+- `governance-decision-approved-[id]`
 
 Decision Owner:
 
-- `[final-decision-owner-placeholder]`
+- `[governance-decision-owner-placeholder]`
 
 Supporting Evidence:
 
-- `[complete-governance-evidence-reference-placeholder]`
+- `[approved-governance-supporting-evidence-placeholder]`
+
+Outstanding Conditions:
+
+- `[none-or-non-blocking-administrative-follow-up-placeholder]`
 
 Next Action:
 
-- Mark the Governance Review Package as complete for review purposes.
-- Proceed to B84-06 Controlled Runtime Governance Approval Package design.
+- Mark the Governance Review Package as complete for review record purposes.
+- Proceed to B86-03 Controlled Runtime Governance Decision Package design.
 
 Interpretation:
 
-- Governance Review Passed means Governance Review completion only.
-- Governance Review Passed does not mean Runtime Enablement.
-- Governance Review Passed does not mean Runtime Verification execution approval.
-- Governance Review Passed does not change feature flags, source options, route, adapters, validation, projection, presentation, or UI.
+- Approved means Governance Review completion only.
+- Approved does not mean Runtime Verification completion.
+- Approved does not mean Runtime Enablement approval.
+- Approved does not mean Production Release.
+- Approved does not change feature flags, source options, route, adapters, validation, projection, presentation, or UI.
 
-### Governance Review Passed with Conditions
+### Approved with Conditions
+
+Decision ID:
+
+- `governance-decision-approved-with-conditions-[id]`
 
 Decision Owner:
 
-- `[final-decision-owner-placeholder]` with `[governance-reviewer-placeholder]`
+- `[governance-decision-owner-placeholder]` with `[governance-reviewer-placeholder]`
 
 Supporting Evidence:
 
-- `[conditional-governance-evidence-reference-placeholder]`
+- `[conditional-governance-supporting-evidence-placeholder]`
+
+Outstanding Conditions:
+
+- `[conditional-governance-outstanding-conditions-placeholder]`
 
 Next Action:
 
 - Proceed only with explicit non-safety conditions recorded.
-- Carry conditions into B84-06 approval package design.
+- Carry conditions into B86-03 Governance Decision Package design.
+- Block Governance Decision readiness if safety, governance, required evidence, or decision owner conditions remain unresolved.
 
 Interpretation:
 
-- Governance Review Passed with Conditions cannot accept safety risk.
-- Governance Review Passed with Conditions cannot hide incomplete evidence.
-- Governance Review Passed with Conditions does not authorize Runtime Enablement.
+- Approved with Conditions may carry non-safety caveats only.
+- Approved with Conditions cannot hide incomplete safety evidence, rejected evidence, missing governance links, unassigned required reviewers, or blocking risks.
+- Approved with Conditions does not authorize Runtime Verification execution or Runtime Enablement.
 
-### Governance Rework Required
+### Rework Required
+
+Decision ID:
+
+- `governance-decision-rework-required-[id]`
 
 Decision Owner:
 
-- `[final-decision-owner-placeholder]`
+- `[governance-decision-owner-placeholder]`
 
 Supporting Evidence:
 
-- `[governance-rework-evidence-reference-placeholder]`
+- `[rework-governance-supporting-evidence-placeholder]`
+
+Outstanding Conditions:
+
+- `[rework-outstanding-conditions-placeholder]`
 
 Next Action:
 
-- Return to package correction, evidence clarification, review consolidation, or consensus clarification.
-- Do not proceed as passed until rework is reviewed.
+- Return to governance input correction, evidence clarification, traceability correction, finding resolution, risk review, or reviewer clarification.
+- Do not proceed as approved until rework is reviewed in a later explicitly scoped phase.
 
 Interpretation:
 
-- Governance Rework Required does not trigger implementation.
-- Governance Rework Required does not authorize runtime execution to fill gaps.
-- Governance Rework Required preserves guarded, disabled, non-live state.
+- Rework Required does not trigger implementation.
+- Rework Required does not authorize runtime execution to fill gaps.
+- Rework Required preserves guarded, disabled, non-live state.
 
-### Governance Review Stopped
+### Escalated
+
+Decision ID:
+
+- `governance-decision-escalated-[id]`
 
 Decision Owner:
 
-- `[stop-authority-placeholder]` with `[final-decision-owner-placeholder]`
+- `[governance-decision-owner-placeholder]` with `[governance-chair-placeholder]`
 
 Supporting Evidence:
 
-- `[governance-stop-evidence-reference-placeholder]`
+- `[escalated-governance-supporting-evidence-placeholder]`
+
+Outstanding Conditions:
+
+- `[escalated-governance-outstanding-conditions-placeholder]`
 
 Next Action:
 
-- Stop the governance review chain for the recorded scope.
-- Preserve stop reason, outstanding risks, and required resolution owner.
-- Do not proceed until Final Decision Owner reviews resume eligibility in a later explicitly scoped phase.
+- Escalate unresolved governance, safety, ownership, decision authority, or audit readiness ambiguity to Governance Decision Package planning.
+- Preserve unresolved items, severity, evidence, owner, and impact in the Governance Summary.
 
 Interpretation:
 
-- Governance Review Stopped blocks progression.
-- Governance Review Stopped does not trigger repair, retry, approval workflow, or runtime workflow.
-- Governance Review Stopped preserves Runtime Enablement as Not Ready.
+- Escalated is governance routing metadata only.
+- Escalated does not authorize Runtime Verification execution, Runtime Enablement, Production Release, feature flag change, source option change, mutation, or API execution.
 
-Decision summary rules:
+Governance decision rules:
 
-- Governance Review Passed is Governance Review completion only.
-- Governance Review Passed is not Runtime Enablement approval.
-- Governance Review Passed is not Runtime Verification execution approval.
+- Approved is Governance Review completion only.
+- Approved is not Runtime Verification completion.
+- Approved is not Runtime Enablement approval.
+- Approved is not Production Release.
 - Any decision that implies enablement, production rollout, mutation, API execution, DB / Supabase connection, or feature flag change is invalid for this package.
+
+## 11. Governance Sign-off
+
+Governance Sign-off records governance role placeholders and remarks.
+
+| Role | Name Placeholder | Sign-off Placeholder | Date Placeholder | Remarks |
+| --- | --- | --- | --- | --- |
+| Governance Chair | `[governance-chair-name-placeholder]` | `[governance-chair-sign-off-placeholder]` | `[YYYY-MM-DD]` | `[governance-chair-remarks-placeholder]` |
+| Governance Reviewer | `[governance-reviewer-name-placeholder]` | `[governance-reviewer-sign-off-placeholder]` | `[YYYY-MM-DD]` | `[governance-reviewer-remarks-placeholder]` |
+| Observer | `[observer-name-placeholder]` | `[observer-sign-off-placeholder]` | `[YYYY-MM-DD]` | `[observer-remarks-placeholder]` |
+
+Sign-off rules:
+
+- Sign-off Placeholder is review metadata and does not implement approval workflow.
+- Governance Chair sign-off covers review coordination, review completeness, and decision readiness only.
+- Governance Reviewer sign-off covers evidence, traceability, safety, non-enablement, risk, and governance interpretation only.
+- Observer sign-off records observation of governance review materials only and does not grant decision authority.
+- No sign-off authorizes Runtime Enablement or Production Release.
+
+## 12. Governance Summary
+
+Governance Summary consolidates final governance review state for later Governance Decision packaging.
+
+| Field | Record Placeholder |
+| --- | --- |
+| Overall Governance Result | `[approved / approved-with-conditions / rework-required / escalated / not-reviewed]` |
+| Findings Summary | `[findings-summary-placeholder]` |
+| Decision Summary | `[decision-summary-placeholder]` |
+| Outstanding Risks | `[outstanding-risks-placeholder]` |
+| Recommendations | `[governance-recommendations-summary-placeholder]` |
+
+Governance summary rules:
+
+- Overall Governance Result must not hide missing inputs, incomplete activities, unresolved findings, unsafe recommendations, missing sign-off, ambiguous decisions, or blocking risks.
+- Findings Summary must preserve category, severity, owner, status, and supporting evidence.
+- Decision Summary must preserve decision owner, evidence, outstanding conditions, and next action.
+- Outstanding Risks must preserve owner, severity, affected section, and blocking status.
+- Recommendations are governance review guidance only and do not authorize implementation or runtime execution.
 
 ## 13. Package Completion Criteria
 
-B84-05 is complete when:
+B86-02 is complete when:
 
+- package header completed
 - governance review information completed
-- evidence consolidation completed
-- review consolidation completed
-- consensus summary completed
+- governance review inputs completed
+- governance review activities completed
 - governance findings completed
-- outstanding risks completed
-- final governance assessment completed
-- governance decision summary completed
+- governance recommendations completed
+- governance decisions completed
+- governance sign-off completed
+- governance summary completed
 
 Completion interpretation:
 
 - Completion means governance review package template design is complete.
+- Completion does not mean Governance Review was actually performed in B86-02.
 - Completion does not mean Runtime Verification has started.
 - Completion does not mean Runtime Verification passed.
 - Completion does not mean Runtime Enablement is ready.
@@ -500,18 +504,18 @@ Completion interpretation:
 Recommended next phase:
 
 ```text
-B84-06 Controlled Runtime Governance Approval Package
+B86-03 Controlled Runtime Governance Decision Package
 ```
 
 Purpose:
 
-- Governance Review の最終承認資料
-- 承認履歴
-- Go / Conditional Go / No-Go 記録
+- Governance Decision の正式記録
+- 承認条件整理
+- 次フェーズ判定資料作成
 
-Recommended B84-06 posture:
+Recommended B86-03 posture:
 
-- Governance approval package design only.
+- Governance decision package design only.
 - Runtime Verification is still not executed.
 - No implementation.
 - No tests追加.
